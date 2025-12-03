@@ -27,6 +27,15 @@
     * {
       box-sizing: border-box;
     }
+    #map {
+      position: fixed;
+      top: 52px; /* spazio per la barra superiore */
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+      height: 100vh;  /* Assicurati che prenda tutta l'altezza */
+    }
 
     html,
     body {
@@ -1172,24 +1181,23 @@
     // =========================
 
     function initMap() {
-      map = L.map("map");
-
+      map = L.map("map").setView([44.5, 8.9], 7);  // posizione e livello di zoom iniziale
+    
       const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors"
-      });
-
-      const osmHot = L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors, Tiles style by HOT"
-      });
-
-      const esriSatellite = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-          maxZoom: 19,
-          attribution: "Tiles &copy; Esri"
-        }
-      );
+      }).addTo(map);
+    
+      markersLayer = L.layerGroup().addTo(map);
+    
+      // fit della mappa al 100% con i marker
+      const bounds = allSpots.map(p => [p.lat, p.lng]);
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [40, 40] });
+      }
+    
+      console.log("Mappa inizializzata");
+    }
 
       baseLayers = {
         osm,
@@ -1836,3 +1844,4 @@
 </body>
 
 </html>
+
