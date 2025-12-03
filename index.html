@@ -682,10 +682,6 @@
         <div id="brandSubtitle">Urban exploration map</div>
       </div>
     </div>
-    <button id="btnRandom">
-      <span class="icon">🎲</span>
-      <span class="text">Random spot</span>
-    </button>
   </div>
 
   <!-- MAPPA -->
@@ -700,26 +696,36 @@ UI
     <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
     <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
     <button id="logoutBtn" class="dock-btn" title="Logout">🚪</button>
+    <button id="randomBtn" class="dock-btn" title="Random Spot">🎲</button>
   </div>
 
   <!-- LIST PANEL -->
+  <!-- Button per aprire lista fullscreen -->
+  <button id="btnList" class="dock-btn">📋 Lista</button>
+  
+  <!-- List Panel con Fullscreen -->
   <div id="listPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
-    <div class="overlay-card">
+    <div class="overlay-card" style="width: 100%; height: 100%;">
       <div class="overlay-header">
         <div class="overlay-header-title">
-          <strong>Lista spot</strong>
-          <small>Tocca uno spot per centrare la mappa</small>
+          <strong>Lista Spot</strong>
         </div>
-        <div id="listHeaderActions">
-          <button id="btnCloseList" class="icon-btn">✕</button>
-        </div>
+        <button id="btnCloseList" class="icon-btn">✕</button>
       </div>
-      <div class="overlay-body">
-        <input id="listSearch" type="text" placeholder="Filtra per nome o descrizione..." />
-        <div id="listSummary"></div>
-        <ul id="listContent"></ul>
+  
+      <div id="listSearch">
+        <input type="text" id="listFilter" placeholder="Filtra per nome o descrizione" />
+        <select id="listTipoFilter">
+          <option value="">Tutti i tipi</option>
+          <option value="hotel">Hotel</option>
+          <option value="villa">Villa</option>
+          <option value="casa">Casa</option>
+          <!-- Aggiungi altri tipi -->
+        </select>
       </div>
+  
+      <div id="listContent"></div>
     </div>
   </div>
 
@@ -1205,12 +1211,14 @@ UI
       const desc = escapeHtml(p.desc || "");
       const coords = `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
       const votoText = p.voto ? `${p.voto}/6` : "n.d.";
-
+      const tipoText = p.tipo ? p.tipo.charAt(0).toUpperCase() + p.tipo.slice(1) : "N/A";
+    
       return `
         <div class="ltu-popup">
           <div class="popup-title">${title}</div>
           <div class="popup-desc">${desc}</div>
           <div class="popup-meta">
+            <span>Tipo: ${tipoText}</span>
             <span>${coords}</span> ·
             <span>Voto: ${votoText}</span>
           </div>
@@ -1268,86 +1276,40 @@ UI
     //  LISTA
     // =========================
 
+    // Aggiungi filtri
     function renderList() {
       const listEl = document.getElementById("listContent");
-      const searchEl = document.getElementById("listSearch");
-      const summaryEl = document.getElementById("listSummary");
-      if (!listEl || !searchEl || !summaryEl) return;
-
+      const searchEl = document.getElementById("listFilter");
+      const tipoFilterEl = document.getElementById("listTipoFilter");
       const q = (searchEl.value || "").toLowerCase().trim();
-      let filtered = allSpots;
-
-      if (q) {
-        filtered = allSpots.filter(p => {
-          const txt = (p.name + " " + (p.desc || "")).toLowerCase();
-          return txt.includes(q);
-        });
-      }
-
-      filtered.sort((a, b) => {
-        const va = a.voto || 0;
-        const vb = b.voto || 0;
-        if (va !== vb) return vb - va;
-        return a.name.localeCompare(b.name);
+      const tipoFilter = tipoFilterEl.value;
+    
+      const filtered = allSpots.filter(p => {
+        if (q && !(p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q))) return false;
+        if (tipoFilter && p.tipo !== tipoFilter) return false;
+        return true;
       });
-
-      summaryEl.textContent = `${filtered.length} spot su ${allSpots.length} totali`;
-
-      listEl.innerHTML = "";
+    
+      listEl.innerHTML = ""; // Pulisci la lista
+    
       filtered.forEach(p => {
-        const row = document.createElement("li");
+        const row = document.createElement("div");
         row.className = "spot-row";
-
-        const emojiDiv = document.createElement("div");
-        emojiDiv.className = "spot-emoji";
-        emojiDiv.textContent = getEmojiByTipo(p.tipo);
-
-        const mainDiv = document.createElement("div");
-        mainDiv.className = "spot-main";
-
-        const titleRow = document.createElement("div");
-        titleRow.className = "spot-main-title";
-
-        const title = document.createElement("strong");
-        title.textContent = p.name || "(senza nome)";
-
-        const vote = document.createElement("div");
-        vote.className = "spot-vote-pill";
-        vote.textContent = p.voto ? `${p.voto}/6` : "-";
-
-        titleRow.appendChild(title);
-        titleRow.appendChild(vote);
-
-        const desc = document.createElement("div");
-        desc.className = "spot-desc";
-        desc.textContent = p.desc || "";
-
-        const meta = document.createElement("div");
-        meta.className = "spot-meta";
-        meta.innerHTML = `
-          <span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>
-          <span>${p.source === "extra" ? "LTU extra" : "Importato"}</span>
+        row.innerHTML = `
+          <div class="spot-emoji">${getEmojiByTipo(p.tipo)}</div>
+          <div class="spot-main">
+            <div class="spot-main-title">
+              <strong>${escapeHtml(p.name)}</strong>
+              <button onclick="editSpot(${p.id})">🖉</button>
+              <button onclick="deleteSpot(${p.id})">🗑️</button>
+            </div>
+            <div class="spot-desc">${escapeHtml(p.desc)}</div>
+          </div>
         `;
-
-        mainDiv.appendChild(titleRow);
-        mainDiv.appendChild(desc);
-        mainDiv.appendChild(meta);
-
-        row.appendChild(emojiDiv);
-        row.appendChild(mainDiv);
-
-        row.addEventListener("click", () => {
-          currentSpot = p;
-          map.setView([p.lat, p.lng], 16);
-          if (p._marker) {
-            p._marker.openPopup();
-          }
-          document.getElementById("listPanel").classList.add("hidden");
-        });
-
         listEl.appendChild(row);
       });
     }
+
 
     // =========================
     //  ADD SPOT
@@ -1715,4 +1677,5 @@ UI
   }
 </script>
 </html>
+
 
