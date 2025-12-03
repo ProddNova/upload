@@ -1760,45 +1760,21 @@ reloadAllSpots();
     renderMarkers();
     renderList();
     showToast("Spot eliminato");
-  } catch(e) {
-    showToast("Errore eliminazione");
-  }
-}
-    function openEditPanel(p) {
-  if (p.source !== "extra") return;
-  currentSpot = p;
-  document.getElementById("fieldName").value = p.name;
-  document.getElementById("fieldDesc").value = p.desc || "";
-  document.getElementById("fieldVoto").value = p.voto || "";
-  document.getElementById("fieldLat").value = p.lat.toFixed(6);
-  document.getElementById("fieldLng").value = p.lng.toFixed(6);
-  document.getElementById("addPanel").classList.remove("hidden");
-  document.getElementById("addForm").onsubmit = async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("fieldName").value.trim();
-    const desc = document.getElementById("fieldDesc").value.trim();
-    const voto = document.getElementById("fieldVoto").value || null;
-    const payload = { name, desc, lat: p.lat, lng: p.lng, voto: voto ? parseInt(voto) : null, tipo: getTipo(name, desc) };
-    
-    await fetch(`/api/spots-extra/${p.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    
-    reloadAllSpots();
-    document.getElementById("addPanel").classList.add("hidden");
-    showToast("Spot aggiornato");
-  };
-</script>
-
+} catch(err) {
+          console.error(err);
+          showToast("Errore aggiornamento");
+        }
+      };
+    }
+  </script>   <!-- QUI CHIUDI IL PRIMO SCRIPT -->
   <script>
-    // redirect se non loggato
+    // Redirect se non loggato
     if (localStorage.getItem("ltu_login") !== "1") {
       window.location.href = "login.html";
     }
   </script>
 </body>
 </html>
+
 
 
