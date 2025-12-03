@@ -4,21 +4,37 @@ const fs = require("fs");
 
 const app = express();
 
-// ======================
-//  CONFIGURAZIONE PASSWORD
-// ======================
-// Cambia questa password oppure usa una variabile di ambiente APP_PASSWORD
-const PASSWORD = process.env.APP_PASSWORD || "cambia-questa-password";
+// ===============================
+//  CONFIG: LOGIN E FILE DI STORAGE
+// ===============================
 
-// File per salvare gli spot aggiuntivi
+// Utente e password di default (puoi sovrascrivere con variabili d'ambiente)
+const USERNAME = process.env.APP_USER || "unit";
+const PASSWORD = process.env.APP_PASSWORD || "ltunit";
+
+// File dove salviamo gli spot aggiunti dagli utenti
 const EXTRA_FILE = path.join(__dirname, "spots-extra.json");
 
-// Middleware Basic Auth molto semplice
+// File dove salviamo le impostazioni condivise tra tutti
+const SETTINGS_FILE = path.join(__dirname, "settings.json");
+
+// Impostazioni di default se il file non esiste ancora
+const DEFAULT_SETTINGS = {
+  version: 1,
+  baseLayer: "osm",            // "osm", "osmHot", "satellite"
+  mapStyle: "default",         // per futuri temi
+  randomIncludeLowRated: false // se includere voti 1-2 nel random
+};
+
+// ===============================
+//  MIDDLEWARE: BASIC AUTH
+// ===============================
+
 app.use((req, res, next) => {
   const auth = req.headers["authorization"];
 
   if (!auth) {
-    res.setHeader("WWW-Authenticate", 'Basic realm="Mappa spot abbandonati"');
+    res.setHeader("WWW-Authenticate", 'Basic realm="Lost Trace Unit"');
     return res.status(401).send("Authentication required.");
   }
 
@@ -28,25 +44,33 @@ app.use((req, res, next) => {
   }
 
   const decoded = Buffer.from(parts[1], "base64").toString("utf8");
-  const index = decoded.indexOf(":");
-  const user = index >= 0 ? decoded.slice(0, index) : "";
-  const pass = index >= 0 ? decoded.slice(index + 1) : decoded;
+  const idx = decoded.indexOf(":");
+  const user = idx >= 0 ? decoded.slice(0, idx) : "";
+  const pass = idx >= 0 ? decoded.slice(idx + 1) : decoded;
 
-  if (pass !== PASSWORD) {
+  // Controllo sia user che password
+  if (user !== USERNAME || pass !== PASSWORD) {
     return res.status(403).send("Accesso negato.");
   }
 
-  req.user = user || "user";
+  req.user = user;
   next();
 });
 
-// Per leggere JSON nel body delle richieste
+// ===============================
+//  MIDDLEWARE GENERICI
+// ===============================
+
 app.use(express.json());
 
-// Serviamo tutti i file statici dalla cartella corrente
+// Serviamo tutti i file statici (index.html, spots.csv, ecc.)
 app.use(express.static(path.join(__dirname)));
 
-// Endpoint API per leggere gli spot aggiuntivi
+// ===============================
+//  API: SPOT EXTRA
+// ===============================
+
+// GET /api/spots-extra  -> lista spot aggiuntivi
 app.get("/api/spots-extra", (req, res) => {
   try {
     if (!fs.existsSync(EXTRA_FILE)) {
@@ -64,7 +88,7 @@ app.get("/api/spots-extra", (req, res) => {
   }
 });
 
-// Endpoint API per aggiungere un nuovo spot
+// POST /api/spots-extra  -> aggiunge un nuovo spot
 app.post("/api/spots-extra", (req, res) => {
   try {
     const { name, desc, lat, lng, voto, tipo } = req.body || {};
@@ -104,7 +128,8 @@ app.post("/api/spots-extra", (req, res) => {
       lng: lngNum,
       voto: votoNum,
       tipo: tipo ? String(tipo) : null,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      createdBy: req.user || "unit"
     };
 
     current.push(spot);
@@ -117,13 +142,74 @@ app.post("/api/spots-extra", (req, res) => {
   }
 });
 
-// Route principale: index.html
+// ===============================
+//  API: SETTINGS CONDIVISE
+// ===============================
+
+// Funzione di utilità per leggere settings con fallback
+function readSettings() {
+  try {
+    if (!fs.existsSync(SETTINGS_FILE)) {
+      return { ...DEFAULT_SETTINGS };
+    }
+    const raw = fs.readFileSync(SETTINGS_FILE, "utf8");
+    const data = JSON.parse(raw);
+    return { ...DEFAULT_SETTINGS, ...data };
+  } catch (err) {
+    console.error("Errore lettura settings:", err);
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+// GET /api/settings  -> restituisce le impostazioni condivise
+app.get("/api/settings", (req, res) => {
+  const settings = readSettings();
+  res.json(settings);
+});
+
+// POST /api/settings  -> aggiorna le impostazioni condivise
+app.post("/api/settings", (req, res) => {
+  try {
+    const incoming = req.body || {};
+    const current = readSettings();
+
+    const updated = { ...current };
+
+    if (incoming.baseLayer && ["osm", "osmHot", "satellite"].includes(incoming.baseLayer)) {
+      updated.baseLayer = incoming.baseLayer;
+    }
+
+    if (incoming.mapStyle && typeof incoming.mapStyle === "string") {
+      updated.mapStyle = incoming.mapStyle;
+    }
+
+    if (typeof incoming.randomIncludeLowRated === "boolean") {
+      updated.randomIncludeLowRated = incoming.randomIncludeLowRated;
+    }
+
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2), "utf8");
+
+    res.json(updated);
+  } catch (err) {
+    console.error("Errore salvataggio settings:", err);
+    res.status(500).json({ error: "Errore salvataggio settings" });
+  }
+});
+
+// ===============================
+//  ROUTE PRINCIPALE
+// ===============================
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Avvio server
+// ===============================
+//  AVVIO SERVER
+// ===============================
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log("Server attivo su port " + port);
+  console.log("Login: user =", USERNAME, "password =", PASSWORD);
 });
