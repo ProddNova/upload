@@ -1037,7 +1037,7 @@
     // =========================
 
     let map;
-    let markersLayer;
+    let markersLayer = L.layerGroup();
     let baseLayers = {};
     let appSettings = {
       baseLayer: "osm",
@@ -1181,23 +1181,16 @@
     // =========================
 
     function initMap() {
-      map = L.map("map").setView([44.5, 8.9], 7);  // posizione e livello di zoom iniziale
-    
-      const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      map = L.map("map").setView([41.9028, 12.4964], 13); // Esempio di coordinata (Roma)
+      
+      const osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors"
       }).addTo(map);
     
       markersLayer = L.layerGroup().addTo(map);
-    
-      // fit della mappa al 100% con i marker
-      const bounds = allSpots.map(p => [p.lat, p.lng]);
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [40, 40] });
-      }
-    
-      console.log("Mappa inizializzata");
     }
+
 
       baseLayers = {
         osm,
@@ -1810,12 +1803,17 @@
       // =========================
 
       document.addEventListener("DOMContentLoaded", async () => {
-        loadMissions();
-        await loadSettings();
-        initMap();
-        initUI();
-        reloadAllSpots();
+        try {
+          loadMissions();
+          await loadSettings();
+          initMap();  // Inizializza la mappa
+          initUI();
+          reloadAllSpots();  // Carica i dati per gli spot
+        } catch (e) {
+          console.error("Errore nel caricamento:", e);
+        }
       });
+
       async function deleteSpot(p) {
         if (p.source !== "extra") return showToast("Non puoi eliminare spot base");
         if (!confirm(`Eliminare "${p.name}"?`)) return;
@@ -1844,4 +1842,5 @@
 </body>
 
 </html>
+
 
