@@ -691,7 +691,7 @@
   <!-- MAPPA -->
   <div id="map"></div>
   <div id="crosshair">+</div>
-
+UI
   <!-- DOCK DESTRO -->
   <div id="rightDock">
     <button id="settingsBtn" class="dock-btn" title="Impostazioni">⚙️</button>
@@ -699,6 +699,7 @@
     <button id="btnList" class="dock-btn" title="Lista spot">📋</button>
     <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
     <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
+    <button id="logoutBtn" class="dock-btn" title="Logout">🚪</button>
   </div>
 
   <!-- LIST PANEL -->
@@ -1687,6 +1688,11 @@
         missionPanel.classList.add("hidden");
       });
       btnSaveMission.addEventListener("click", saveMissionForCurrent);
+      const logoutBtn = document.getElementById("logoutBtn");
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("ltu_login");
+        window.location.href = "login.html";
+      });
     }
 
     // =========================
@@ -1702,4 +1708,11 @@
     });
   </script>
 </body>
+  <script>
+  // redirect se non loggato
+  if (localStorage.getItem("ltu_login") !== "1") {
+    window.location.href = "login.html";
+  }
+</script>
 </html>
+
