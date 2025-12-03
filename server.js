@@ -26,43 +26,7 @@ const DEFAULT_SETTINGS = {
   randomIncludeLowRated: false // se includere voti 1-2 nel random
 };
 
-// ===============================
-//  MIDDLEWARE: BASIC AUTH
-// ===============================
 
-app.use((req, res, next) => {
-  const auth = req.headers["authorization"];
-
-  if (!auth) {
-    res.setHeader("WWW-Authenticate", 'Basic realm="Lost Trace Unit"');
-    return res.status(401).send("Authentication required.");
-  }
-
-  const parts = auth.split(" ");
-  if (parts.length !== 2 || parts[0] !== "Basic") {
-    return res.status(400).send("Bad Authorization header.");
-  }
-
-  const decoded = Buffer.from(parts[1], "base64").toString("utf8");
-  const idx = decoded.indexOf(":");
-  const user = idx >= 0 ? decoded.slice(0, idx) : "";
-  const pass = idx >= 0 ? decoded.slice(idx + 1) : decoded;
-
-  // Controllo sia user che password
-  if (user !== USERNAME || pass !== PASSWORD) {
-    return res.status(403).send("Accesso negato.");
-  }
-
-  req.user = user;
-  next();
-});
-app.use((req, res, next) => {
-  // blocca URL con credenziali nella barra
-  if (req.originalUrl.includes("@")) {
-    return res.status(400).send("Formato URL non permesso.");
-  }
-  next();
-});
 // ===============================
 //  MIDDLEWARE GENERICI
 // ===============================
@@ -219,4 +183,5 @@ app.listen(port, () => {
   console.log("Server attivo su port " + port);
   console.log("Login: user =", USERNAME, "password =", PASSWORD);
 });
+
 
