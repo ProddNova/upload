@@ -1192,20 +1192,33 @@
     }
 
 
-      baseLayers = {
-        osm,
-        osmHot,
-        satellite: esriSatellite
-      };
+    // DEFINIZIONE CORRETTA DEI TILE LAYER
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    });
 
-      // Applica baseLayer da settings
-      let chosen = baseLayers[appSettings.baseLayer] || osm;
-      chosen.addTo(map);
+    const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a>'
+    });
 
-      markersLayer = L.layerGroup().addTo(map);
+    const satellitare = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
 
-      // fit di base
-      map.setView([44.5, 8.9], 7);
+    baseLayers = {
+      osm: osm,
+      osmHot: osmHot,
+      satellite: satellitare
+    };
+
+    // Applica il layer scelto (default osm)
+    const layerScelto = baseLayers[appSettings.baseLayer] || osm;
+    layerScelto.addTo(map);
+
+    // Fit iniziale sull'Italia
+    map.setView([42.5, 12.0], 6);
 
       // click sulla mappa per compilare lat/lng
       map.on("click", function(e) {
@@ -1842,5 +1855,6 @@
 </body>
 
 </html>
+
 
 
