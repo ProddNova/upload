@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lost Trace Unit – Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      font-family: system-ui, sans-serif;
+      color: #e2e8f0;
+    }
+    #card {
+      width: 340px;
+      padding: 25px;
+      background: #1e293b;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+      border: 1px solid rgba(148,163,184,0.25);
+    }
+    #title {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #title strong {
+      font-size: 18px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    #inputs { margin-bottom: 12px; }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #334155;
+      color: #e2e8f0;
+      font-size: 14px;
+      outline: none;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #3b82f6;
+      color: #f8fafc;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    #error {
+      color: #f87171;
+      text-align: center;
+      margin-top: 8px;
+      font-size: 13px;
+      min-height: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="card">
+    <div id="title">
+      <strong>Lost Trace Unit</strong><br>
+      <small>Accesso riservato</small>
+    </div>
+
+    <div id="inputs">
+      <input id="user" placeholder="Username" autocomplete="username" />
+      <input id="pw" type="password" placeholder="Password" autocomplete="current-password" />
+    </div>
+
+    <button id="loginBtn">Accedi</button>
+
+    <div id="error"></div>
+  </div>
+
+  <script>
+    const USER = "unit";
+    const PASS = "ltunit";
+
+    // se già loggato → entra direttamente
+    if (localStorage.getItem("ltu_login") === "1") {
+      window.location.href = "index.html";
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const u = document.getElementById("user").value.trim();
+      const p = document.getElementById("pw").value.trim();
+
+      if (u === USER && p === PASS) {
+        localStorage.setItem("ltu_login", "1");
+        window.location.href = "index.html";
+      } else {
+        document.getElementById("error").innerText = "Credenziali errate";
+      }
+    });
+  </script>
+
+</body>
+</html>
