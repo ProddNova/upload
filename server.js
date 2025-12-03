@@ -56,7 +56,13 @@ app.use((req, res, next) => {
   req.user = user;
   next();
 });
-
+app.use((req, res, next) => {
+  // blocca URL con credenziali nella barra
+  if (req.originalUrl.includes("@")) {
+    return res.status(400).send("Formato URL non permesso.");
+  }
+  next();
+});
 // ===============================
 //  MIDDLEWARE GENERICI
 // ===============================
@@ -213,3 +219,4 @@ app.listen(port, () => {
   console.log("Server attivo su port " + port);
   console.log("Login: user =", USERNAME, "password =", PASSWORD);
 });
+
