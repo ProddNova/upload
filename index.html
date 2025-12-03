@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Punti Abbandonati</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; }
+    #map { width: 100%; height: 100vh; }
+
+    .custom-pin-wrapper {}
+    .custom-pin {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+    }
+    .pin-emoji { transform: rotate(45deg); font-size: 18px; }
+    .info.legend {
+      background: white;
+      padding: 6px 8px;
+      border-radius: 4px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.3);
+      font: 12px/1.2 Arial, sans-serif;
+    }
+  </style>
+
+  <link rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    async function loadCSV() {
+      const res = await fetch("/spots.csv");
+      const text = await res.text();
+      return text;
+    }
+
+    function parseCSVRow(line) {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === "," && !inQuotes) {
+          result.push(current);
+          current = "";
+        } else current += char;
+      }
+      result.push(current);
+      return result;
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      const rows = [];
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        rows.push(parseCSVRow(line));
+      }
+      return rows;
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, function (c) {
+        return ({
+          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+        })[c];
+      });
+    }
+
+    function extractVoto(desc) {
+      const match = desc.match(/Voto:\s*([0-9]+)\s*\/\s*6/i);
+      return match ? parseInt(match[1]) : null;
+    }
+
+    function getColorByVoto(voto) {
+      return {
+        1:"#d73027",2:"#fc8d59",3:"#fee08b",4:"#d9ef8b",
+        5:"#91cf60",6:"#1a9850"
+      }[voto] || "#666";
+    }
+
+    function getTipo(n, d) {
+      const t = (n+" "+d).toLowerCase();
+      if (t.includes("hotel") || t.includes("residence")) return "hotel";
+      if (t.includes("villa") || t.includes("villone") || t.includes("ville")) return "villa";
+      if (t.includes("casa") || t.includes("casetta") || t.includes("casone") || t.includes("cascina")) return "casa";
+      if (t.includes("fabbrica") || t.includes("capannone") || t.includes("magazzino")) return "industria";
+      return "altro";
+    }
+
+    function getEmojiByTipo(t) {
+      return {
+        hotel:"🏨", villa:"🏡", casa:"🏠",
+        industria:"🏭", altro:"📍"
+      }[t] || "📍";
+    }
+
+    loadCSV().then(csv => {
+      const rows = parseCSV(csv);
+      const data = rows.slice(1);
+
+      const points = data.map(cols => ({
+        name: cols[0],
+        desc: cols[1],
+        lat: parseFloat(cols[2]),
+        lng: parseFloat(cols[3]),
+        voto: extractVoto(cols[1]),
+        tipo: getTipo(cols[0], cols[1])
+      }));
+
+      const map = L.map('map');
+      const layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { maxZoom: 19 }).addTo(map);
+
+      const group = L.layerGroup().addTo(map);
+      const bounds = [];
+
+      points.forEach(p => {
+        if (isNaN(p.lat) || isNaN(p.lng)) return;
+
+        const color = getColorByVoto(p.voto);
+        const emoji = getEmojiByTipo(p.tipo);
+
+        const iconHtml = `
+        <div class="custom-pin" style="background:${color};border-color:${color};">
+          <div class="pin-emoji">${emoji}</div>
+        </div>`;
+
+        const icon = L.divIcon({
+          html: iconHtml, className:"custom-pin-wrapper",
+          iconSize:[30,42], iconAnchor:[15,42]
+        });
+
+        const m = L.marker([p.lat, p.lng], { icon }).addTo(group);
+        m.bindPopup(`
+          <strong>${escapeHtml(p.name)}</strong><br>
+          ${escapeHtml(p.desc)}<br>
+          <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank">
+            Apri in Google Maps
+          </a>
+        `);
+        bounds.push([p.lat,p.lng]);
+      });
+
+      if (bounds.length) map.fitBounds(bounds);
+      else map.setView([44.5, 8.9], 7);
+    });
+  </script>
+</body>
+</html>
