@@ -2,14 +2,205 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Punti Abbandonati</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mappa spot abbandonati</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="anonymous"
+  />
 
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; }
-    #map { width: 100%; height: 100vh; }
+    :root {
+      --bg-main: #020617;
+      --bg-elevated: #0b1120;
+      --bg-soft: #111827;
+      --accent-main: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.15);
+      --text-main: #e5e7eb;
+      --text-dim: #9ca3af;
+      --border-soft: rgba(148, 163, 184, 0.4);
+      --shadow-soft: 0 10px 25px rgba(15, 23, 42, 0.75);
+      --radius-card: 18px;
+    }
 
-    .custom-pin-wrapper {}
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top, #020817 0, #020617 40%, #020617 100%);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #topbar {
+      height: 52px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(to right, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
+      border-bottom: 1px solid rgba(15,23,42,1);
+      box-shadow: 0 10px 25px rgba(15,23,42,0.85);
+      z-index: 20;
+    }
+
+    #topbar-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #topbar-title span.icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 30% 10%, rgba(248, 250, 252, 0.9), rgba(59, 130, 246, 0.1));
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.8), 0 10px 25px rgba(15, 23, 42, 0.9);
+      font-size: 16px;
+    }
+
+    #topbar-title span.text-main {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    #topbar-title span.text-main strong {
+      font-size: 13px;
+    }
+
+    #topbar-title span.text-main small {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .topbar-buttons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      padding: 6px 10px;
+      font-size: 11px;
+      background: radial-gradient(circle at top, rgba(30,64,175,0.55), rgba(15,23,42,1));
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(15,23,42,0.8);
+    }
+
+    .chip-btn span.icon {
+      font-size: 13px;
+    }
+
+    .chip-btn.secondary {
+      background: linear-gradient(to bottom right, rgba(15,23,42,0.95), rgba(15,23,42,1));
+      color: var(--text-dim);
+    }
+
+    .chip-btn:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: 0 6px 14px rgba(15,23,42,0.85);
+    }
+
+    #map {
+      position: absolute;
+      inset: 52px 0 0 0;
+      width: 100%;
+    }
+
+    /* legend bottom-right */
+    #legend {
+      position: fixed;
+      right: 10px;
+      bottom: 10px;
+      z-index: 15;
+      background: rgba(15,23,42,0.95);
+      border-radius: 999px;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid rgba(148,163,184,0.4);
+      box-shadow: 0 15px 30px rgba(15,23,42,0.95);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 4px;
+      border-radius: 999px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(15,23,42,1);
+    }
+
+    .legend-dot-1 { background: #d73027; }
+    .legend-dot-2 { background: #fc8d59; }
+    .legend-dot-3 { background: #fee08b; }
+    .legend-dot-4 { background: #d9ef8b; }
+    .legend-dot-5 { background: #91cf60; }
+    .legend-dot-6 { background: #1a9850; }
+
+    /* Crosshair al centro */
+    #crosshair {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(248,250,252,0.9);
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: rgba(248,250,252,0.95);
+      background: radial-gradient(circle at center, rgba(15,23,42,0.9), rgba(15,23,42,0.1));
+      pointer-events: none;
+      text-shadow: 0 0 3px rgba(15,23,42,1);
+    }
+
+    /* pins */
+    .custom-pin-wrapper { }
+
     .custom-pin {
       position: relative;
       width: 30px;
@@ -23,31 +214,400 @@
       justify-content: center;
       color: #ffffff;
     }
-    .pin-emoji { transform: rotate(45deg); font-size: 18px; }
-    .info.legend {
-      background: white;
+
+    .custom-pin .pin-emoji {
+      transform: rotate(45deg);
+      font-size: 18px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* pannello lista */
+    #listPanel {
+      position: fixed;
+      top: 62px;
+      right: 10px;
+      bottom: 12px;
+      width: min(340px, 84vw);
+      z-index: 25;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.98));
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.45);
+      box-shadow: 0 24px 60px rgba(15,23,42,1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    #listHeader {
+      padding: 10px 12px 6px;
+      border-bottom: 1px solid rgba(31,41,55,1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    #listHeaderTitle {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #listHeaderTitle strong {
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    #listHeaderTitle small {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .icon-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, rgba(31,41,55,1), rgba(15,23,42,1));
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    #listSearch {
+      margin: 0 10px 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(55,65,81,1);
+      color: var(--text-main);
+      font-size: 12px;
+      outline: none;
+    }
+
+    #listSearch::placeholder {
+      color: rgba(107,114,128,0.9);
+    }
+
+    #listContent {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 6px 10px;
+    }
+
+    .spot-row {
+      padding: 7px 9px;
+      border-radius: 14px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      cursor: pointer;
+      background: radial-gradient(circle at top left, rgba(31,41,55,0.95), rgba(15,23,42,0.98));
+      border: 1px solid rgba(31,41,55,1);
+    }
+
+    .spot-row:hover {
+      border-color: rgba(59,130,246,0.7);
+      box-shadow: 0 0 0 1px rgba(15,23,42,1);
+    }
+
+    .spot-emoji {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(15,23,42,1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, rgba(17,24,39,1), rgba(15,23,42,1));
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .spot-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .spot-main-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .spot-main-title strong {
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .spot-vote-pill {
+      border-radius: 999px;
+      padding: 2px 6px;
+      font-size: 10px;
+      border: 1px solid rgba(55,65,81,1);
+      color: var(--text-dim);
+      background: rgba(15,23,42,1);
+      flex-shrink: 0;
+    }
+
+    .spot-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      max-height: 2.6em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .spot-meta {
+      margin-top: 2px;
+      font-size: 10px;
+      color: rgba(148,163,184,0.95);
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    /* pannello aggiunta in basso */
+    #addPanel {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 24;
+      padding: 10px 10px 14px;
+      pointer-events: none;
+    }
+
+    #addCard {
+      pointer-events: all;
+      max-width: 520px;
+      margin: 0 auto;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,0.98));
+      border-radius: var(--radius-card);
+      border: 1px solid rgba(148,163,184,0.55);
+      box-shadow: 0 22px 55px rgba(15,23,42,1);
+      padding: 10px 12px 12px;
+    }
+
+    #addHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    #addHeaderLeft {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #addHeaderLeft strong {
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    #addHeaderLeft small {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .add-form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-bottom: 6px;
+    }
+
+    .add-form-row label {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .add-input, .add-textarea, .add-select {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(55,65,81,1);
+      background: rgba(15,23,42,0.95);
       padding: 6px 8px;
-      border-radius: 4px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.3);
-      font: 12px/1.2 Arial, sans-serif;
+      color: var(--text-main);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .add-textarea {
+      min-height: 54px;
+      resize: vertical;
+    }
+
+    .add-input::placeholder,
+    .add-textarea::placeholder {
+      color: rgba(107,114,128,0.95);
+    }
+
+    .add-cols {
+      display: flex;
+      gap: 6px;
+    }
+
+    .add-cols .add-form-row {
+      flex: 1;
+    }
+
+    #addActions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: linear-gradient(to right, #2563eb, #3b82f6);
+      color: #f9fafb;
+      box-shadow: 0 12px 30px rgba(37,99,235,0.9);
+    }
+
+    .btn-secondary {
+      background: rgba(15,23,42,0.95);
+      color: var(--text-dim);
+      border: 1px solid rgba(55,65,81,1);
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: none;
+    }
+
+    @media (max-width: 640px) {
+      #listPanel {
+        left: 10px;
+        width: auto;
+      }
     }
   </style>
-
-  <link rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
-  <div id="map"></div>
+  <div id="topbar">
+    <div id="topbar-title">
+      <span class="icon">🏚️</span>
+      <span class="text-main">
+        <strong>Spot abbandonati</strong>
+        <small>Mappa condivisa</small>
+      </span>
+    </div>
+    <div class="topbar-buttons">
+      <button id="btnList" class="chip-btn secondary"><span class="icon">📋</span><span>Lista</span></button>
+      <button id="btnAdd" class="chip-btn"><span class="icon">➕</span><span>Aggiungi</span></button>
+    </div>
+  </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <div id="map"></div>
+  <div id="crosshair">+</div>
+
+  <div id="legend">
+    <div class="legend-item"><span class="legend-dot legend-dot-1"></span>1</div>
+    <div class="legend-item"><span class="legend-dot legend-dot-2"></span>2</div>
+    <div class="legend-item"><span class="legend-dot legend-dot-3"></span>3</div>
+    <div class="legend-item"><span class="legend-dot legend-dot-4"></span>4</div>
+    <div class="legend-item"><span class="legend-dot legend-dot-5"></span>5</div>
+    <div class="legend-item"><span class="legend-dot legend-dot-6"></span>6</div>
+  </div>
+
+  <div id="listPanel" class="hidden">
+    <div id="listHeader">
+      <div id="listHeaderTitle">
+        <strong>Lista spot</strong>
+        <small>Tocca uno spot per centrare la mappa</small>
+      </div>
+      <button id="btnCloseList" class="icon-btn">✕</button>
+    </div>
+    <input id="listSearch" type="text" placeholder="Filtra per nome o descrizione..." />
+    <div id="listContent"></div>
+  </div>
+
+  <div id="addPanel" class="hidden">
+    <div id="addCard">
+      <div id="addHeader">
+        <div id="addHeaderLeft">
+          <strong>Nuovo spot</strong>
+          <small>Tocca sulla mappa per prendere le coordinate</small>
+        </div>
+        <button id="btnCloseAdd" class="icon-btn">✕</button>
+      </div>
+      <form id="addForm">
+        <div class="add-form-row">
+          <label for="fieldName">Nome</label>
+          <input id="fieldName" class="add-input" type="text" placeholder="Es. Villa, Casetta, Hotel..." required />
+        </div>
+        <div class="add-form-row">
+          <label for="fieldDesc">Descrizione</label>
+          <textarea id="fieldDesc" class="add-textarea" placeholder="Note, accesso, stato, storia..."></textarea>
+        </div>
+        <div class="add-cols">
+          <div class="add-form-row">
+            <label for="fieldVoto">Voto (1–6)</label>
+            <input id="fieldVoto" class="add-input" type="number" min="1" max="6" placeholder="Es. 4" />
+          </div>
+          <div class="add-form-row">
+            <label>&nbsp;</label>
+            <div style="font-size:11px;color:var(--text-dim);padding-top:4px;">
+              Se lasci vuoto, il voto non viene mostrato.
+            </div>
+          </div>
+        </div>
+        <div class="add-cols">
+          <div class="add-form-row">
+            <label for="fieldLat">Latitudine</label>
+            <input id="fieldLat" class="add-input" type="text" placeholder="Clicca sulla mappa" required />
+          </div>
+          <div class="add-form-row">
+            <label for="fieldLng">Longitudine</label>
+            <input id="fieldLng" class="add-input" type="text" placeholder="Clicca sulla mappa" required />
+          </div>
+        </div>
+        <div id="addActions">
+          <button type="button" id="btnUseCenter" class="btn btn-secondary">Usa centro mappa</button>
+          <button type="submit" class="btn btn-primary">Salva spot</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin="anonymous"
+  ></script>
 
   <script>
-    async function loadCSV() {
-      const res = await fetch("/spots.csv");
-      const text = await res.text();
-      return text;
-    }
-
+    // --- utils ---
     function parseCSVRow(line) {
       const result = [];
       let current = "";
@@ -66,7 +626,9 @@
         } else if (char === "," && !inQuotes) {
           result.push(current);
           current = "";
-        } else current += char;
+        } else {
+          current += char;
+        }
       }
       result.push(current);
       return result;
@@ -84,89 +646,396 @@
 
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, function (c) {
-        return ({
-          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-        })[c];
+        switch (c) {
+          case "&": return "&amp;";
+          case "<": return "&lt;";
+          case ">": return "&gt;";
+          case '"': return "&quot;";
+          case "'": return "&#39;";
+          default: return c;
+        }
       });
     }
 
     function extractVoto(desc) {
+      if (!desc) return null;
       const match = desc.match(/Voto:\s*([0-9]+)\s*\/\s*6/i);
-      return match ? parseInt(match[1]) : null;
+      if (!match) return null;
+      const v = parseInt(match[1], 10);
+      if (v >= 1 && v <= 6) return v;
+      return null;
     }
 
-    function getColorByVoto(voto) {
-      return {
-        1:"#d73027",2:"#fc8d59",3:"#fee08b",4:"#d9ef8b",
-        5:"#91cf60",6:"#1a9850"
-      }[voto] || "#666";
-    }
+    function getTipo(name, desc) {
+      const text = (name + " " + (desc || "")).toLowerCase();
 
-    function getTipo(n, d) {
-      const t = (n+" "+d).toLowerCase();
-      if (t.includes("hotel") || t.includes("residence")) return "hotel";
-      if (t.includes("villa") || t.includes("villone") || t.includes("ville")) return "villa";
-      if (t.includes("casa") || t.includes("casetta") || t.includes("casone") || t.includes("cascina")) return "casa";
-      if (t.includes("fabbrica") || t.includes("capannone") || t.includes("magazzino")) return "industria";
+      if (text.includes("hotel") || text.includes("ostello") || text.includes("residence")) return "hotel";
+      if (text.includes("villa") || text.includes("villone") || text.includes("villino") || text.includes("villetta") || text.includes("ville")) return "villa";
+      if (text.includes("casa") || text.includes("casetta") || text.includes("casone") || text.includes("case") || text.includes("cascina") || text.includes("casolare")) return "casa";
+      if (text.includes("fabbrica") || text.includes("capannone") || text.includes("magazzino") || text.includes("distilleria") || text.includes("cantiere") || text.includes("impresa edile") || text.includes("stazione") || text.includes("centro commerciale")) return "industria";
+      if (text.includes("scuola") || text.includes("itis")) return "scuola";
+      if (text.includes("chiesa")) return "chiesa";
+      if (text.includes("colonia")) return "colonia";
+      if (text.includes("prigione") || text.includes("manicomio") || text.includes("ospedale") || text.includes("clinica") || text.includes("convento")) return "istituzione";
+      if (text.includes("discoteca") || text.includes("bar") || text.includes("ristorante") || text.includes("pizzeria")) return "svago";
+      if (text.includes("castello")) return "castello";
+      if (text.includes("nave")) return "nave";
+      if (text.includes("diga")) return "diga";
+      if (text.includes("base nato")) return "militare";
+
       return "altro";
     }
 
-    function getEmojiByTipo(t) {
-      return {
-        hotel:"🏨", villa:"🏡", casa:"🏠",
-        industria:"🏭", altro:"📍"
-      }[t] || "📍";
+    function getEmojiByTipo(tipo) {
+      switch (tipo) {
+        case "hotel": return "🏨";
+        case "villa": return "🏡";
+        case "casa": return "🏠";
+        case "industria": return "🏭";
+        case "scuola": return "🏫";
+        case "chiesa": return "⛪";
+        case "colonia": return "🏚️";
+        case "istituzione": return "🏥";
+        case "svago": return "🎭";
+        case "castello": return "🏰";
+        case "nave": return "🚢";
+        case "diga": return "💧";
+        case "militare": return "🪖";
+        default: return "📍";
+      }
     }
 
-    loadCSV().then(csv => {
-      const rows = parseCSV(csv);
-      const data = rows.slice(1);
+    function getColorByVoto(voto) {
+      switch (voto) {
+        case 1: return "#d73027";
+        case 2: return "#fc8d59";
+        case 3: return "#fee08b";
+        case 4: return "#d9ef8b";
+        case 5: return "#91cf60";
+        case 6: return "#1a9850";
+        default: return "#666666";
+      }
+    }
 
-      const points = data.map(cols => ({
-        name: cols[0],
-        desc: cols[1],
-        lat: parseFloat(cols[2]),
-        lng: parseFloat(cols[3]),
-        voto: extractVoto(cols[1]),
-        tipo: getTipo(cols[0], cols[1])
-      }));
+    let map;
+    let markersLayer;
+    let allSpots = [];
 
-      const map = L.map('map');
-      const layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        { maxZoom: 19 }).addTo(map);
+    async function loadBaseSpots() {
+      const res = await fetch("/spots.csv");
+      if (!res.ok) {
+        throw new Error("Impossibile caricare spots.csv");
+      }
+      const text = await res.text();
+      const rows = parseCSV(text);
+      const dataRows = rows.slice(1);
+      const points = [];
 
-      const group = L.layerGroup().addTo(map);
-      const bounds = [];
-
-      points.forEach(p => {
-        if (isNaN(p.lat) || isNaN(p.lng)) return;
-
-        const color = getColorByVoto(p.voto);
-        const emoji = getEmojiByTipo(p.tipo);
-
-        const iconHtml = `
-        <div class="custom-pin" style="background:${color};border-color:${color};">
-          <div class="pin-emoji">${emoji}</div>
-        </div>`;
-
-        const icon = L.divIcon({
-          html: iconHtml, className:"custom-pin-wrapper",
-          iconSize:[30,42], iconAnchor:[15,42]
-        });
-
-        const m = L.marker([p.lat, p.lng], { icon }).addTo(group);
-        m.bindPopup(`
-          <strong>${escapeHtml(p.name)}</strong><br>
-          ${escapeHtml(p.desc)}<br>
-          <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank">
-            Apri in Google Maps
-          </a>
-        `);
-        bounds.push([p.lat,p.lng]);
+      dataRows.forEach(cols => {
+        if (cols.length < 4) return;
+        const name = cols[0] || "";
+        const desc = cols[1] || "";
+        const lat = parseFloat(cols[2]);
+        const lng = parseFloat(cols[3]);
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+        const voto = extractVoto(desc);
+        const tipo = getTipo(name, desc);
+        points.push({ name, desc, lat, lng, voto, tipo, source: "csv" });
       });
 
-      if (bounds.length) map.fitBounds(bounds);
-      else map.setView([44.5, 8.9], 7);
+      return points;
+    }
+
+    async function loadExtraSpots() {
+      try {
+        const res = await fetch("/api/spots-extra");
+        if (!res.ok) return [];
+        const arr = await res.json();
+        if (!Array.isArray(arr)) return [];
+        return arr.map(raw => {
+          const lat = parseFloat(raw.lat);
+          const lng = parseFloat(raw.lng);
+          if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+          const name = raw.name || "";
+          const desc = raw.desc || "";
+          const voto = raw.voto != null ? parseInt(raw.voto, 10) : extractVoto(desc);
+          const tipo = raw.tipo || getTipo(name, desc);
+          return {
+            name,
+            desc,
+            lat,
+            lng,
+            voto: (voto >= 1 && voto <= 6) ? voto : null,
+            tipo,
+            source: "extra",
+            createdAt: raw.createdAt || null
+          };
+        }).filter(Boolean);
+      } catch (e) {
+        console.error("Errore caricando spots-extra", e);
+        return [];
+      }
+    }
+
+    async function reloadAllSpots() {
+      try {
+        const [base, extra] = await Promise.all([loadBaseSpots(), loadExtraSpots()]);
+        allSpots = base.concat(extra);
+        renderMarkers();
+        renderList();
+      } catch (e) {
+        console.error(e);
+        alert("Errore nel caricamento degli spot.");
+      }
+    }
+
+    function renderMarkers() {
+      if (!markersLayer) return;
+      markersLayer.clearLayers();
+      const bounds = [];
+
+      allSpots.forEach(p => {
+        const color = getColorByVoto(p.voto);
+        const emoji = getEmojiByTipo(p.tipo);
+        const iconHtml = `
+          <div class="custom-pin" style="background:${color};border-color:${color};">
+            <div class="pin-emoji">${emoji}</div>
+          </div>
+        `;
+        const icon = L.divIcon({
+          html: iconHtml,
+          className: "custom-pin-wrapper",
+          iconSize: [30, 42],
+          iconAnchor: [15, 42],
+          popupAnchor: [0, -36]
+        });
+
+        const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
+        const popupHtml = `
+          <strong>${escapeHtml(p.name)}</strong><br>
+          ${escapeHtml(p.desc || "")}<br>
+          <small>${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}</small><br>
+          <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener noreferrer">
+            Apri in Google Maps
+          </a>
+        `;
+        marker.bindPopup(popupHtml);
+        bounds.push([p.lat, p.lng]);
+      });
+
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [40, 40] });
+      } else {
+        map.setView([44.5, 8.9], 7);
+      }
+    }
+
+    function renderList() {
+      const listEl = document.getElementById("listContent");
+      const searchEl = document.getElementById("listSearch");
+      if (!listEl) return;
+
+      const q = (searchEl.value || "").toLowerCase().trim();
+
+      const filtered = allSpots.filter(p => {
+        if (!q) return true;
+        const txt = (p.name + " " + (p.desc || "")).toLowerCase();
+        return txt.includes(q);
+      });
+
+      filtered.sort((a, b) => {
+        const va = a.voto || 0;
+        const vb = b.voto || 0;
+        if (va !== vb) return vb - va;
+        return a.name.localeCompare(b.name);
+      });
+
+      listEl.innerHTML = "";
+      filtered.forEach(p => {
+        const row = document.createElement("div");
+        row.className = "spot-row";
+
+        const emojiDiv = document.createElement("div");
+        emojiDiv.className = "spot-emoji";
+        emojiDiv.textContent = getEmojiByTipo(p.tipo);
+
+        const mainDiv = document.createElement("div");
+        mainDiv.className = "spot-main";
+
+        const titleRow = document.createElement("div");
+        titleRow.className = "spot-main-title";
+
+        const title = document.createElement("strong");
+        title.textContent = p.name || "(senza nome)";
+
+        const vote = document.createElement("div");
+        vote.className = "spot-vote-pill";
+        vote.textContent = p.voto ? (p.voto + "/6") : "-";
+
+        titleRow.appendChild(title);
+        titleRow.appendChild(vote);
+
+        const desc = document.createElement("div");
+        desc.className = "spot-desc";
+        desc.textContent = p.desc || "";
+
+        const meta = document.createElement("div");
+        meta.className = "spot-meta";
+        meta.innerHTML = `
+          <span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>
+          <span>${p.source === "extra" ? "Nuovo" : "Importato"}</span>
+        `;
+
+        mainDiv.appendChild(titleRow);
+        mainDiv.appendChild(desc);
+        mainDiv.appendChild(meta);
+
+        row.appendChild(emojiDiv);
+        row.appendChild(mainDiv);
+        row.addEventListener("click", () => {
+          map.setView([p.lat, p.lng], 16);
+          document.getElementById("listPanel").classList.add("hidden");
+        });
+
+        listEl.appendChild(row);
+      });
+    }
+
+    async function handleAddSubmit(evt) {
+      evt.preventDefault();
+      const name = document.getElementById("fieldName").value.trim();
+      const desc = document.getElementById("fieldDesc").value.trim();
+      const latStr = document.getElementById("fieldLat").value.trim();
+      const lngStr = document.getElementById("fieldLng").value.trim();
+      const votoStr = document.getElementById("fieldVoto").value.trim();
+
+      if (!name || !latStr || !lngStr) {
+        alert("Nome, latitudine e longitudine sono obbligatori.");
+        return;
+      }
+
+      const lat = parseFloat(latStr.replace(",", "."));
+      const lng = parseFloat(lngStr.replace(",", "."));
+      if (Number.isNaN(lat) || Number.isNaN(lng)) {
+        alert("Coordinate non valide.");
+        return;
+      }
+
+      let voto = null;
+      if (votoStr) {
+        const v = parseInt(votoStr, 10);
+        if (v >= 1 && v <= 6) voto = v;
+      }
+
+      const tipo = getTipo(name, desc);
+
+      const payload = { name, desc, lat, lng, voto, tipo };
+
+      try {
+        const res = await fetch("/api/spots-extra", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          throw new Error("Errore HTTP " + res.status);
+        }
+        const saved = await res.json();
+        const latSaved = parseFloat(saved.lat);
+        const lngSaved = parseFloat(saved.lng);
+        allSpots.push({
+          name: saved.name || name,
+          desc: saved.desc || desc,
+          lat: Number.isNaN(latSaved) ? lat : latSaved,
+          lng: Number.isNaN(lngSaved) ? lng : lngSaved,
+          voto: saved.voto != null ? saved.voto : voto,
+          tipo: saved.tipo || tipo,
+          source: "extra",
+          createdAt: saved.createdAt || null
+        });
+        renderMarkers();
+        renderList();
+        document.getElementById("addPanel").classList.add("hidden");
+        document.getElementById("addForm").reset();
+      } catch (e) {
+        console.error(e);
+        alert("Errore nel salvataggio dello spot.");
+      }
+    }
+
+    function useMapCenter() {
+      const center = map.getCenter();
+      document.getElementById("fieldLat").value = center.lat.toFixed(6);
+      document.getElementById("fieldLng").value = center.lng.toFixed(6);
+    }
+
+    function initUI() {
+      const btnList = document.getElementById("btnList");
+      const btnAdd = document.getElementById("btnAdd");
+      const btnCloseList = document.getElementById("btnCloseList");
+      const btnCloseAdd = document.getElementById("btnCloseAdd");
+      const listPanel = document.getElementById("listPanel");
+      const addPanel = document.getElementById("addPanel");
+      const listSearch = document.getElementById("listSearch");
+      const addForm = document.getElementById("addForm");
+      const btnUseCenter = document.getElementById("btnUseCenter");
+
+      btnList.addEventListener("click", () => {
+        const isHidden = listPanel.classList.contains("hidden");
+        if (isHidden) {
+          renderList();
+          listPanel.classList.remove("hidden");
+        } else {
+          listPanel.classList.add("hidden");
+        }
+      });
+
+      btnCloseList.addEventListener("click", () => {
+        listPanel.classList.add("hidden");
+      });
+
+      btnAdd.addEventListener("click", () => {
+        addPanel.classList.remove("hidden");
+        useMapCenter();
+      });
+
+      btnCloseAdd.addEventListener("click", () => {
+        addPanel.classList.add("hidden");
+      });
+
+      listSearch.addEventListener("input", () => {
+        renderList();
+      });
+
+      addForm.addEventListener("submit", handleAddSubmit);
+      btnUseCenter.addEventListener("click", (e) => {
+        e.preventDefault();
+        useMapCenter();
+      });
+    }
+
+    function initMap() {
+      map = L.map("map");
+      const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      });
+      osm.addTo(map);
+
+      markersLayer = L.layerGroup().addTo(map);
+
+      map.setView([44.5, 8.9], 7);
+
+      map.on("click", function (e) {
+        document.getElementById("fieldLat").value = e.latlng.lat.toFixed(6);
+        document.getElementById("fieldLng").value = e.latlng.lng.toFixed(6);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initMap();
+      initUI();
+      reloadAllSpots();
     });
   </script>
 </body>
