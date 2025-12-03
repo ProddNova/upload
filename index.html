@@ -1791,13 +1791,14 @@ reloadAllSpots();
     showToast("Spot aggiornato");
   };
 </script>
-</body>
+
   <script>
-  // redirect se non loggato
-  if (localStorage.getItem("ltu_login") !== "1") {
-    window.location.href = "login.html";
-  }
-</script>
+    // redirect se non loggato
+    if (localStorage.getItem("ltu_login") !== "1") {
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
 </html>
 
 
