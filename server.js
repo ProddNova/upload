@@ -166,6 +166,39 @@ app.post("/api/settings", (req, res) => {
   }
 });
 
+// DELETE singolo spot
+app.delete("/api/spots-extra/:id", (req, res) => {
+  try {
+    let current = [];
+    if (fs.existsSync(EXTRA_FILE)) {
+      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
+    }
+    current = current.filter(s => s.id !== req.params.id);
+    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
+    res.json({success: true});
+  } catch(e) {
+    res.status(500).json({error: "errore"});
+  }
+});
+
+// PUT (update) singolo spot
+app.put("/api/spots-extra/:id", (req, res) => {
+  try {
+    let current = [];
+    if (fs.existsSync(EXTRA_FILE)) {
+      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
+    }
+    const index = current.findIndex(s => s.id === req.params.id);
+    if (index === -1) return res.status(404).json({error: "non trovato"});
+    
+    current[index] = { ...current[index], ...req.body, tipo: req.body.tipo || getTipo(req.body.name, req.body.desc) };
+    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
+    res.json(current[index]);
+  } catch(e) {
+    res.status(500).json({error: "errore"});
+  }
+});
+
 // ===============================
 //  ROUTE PRINCIPALE
 // ===============================
@@ -183,5 +216,6 @@ app.listen(port, () => {
   console.log("Server attivo su port " + port);
   console.log("Login: user =", USERNAME, "password =", PASSWORD);
 });
+
 
 
