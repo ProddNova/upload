@@ -1093,7 +1093,7 @@
           const color = getRatingColor(v);
           div.innerHTML += `
             <div class="legend-row">
-              <i style="background:${color}"></i><span>${v}/6</span>
+              <i style="background:${color}"></i><span>${v}</span>
             </div>
           `;
         });
@@ -1114,7 +1114,7 @@
       const title = escapeHtml(p.name || "Spot senza nome");
       const desc = p.desc ? escapeHtml(p.desc).replace(/\n/g, '<br>') : "";
       const coords = `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
-      const votoText = p.voto ? `${p.voto}/6` : "n.d.";
+      const votoText = p.voto ? `${p.voto}` : "n.d.";
       const color = getRatingColor(p.voto || 0);
       const emoji = getEmojiByTipo(p.tipo);
     
@@ -1244,7 +1244,7 @@
 
         const vote = document.createElement("div");
         vote.className = "spot-vote-pill";
-        vote.textContent = p.voto ? `${p.voto}/6` : "-";
+        vote.textContent = p.voto ? `${p.voto}` : "-";
 
         titleRow.appendChild(title);
         titleRow.appendChild(vote);
