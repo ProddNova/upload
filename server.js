@@ -36,6 +36,27 @@ app.use(express.json());
 // Serviamo tutti i file statici (index.html, spots.csv, ecc.)
 app.use(express.static(path.join(__dirname)));
 
+// Funzione getTipo (copia dal frontend)
+function getTipo(name, desc) {
+  const text = (name + " " + (desc || "")).toLowerCase();
+
+  if (text.includes("hotel") || text.includes("ostello") || text.includes("residence")) return "hotel";
+  if (text.includes("villa") || text.includes("villone") || text.includes("villino") || text.includes("villetta") || text.includes("ville")) return "villa";
+  if (text.includes("casa") || text.includes("casetta") || text.includes("casone") || text.includes("case") || text.includes("cascina") || text.includes("casolare")) return "casa";
+  if (text.includes("fabbrica") || text.includes("capannone") || text.includes("magazzino") || text.includes("distilleria") || text.includes("cantiere") || text.includes("impresa edile") || text.includes("stazione") || text.includes("centro commerciale")) return "industria";
+  if (text.includes("scuola") || text.includes("itis")) return "scuola";
+  if (text.includes("chiesa")) return "chiesa";
+  if (text.includes("colonia")) return "colonia";
+  if (text.includes("prigione") || text.includes("manicomio") || text.includes("ospedale") || text.includes("clinica") || text.includes("convento")) return "istituzione";
+  if (text.includes("discoteca") || text.includes("bar") || text.includes("ristorante") || text.includes("pizzeria")) return "svago";
+  if (text.includes("castello")) return "castello";
+  if (text.includes("nave")) return "nave";
+  if (text.includes("diga")) return "diga";
+  if (text.includes("base nato")) return "militare";
+
+  return "altro";
+}
+
 // ===============================
 //  API: SPOT EXTRA
 // ===============================
@@ -112,6 +133,39 @@ app.post("/api/spots-extra", (req, res) => {
   }
 });
 
+// DELETE singolo spot
+app.delete("/api/spots-extra/:id", (req, res) => {
+  try {
+    let current = [];
+    if (fs.existsSync(EXTRA_FILE)) {
+      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
+    }
+    current = current.filter(s => s.id !== req.params.id);
+    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
+    res.json({success: true});
+  } catch(e) {
+    res.status(500).json({error: "errore"});
+  }
+});
+
+// PUT (update) singolo spot
+app.put("/api/spots-extra/:id", (req, res) => {
+  try {
+    let current = [];
+    if (fs.existsSync(EXTRA_FILE)) {
+      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
+    }
+    const index = current.findIndex(s => s.id === req.params.id);
+    if (index === -1) return res.status(404).json({error: "non trovato"});
+    
+    current[index] = { ...current[index], ...req.body, tipo: req.body.tipo || getTipo(req.body.name, req.body.desc) };
+    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
+    res.json(current[index]);
+  } catch(e) {
+    res.status(500).json({error: "errore"});
+  }
+});
+
 // ===============================
 //  API: SETTINGS CONDIVISE
 // ===============================
@@ -166,39 +220,6 @@ app.post("/api/settings", (req, res) => {
   }
 });
 
-// DELETE singolo spot
-app.delete("/api/spots-extra/:id", (req, res) => {
-  try {
-    let current = [];
-    if (fs.existsSync(EXTRA_FILE)) {
-      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
-    }
-    current = current.filter(s => s.id !== req.params.id);
-    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
-    res.json({success: true});
-  } catch(e) {
-    res.status(500).json({error: "errore"});
-  }
-});
-
-// PUT (update) singolo spot
-app.put("/api/spots-extra/:id", (req, res) => {
-  try {
-    let current = [];
-    if (fs.existsSync(EXTRA_FILE)) {
-      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
-    }
-    const index = current.findIndex(s => s.id === req.params.id);
-    if (index === -1) return res.status(404).json({error: "non trovato"});
-    
-    current[index] = { ...current[index], ...req.body, tipo: req.body.tipo || getTipo(req.body.name, req.body.desc) };
-    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
-    res.json(current[index]);
-  } catch(e) {
-    res.status(500).json({error: "errore"});
-  }
-});
-
 // ===============================
 //  ROUTE PRINCIPALE
 // ===============================
@@ -216,6 +237,3 @@ app.listen(port, () => {
   console.log("Server attivo su port " + port);
   console.log("Login: user =", USERNAME, "password =", PASSWORD);
 });
-
-
-
