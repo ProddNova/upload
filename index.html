@@ -94,6 +94,10 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      transition: transform 0.3s ease;
+    }
+    #rightDock.collapsed .dock-btn:not(#dockToggleBtn) {
+      display: none;
     }
     .dock-btn {
       width: 34px;
@@ -108,6 +112,7 @@
       justify-content: center;
       font-size: 16px;
       cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .dock-btn:active {
       transform: translateY(1px) scale(0.98);
@@ -116,6 +121,36 @@
     .dock-btn.active {
       border-color: rgba(59, 130, 246, 0.9);
       box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 0 0 2px rgba(37, 99, 235, 0.7);
+    }
+    /* LEGENDA POSIZIONATA IN BASSO A DESTRA */
+    .info.legend {
+      position: fixed;
+      right: 10px;
+      bottom: 60px;
+      z-index: 30;
+      padding: 6px 8px;
+      background: rgba(15, 23, 42, 0.9);
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.95);
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: var(--text-dim);
+      font-size: 10px;
+      max-width: 120px;
+    }
+    .info.legend .legend-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+    .info.legend i {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+      border: 1px solid #020617;
+      flex-shrink: 0;
     }
     /* OVERLAY PANELS */
     .overlay {
@@ -227,10 +262,16 @@
       border: 1px solid rgba(31, 41, 55, 1);
       margin-bottom: 4px;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
     .spot-row:hover {
       border-color: rgba(59, 130, 246, 0.8);
       box-shadow: 0 0 0 1px rgba(15, 23, 42, 1);
+    }
+    .spot-row.highlighted {
+      border-color: #fbbf24;
+      box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.8), 0 0 10px rgba(251, 191, 36, 0.3);
+      background: radial-gradient(circle at top left, rgba(30, 41, 59, 1), rgba(15, 23, 42, 0.96));
     }
     .spot-emoji {
       width: 26px;
@@ -337,6 +378,7 @@
       align-items: center;
       gap: 6px;
       font-weight: 500;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .btn-primary {
       background: linear-gradient(to right, #2563eb, #3b82f6);
@@ -449,7 +491,7 @@
       font-weight: 600;
       margin-bottom: 4px;
       font-size: 13px;
-      color: #ffffff !important; /* MODIFICATO: colore bianco */
+      color: #ffffff !important;
     }
     .ltu-popup .popup-desc {
       font-size: 11px;
@@ -470,30 +512,6 @@
     }
     .ltu-popup a:hover {
       text-decoration: underline;
-    }
-    /* legend Leaflet */
-    .info.legend {
-      padding: 6px 8px;
-      background: rgba(15, 23, 42, 0.9);
-      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.95);
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      color: var(--text-dim);
-      font-size: 10px;
-    }
-    .info.legend .legend-row {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 4px;
-      margin-bottom: 2px;
-    }
-    .info.legend i {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      display: inline-block;
-      border: 1px solid #020617;
     }
     .ltu-custom-pin {
       background: transparent !important;
@@ -530,36 +548,6 @@
       top: 8px !important;
       right: 10px !important;
     }
-    /* STREETVIEW IFRAME */
-    #streetviewContainer {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 100;
-      background: rgba(0, 0, 0, 0.9);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    #streetviewIframe {
-      width: 90%;
-      height: 80%;
-      border: 2px solid var(--border-soft);
-      border-radius: 8px;
-    }
-    #closeStreetview {
-      margin-top: 15px;
-      padding: 10px 20px;
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size: 14px;
-    }
     /* IMPORT LINK OVERLAY */
     #importLinkPanel .overlay-body {
       padding: 15px;
@@ -579,6 +567,21 @@
       margin-bottom: 10px;
       font-size: 14px;
     }
+    /* TIPO SELECT STYLING */
+    .tipo-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+    }
+    .tipo-option-emoji {
+      font-size: 16px;
+      width: 24px;
+      text-align: center;
+    }
+    .tipo-option-name {
+      font-size: 12px;
+    }
     /* MOBILE ADJUSTMENTS */
     @media (max-width: 640px) {
       .overlay-card {
@@ -589,9 +592,9 @@
       #rightDock {
         right: 6px;
       }
-      #streetviewIframe {
-        width: 95%;
-        height: 70%;
+      .info.legend {
+        right: 6px;
+        bottom: 50px;
       }
     }
   </style>
@@ -600,7 +603,8 @@
   <!-- MAPPA -->
   <div id="map"></div>
   <div id="crosshair"></div>
-  <!-- DOCK DESTRO -->
+  
+  <!-- DOCK DESTRO CON TOGGLE -->
   <div id="rightDock">
     <button id="streetviewBtn" class="dock-btn" title="StreetView">🌍</button>
     <button id="importLinkBtn" class="dock-btn" title="Importa link">📎</button>
@@ -610,7 +614,19 @@
     <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
     <button id="btnRandom" class="dock-btn" title="Random spot">🎲</button>
     <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
+    <button id="dockToggleBtn" class="dock-btn" title="Mostra/Nascondi pulsanti">⬆️</button>
   </div>
+  
+  <!-- LEGENDA -->
+  <div class="info legend">
+    <div class="legend-row"><i style="background:#b91c1c"></i><span>1 ★</span></div>
+    <div class="legend-row"><i style="background:#f97316"></i><span>2 ★</span></div>
+    <div class="legend-row"><i style="background:#eab308"></i><span>3 ★</span></div>
+    <div class="legend-row"><i style="background:#2563eb"></i><span>4 ★</span></div>
+    <div class="legend-row"><i style="background:#16a34a"></i><span>5 ★</span></div>
+    <div class="legend-row"><i style="background:#a855f7"></i><span>6 ★</span></div>
+  </div>
+  
   <!-- LIST PANEL -->
   <div id="listPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -631,6 +647,7 @@
       </div>
     </div>
   </div>
+  
   <!-- ADD PANEL -->
   <div id="addPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -658,10 +675,24 @@
               <input id="fieldVoto" class="input" type="number" min="1" max="6" placeholder="Es. 4" />
             </div>
             <div class="form-row">
-              <label>&nbsp;</label>
-              <div style="font-size:11px;color:var(--text-dim);padding-top:4px;">
-                Se vuoto, il voto non viene mostrato.
-              </div>
+              <label for="fieldTipo">Tipologia</label>
+              <select id="fieldTipo" class="select">
+                <option value="">Auto-rileva</option>
+                <option value="hotel">🏨 Hotel</option>
+                <option value="villa">🏡 Villa</option>
+                <option value="casa">🏠 Casa</option>
+                <option value="industria">🏭 Industria</option>
+                <option value="scuola">🏫 Scuola</option>
+                <option value="chiesa">⛪ Chiesa</option>
+                <option value="colonia">🏚️ Colonia</option>
+                <option value="istituzione">🏥 Istituzione</option>
+                <option value="svago">🎭 Svago</option>
+                <option value="castello">🏰 Castello</option>
+                <option value="nave">🚢 Nave</option>
+                <option value="diga">💧 Diga</option>
+                <option value="militare">🪖 Militare</option>
+                <option value="altro">📍 Altro</option>
+              </select>
             </div>
           </div>
           <div class="cols">
@@ -682,6 +713,7 @@
       </div>
     </div>
   </div>
+  
   <!-- EDIT PANEL -->
   <div id="editPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -710,10 +742,24 @@
               <input id="editFieldVoto" class="input" type="number" min="1" max="6" placeholder="Es. 4" />
             </div>
             <div class="form-row">
-              <label>&nbsp;</label>
-              <div style="font-size:11px;color:var(--text-dim);padding-top:4px;">
-                Se vuoto, il voto non viene mostrato.
-              </div>
+              <label for="editFieldTipo">Tipologia</label>
+              <select id="editFieldTipo" class="select">
+                <option value="">Auto-rileva</option>
+                <option value="hotel">🏨 Hotel</option>
+                <option value="villa">🏡 Villa</option>
+                <option value="casa">🏠 Casa</option>
+                <option value="industria">🏭 Industria</option>
+                <option value="scuola">🏫 Scuola</option>
+                <option value="chiesa">⛪ Chiesa</option>
+                <option value="colonia">🏚️ Colonia</option>
+                <option value="istituzione">🏥 Istituzione</option>
+                <option value="svago">🎭 Svago</option>
+                <option value="castello">🏰 Castello</option>
+                <option value="nave">🚢 Nave</option>
+                <option value="diga">💧 Diga</option>
+                <option value="militare">🪖 Militare</option>
+                <option value="altro">📍 Altro</option>
+              </select>
             </div>
           </div>
           <div class="cols">
@@ -734,6 +780,7 @@
       </div>
     </div>
   </div>
+  
   <!-- SETTINGS PANEL -->
   <div id="settingsPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -791,6 +838,7 @@
       </div>
     </div>
   </div>
+  
   <!-- MISSION PANEL -->
   <div id="missionPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -812,6 +860,7 @@
       </div>
     </div>
   </div>
+  
   <!-- IMPORT LINK PANEL -->
   <div id="importLinkPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -852,13 +901,10 @@
       </div>
     </div>
   </div>
-  <!-- STREETVIEW CONTAINER -->
-  <div id="streetviewContainer" class="hidden">
-    <iframe id="streetviewIframe" frameborder="0"></iframe>
-    <button id="closeStreetview">Chiudi StreetView</button>
-  </div>
+  
   <!-- TOAST -->
   <div id="toast"></div>
+  
   <!-- Leaflet JS -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -892,6 +938,7 @@
       result.push(current);
       return result;
     }
+    
     function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
       const rows = [];
@@ -901,6 +948,7 @@
       }
       return rows;
     }
+    
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, function (c) {
         switch (c) {
@@ -913,6 +961,7 @@
         }
       });
     }
+    
     function extractVoto(desc) {
       if (!desc) return null;
       const match = desc.match(/Voto:\s*([0-9]+)\s*\/\s*6/i);
@@ -921,6 +970,7 @@
       if (v >= 1 && v <= 6) return v;
       return null;
     }
+    
     // nuovi colori in stile LTU (come nel tuo script originale)
     function getRatingColor(r) {
       if (typeof r !== "number" || !isFinite(r)) return "#64748b";
@@ -932,6 +982,7 @@
       if (r === 6) return "#a855f7";
       return "#64748b";
     }
+    
     function getTipo(name, desc) {
       const text = (name + " " + (desc || "")).toLowerCase();
       if (text.includes("hotel") || text.includes("ostello") || text.includes("residence")) return "hotel";
@@ -949,6 +1000,7 @@
       if (text.includes("base nato")) return "militare";
       return "altro";
     }
+    
     function getEmojiByTipo(tipo) {
       switch (tipo) {
         case "hotel": return "🏨";
@@ -967,6 +1019,7 @@
         default: return "📍";
       }
     }
+    
     function showToast(msg) {
       const t = document.getElementById("toast");
       if (!t) return;
@@ -974,6 +1027,7 @@
       t.classList.add("show");
       setTimeout(() => t.classList.remove("show"), 1700);
     }
+    
     // =========================
     // GLOBAL STATE
     // =========================
@@ -989,6 +1043,7 @@
     let currentSpot = null; // ultimo spot cliccato (per missioni / random)
     let missions = {}; // localStorage
     let lastAddedSpotId = null; // per centrare spot appena aggiunto
+    let spotToHighlight = null; // ID dello spot da evidenziare nella lista
     
     function loadMissions() {
       try {
@@ -1156,22 +1211,6 @@
           lngInput.value = e.latlng.lng.toFixed(6);
         }
       });
-      // legenda Leaflet
-      const legend = L.control({ position: "topleft" });
-      legend.onAdd = function () {
-        const div = L.DomUtil.create("div", "info legend");
-        const grades = [1, 2, 3, 4, 5, 6];
-        grades.forEach(v => {
-          const color = getRatingColor(v);
-          div.innerHTML += `
-            <div class="legend-row">
-              <i style="background:${color}"></i><span>${v}</span>
-            </div>
-          `;
-        });
-        return div;
-      };
-      legend.addTo(map);
     }
     
     function switchBaseLayer(key) {
@@ -1210,12 +1249,13 @@
              style="background:#2563eb; color:white; padding:9px 16px; border-radius:999px; text-decoration:none; display:block; text-align:center; font-weight:600; font-size:13px;">
             Apri in Google Maps ↗
           </a>
-          ${spotId ? `
-            <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
+          <div style="margin-top: 8px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+            <button id="list-btn-${spotId}" data-spot-id="${spotId}" style="background: #16a34a; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📋 Lista</button>
+            ${spotId ? `
               <button id="edit-btn-${spotId}" data-spot-id="${spotId}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
               <button id="delete-btn-${spotId}" data-spot-id="${spotId}" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Elimina</button>
-            </div>
-          ` : ''}
+            ` : ''}
+          </div>
         </div>
       `;
     }
@@ -1304,6 +1344,9 @@
       filtered.forEach(p => {
         const row = document.createElement("li");
         row.className = "spot-row";
+        if (spotToHighlight && p.id === spotToHighlight) {
+          row.classList.add("highlighted");
+        }
         const emojiDiv = document.createElement("div");
         emojiDiv.className = "spot-emoji";
         emojiDiv.textContent = getEmojiByTipo(p.tipo);
@@ -1354,6 +1397,9 @@
       const latStr = document.getElementById("fieldLat").value.trim();
       const lngStr = document.getElementById("fieldLng").value.trim();
       const votoStr = document.getElementById("fieldVoto").value.trim();
+      const tipoSelect = document.getElementById("fieldTipo");
+      const tipo = tipoSelect.value || getTipo(name, desc);
+      
       if (!name || !latStr || !lngStr) {
         alert("Nome, latitudine e longitudine sono obbligatori.");
         return;
@@ -1369,7 +1415,6 @@
         const v = parseInt(votoStr, 10);
         if (v >= 1 && v <= 6) voto = v;
       }
-      const tipo = getTipo(name, desc);
       const payload = { name, desc, lat, lng, voto, tipo };
       try {
         const res = await fetch("/api/spots-extra", {
@@ -1402,6 +1447,7 @@
         renderList();
         document.getElementById("addPanel").classList.add("hidden");
         document.getElementById("addForm").reset();
+        document.getElementById("fieldTipo").value = "";
         showToast("Spot aggiunto.");
       } catch (e) {
         console.error(e);
@@ -1469,15 +1515,15 @@
     }
     
     // =========================
-    // STREETVIEW
+    // STREETVIEW (SENZA API KEY)
     // =========================
     function openStreetView() {
       const center = map.getCenter();
       const lat = center.lat;
       const lng = center.lng;
-      const url = `https://www.google.com/maps/embed/v1/streetview?key=AIzaSyD3E1D9b-Z7pR1ALe3M7d17QR7K2QJk6Nw&location=${lat},${lng}&heading=210&pitch=10&fov=90`;
-      document.getElementById("streetviewIframe").src = url;
-      document.getElementById("streetviewContainer").classList.remove("hidden");
+      // Usa l'URL di Google Maps Street View senza API key (apre in nuova scheda)
+      const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+      window.open(url, '_blank');
     }
     
     // =========================
@@ -1532,7 +1578,7 @@
         return;
       }
       
-      const voto = null; // Puoi aggiungere un campo per il voto se vuoi
+      const voto = null;
       const tipo = getTipo(name, desc);
       const payload = { name, desc, lat, lng, voto, tipo };
       
@@ -1654,11 +1700,13 @@
         alert("Nessuno spot da esportare.");
         return;
       }
-      let csv = "Name,Description,Latitude,Longitude\n";
+      let csv = "Name,Description,Latitude,Longitude,Voto,Tipo\n";
       allSpots.forEach(p => {
         const name = (p.name || "").replace(/"/g, '""');
         const desc = (p.desc || "").replace(/"/g, '""');
-        csv += `"${name}","${desc}",${p.lat},${p.lng}\n`;
+        const voto = p.voto || "";
+        const tipo = p.tipo || "";
+        csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo}\n`;
       });
       document.getElementById("exportTextarea").value = csv;
       showToast("CSV generato.");
@@ -1668,6 +1716,7 @@
     // UI INIT
     // =========================
     function initUI() {
+      // LISTA
       const btnList = document.getElementById("btnList");
       const btnCloseList = document.getElementById("btnCloseList");
       const listPanel = document.getElementById("listPanel");
@@ -1675,6 +1724,7 @@
       btnList.addEventListener("click", () => {
         const hidden = listPanel.classList.contains("hidden");
         if (hidden) {
+          spotToHighlight = null;
           renderList();
           listPanel.classList.remove("hidden");
         } else {
@@ -1683,10 +1733,12 @@
       });
       btnCloseList.addEventListener("click", () => {
         listPanel.classList.add("hidden");
+        spotToHighlight = null;
       });
       listSearch.addEventListener("input", () => {
         renderList();
       });
+      
       // ADD
       const btnAdd = document.getElementById("btnAdd");
       const btnCloseAdd = document.getElementById("btnCloseAdd");
@@ -1705,6 +1757,7 @@
         e.preventDefault();
         useMapCenter();
       });
+      
       // SETTINGS
       const settingsBtn = document.getElementById("settingsBtn");
       const settingsPanel = document.getElementById("settingsPanel");
@@ -1737,9 +1790,11 @@
       });
       btnImportJson.addEventListener("click", handleImportJson);
       btnExportCsv.addEventListener("click", handleExportCsv);
+      
       // RANDOM
       const btnRandom = document.getElementById("btnRandom");
       btnRandom.addEventListener("click", pickRandomSpot);
+      
       // CROSSHAIR TOGGLE
       const crosshairToggleBtn = document.getElementById("crosshairToggleBtn");
       const crosshairEl = document.getElementById("crosshair");
@@ -1753,6 +1808,7 @@
           showToast("Mirino nascosto.");
         }
       });
+      
       // MISSIONI
       const missionBtn = document.getElementById("missionBtn");
       const missionPanel = document.getElementById("missionPanel");
@@ -1763,14 +1819,11 @@
         missionPanel.classList.add("hidden");
       });
       btnSaveMission.addEventListener("click", saveMissionForCurrent);
+      
       // STREETVIEW
       const streetviewBtn = document.getElementById("streetviewBtn");
-      const closeStreetviewBtn = document.getElementById("closeStreetview");
       streetviewBtn.addEventListener("click", openStreetView);
-      closeStreetviewBtn.addEventListener("click", () => {
-        document.getElementById("streetviewContainer").classList.add("hidden");
-        document.getElementById("streetviewIframe").src = "";
-      });
+      
       // IMPORT LINK
       const importLinkBtn = document.getElementById("importLinkBtn");
       const importLinkPanel = document.getElementById("importLinkPanel");
@@ -1785,8 +1838,32 @@
       });
       btnDecodeLink.addEventListener("click", decodeGoogleMapsLink);
       btnAddFromLink.addEventListener("click", addSpotFromLink);
-      // EVENTI PER MODIFICA/ELIMINA (delegation per popup dinamici)
+      
+      // DOCK TOGGLE
+      const dockToggleBtn = document.getElementById("dockToggleBtn");
+      const rightDock = document.getElementById("rightDock");
+      dockToggleBtn.addEventListener("click", () => {
+        rightDock.classList.toggle("collapsed");
+        const isCollapsed = rightDock.classList.contains("collapsed");
+        dockToggleBtn.innerHTML = isCollapsed ? "⬇️" : "⬆️";
+        dockToggleBtn.title = isCollapsed ? "Espandi pulsanti" : "Comprimi pulsanti";
+      });
+      
+      // EVENTI PER POPUP DINAMICI (LISTA, MODIFICA, ELIMINA)
       document.addEventListener('click', async (e) => {
+        if (e.target.id && e.target.id.startsWith('list-btn-')) {
+          e.preventDefault();
+          const spotId = e.target.dataset.spotId;
+          const spot = allSpots.find(s => s.id === spotId);
+          if (!spot) return showToast('Spot non trovato.');
+          
+          // Apri il pannello lista evidenziando lo spot
+          spotToHighlight = spotId;
+          renderList();
+          document.getElementById("listPanel").classList.remove("hidden");
+          map.closePopup();
+        }
+        
         if (e.target.id && e.target.id.startsWith('delete-btn-')) {
           e.preventDefault();
           const spotId = e.target.dataset.spotId;
@@ -1812,6 +1889,7 @@
             showToast('Errore eliminazione.');
           }
         }
+        
         if (e.target.id && e.target.id.startsWith('edit-btn-')) {
           e.preventDefault();
           const spotId = e.target.dataset.spotId;
@@ -1824,11 +1902,14 @@
           document.getElementById('editFieldVoto').value = spot.voto || '';
           document.getElementById('editFieldLat').value = spot.lat.toFixed(6);
           document.getElementById('editFieldLng').value = spot.lng.toFixed(6);
+          document.getElementById('editFieldTipo').value = spot.tipo || '';
          
           document.getElementById('editPanel').classList.remove('hidden');
           currentSpot = spot;
+          map.closePopup();
         }
       });
+      
       // SUBMIT EDIT FORM
       const editForm = document.getElementById('editForm');
       const btnCloseEdit = document.getElementById('btnCloseEdit');
@@ -1842,6 +1923,9 @@
         const latStr = document.getElementById('editFieldLat').value.trim();
         const lngStr = document.getElementById('editFieldLng').value.trim();
         const votoStr = document.getElementById('editFieldVoto').value.trim();
+        const tipoSelect = document.getElementById('editFieldTipo');
+        const tipo = tipoSelect.value || getTipo(name, desc);
+        
         if (!name || !latStr || !lngStr) {
           alert('Nome, latitudine e longitudine sono obbligatori.');
           return;
@@ -1857,7 +1941,6 @@
           const v = parseInt(votoStr, 10);
           if (v >= 1 && v <= 6) voto = v;
         }
-        const tipo = getTipo(name, desc);
         const payload = { name, desc, lat, lng, voto, tipo };
         try {
           const res = await fetch(`/api/spots-extra/${spotId}`, {
