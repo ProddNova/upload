@@ -3,7 +3,6 @@ const path = require("path");
 const fs = require("fs");
 const https = require("https");
 const app = express();
-const basicAuth = require("basic-auth");
 
 // ===============================
 // CONFIG: LOGIN E FILE DI STORAGE
@@ -26,13 +25,24 @@ const DEFAULT_SETTINGS = {
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Middleware di autenticazione per operazioni critiche
+// Middleware di autenticazione senza dipendenze esterne
 const authMiddleware = (req, res, next) => {
-  const user = basicAuth(req);
-  if (!user || user.name !== USERNAME || user.pass !== PASSWORD) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
     res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
     return res.status(401).json({ error: "Accesso non autorizzato" });
   }
+  
+  const base64Credentials = authHeader.split(' ')[1];
+  const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+  const [username, password] = credentials.split(':');
+  
+  if (username !== USERNAME || password !== PASSWORD) {
+    res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
+    return res.status(401).json({ error: "Accesso non autorizzato" });
+  }
+  
+  req.user = { name: username };
   next();
 };
 
