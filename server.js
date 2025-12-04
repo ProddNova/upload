@@ -154,15 +154,27 @@ app.put("/api/spots-extra/:id", authMiddleware, (req, res) => {
     const index = current.findIndex(s => s.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: "non trovato" });
 
+    // Correzione: Gestisci voto correttamente (potrebbe essere stringa vuota)
+    let votoNum = null;
+    if (req.body.voto !== undefined && req.body.voto !== "") {
+      const v = parseInt(req.body.voto, 10);
+      if (v >= 1 && v <= 6) votoNum = v;
+    }
+
     current[index] = { 
       ...current[index], 
-      ...req.body, 
-      tipo: req.body.tipo || getTipo(req.body.name, req.body.desc),
+      name: req.body.name || current[index].name,
+      desc: req.body.desc !== undefined ? req.body.desc : current[index].desc,
+      lat: parseFloat(req.body.lat) || current[index].lat,
+      lng: parseFloat(req.body.lng) || current[index].lng,
+      voto: votoNum,
+      tipo: req.body.tipo ? String(req.body.tipo) : getTipo(req.body.name || current[index].name, req.body.desc || current[index].desc),
       updatedAt: new Date().toISOString()
     };
     fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
     res.json(current[index]);
   } catch (e) {
+    console.error("Errore aggiornamento spot:", e);
     res.status(500).json({ error: "errore" });
   }
 });
