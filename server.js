@@ -1,6 +1,9 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
+const https = require("https");
+const http = require("http");
+const urlModule = require("url");
 
 const app = express();
 
@@ -55,6 +58,80 @@ function getTipo(name, desc) {
   if (text.includes("base nato")) return "militare";
 
   return "altro";
+}
+
+// Funzione per seguire redirect e risolvere short URL Google Maps
+async function resolveGoogleMapsUrl(shortUrl) {
+  return new Promise((resolve, reject) => {
+    const parsed = urlModule.parse(shortUrl);
+    const isHttps = parsed.protocol === 'https:';
+    const client = isHttps ? https : http;
+
+    let redirects = 0;
+    const maxRedirects = 5;
+
+    function follow(urlStr) {
+      if (redirects >= maxRedirects) {
+        return reject(new Error('Too many redirects'));
+      }
+
+      const url = urlModule.parse(urlStr);
+      const options = {
+        hostname: url.hostname,
+        port: url.port || (isHttps ? 443 : 80),
+        path: url.path,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      };
+
+      const req = client.request(options, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          redirects++;
+          return follow(res.headers.location);
+        }
+
+        if (res.statusCode !== 200) {
+          return reject(new Error(`HTTP ${res.statusCode}`));
+        }
+
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          // Estrai lat/lng dall'URL finale o dal contenuto
+          const finalUrl = res.responseUrl || urlStr;
+          const match = finalUrl.match(/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+          if (match) {
+            resolve({
+              lat: parseFloat(match[1]),
+              lng: parseFloat(match[2]),
+              name: '' // Nome non estratto, da frontend
+            });
+          } else {
+            // Fallback: cerca nel contenuto (es. meta tags o testo)
+            const titleMatch = data.match(/<title>([^<]+)<\/title>/i);
+            const name = titleMatch ? titleMatch[1].replace(' - Google Maps', '').trim() : '';
+            const latLngMatch = data.match(/ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/) || data.match(/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+            if (latLngMatch) {
+              resolve({
+                lat: parseFloat(latLngMatch[1]),
+                lng: parseFloat(latLngMatch[2]),
+                name
+              });
+            } else {
+              reject(new Error('Impossibile estrarre coordinate'));
+            }
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.end();
+    }
+
+    follow(shortUrl);
+  });
 }
 
 // ===============================
@@ -163,6 +240,22 @@ app.put("/api/spots-extra/:id", (req, res) => {
     res.json(current[index]);
   } catch(e) {
     res.status(500).json({error: "errore"});
+  }
+});
+
+// NUOVO ENDPOINT: Parse Google Maps short URL
+app.get("/api/parse-gmaps", async (req, res) => {
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).json({ error: "URL obbligatorio" });
+  }
+
+  try {
+    const result = await resolveGoogleMapsUrl(url);
+    res.json(result);
+  } catch (err) {
+    console.error("Errore parsing GMaps URL:", err);
+    res.status(500).json({ error: "Impossibile estrarre coordinate dal link" });
   }
 });
 
