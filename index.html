@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Lost Trace Unit – Mappa spot abbandonati</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-
   <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
@@ -12,7 +11,6 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin="anonymous"
   />
-
   <style>
     :root {
       --bg-main: #020617;
@@ -27,11 +25,9 @@
       --shadow-strong: 0 20px 50px rgba(15, 23, 42, 0.95);
       --radius-card: 16px;
     }
-
     * {
       box-sizing: border-box;
     }
-
     html, body {
       margin: 0;
       padding: 0;
@@ -42,15 +38,12 @@
       color: var(--text-main);
       overflow: hidden;
     }
-
     body {
       position: relative;
     }
-
     .hidden {
       display: none !important;
     }
-
     /* MAPPA */
     #map {
       position: fixed;
@@ -60,29 +53,38 @@
       bottom: 0;
       z-index: 1;
     }
-
-    /* CROSSHAIR */
+    /* CROSSHAIR - MODIFICATO: CROCE ROSSA CON BORDI NERI */
     #crosshair {
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 20px;
-      height: 20px;
-      border-radius: 999px;
-      border: 1px solid rgba(248, 250, 252, 0.9);
-      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.95);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      color: rgba(248, 250, 252, 0.95);
-      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.95), transparent);
+      width: 24px;
+      height: 24px;
       pointer-events: none;
-      text-shadow: 0 0 3px rgba(15, 23, 42, 1);
       z-index: 8;
     }
-
+    #crosshair::before,
+    #crosshair::after {
+      content: '';
+      position: absolute;
+      background: #ff0000;
+      border: 1px solid #000;
+    }
+    #crosshair::before {
+      width: 16px;
+      height: 2px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    #crosshair::after {
+      width: 2px;
+      height: 16px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
     /* DOCK LATERALE DESTRO */
     #rightDock {
       position: fixed;
@@ -93,7 +95,6 @@
       flex-direction: column;
       gap: 8px;
     }
-
     .dock-btn {
       width: 34px;
       height: 34px;
@@ -108,17 +109,14 @@
       font-size: 16px;
       cursor: pointer;
     }
-
     .dock-btn:active {
       transform: translateY(1px) scale(0.98);
       box-shadow: none;
     }
-
     .dock-btn.active {
       border-color: rgba(59, 130, 246, 0.9);
       box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 0 0 2px rgba(37, 99, 235, 0.7);
     }
-
     /* OVERLAY PANELS */
     .overlay {
       position: fixed;
@@ -128,7 +126,6 @@
       justify-content: center;
       z-index: 80;
     }
-
     .overlay-backdrop {
       position: absolute;
       inset: 0;
@@ -136,7 +133,6 @@
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
     }
-
     .overlay-card {
       position: relative;
       z-index: 81;
@@ -151,7 +147,6 @@
       flex-direction: column;
       overflow: hidden;
     }
-
     .overlay-header {
       padding: 10px 12px;
       border-bottom: 1px solid rgba(31, 41, 55, 1);
@@ -160,24 +155,20 @@
       justify-content: space-between;
       gap: 8px;
     }
-
     .overlay-header-title {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
-
     .overlay-header-title strong {
       font-size: 13px;
       letter-spacing: 0.06em;
       text-transform: uppercase;
     }
-
     .overlay-header-title small {
       font-size: 11px;
       color: var(--text-dim);
     }
-
     .icon-btn {
       width: 26px;
       height: 26px;
@@ -191,20 +182,17 @@
       font-size: 13px;
       cursor: pointer;
     }
-
     .overlay-body {
       padding: 8px 10px 10px;
       overflow-y: auto;
       flex: 1;
     }
-
     /* LISTA SPOT */
     #listHeaderActions {
       display: flex;
       align-items: center;
       gap: 6px;
     }
-
     #listSearch {
       width: 100%;
       border-radius: 999px;
@@ -216,23 +204,19 @@
       outline: none;
       margin-bottom: 8px;
     }
-
     #listSearch::placeholder {
       color: rgba(107, 114, 128, 0.9);
     }
-
     #listSummary {
       font-size: 11px;
       color: var(--text-dim);
       margin-bottom: 6px;
     }
-
     #listContent {
       list-style: none;
       padding: 0;
       margin: 0;
     }
-
     .spot-row {
       display: flex;
       align-items: flex-start;
@@ -244,12 +228,10 @@
       margin-bottom: 4px;
       cursor: pointer;
     }
-
     .spot-row:hover {
       border-color: rgba(59, 130, 246, 0.8);
       box-shadow: 0 0 0 1px rgba(15, 23, 42, 1);
     }
-
     .spot-emoji {
       width: 26px;
       height: 26px;
@@ -262,12 +244,10 @@
       font-size: 16px;
       flex-shrink: 0;
     }
-
     .spot-main {
       flex: 1;
       min-width: 0;
     }
-
     .spot-main-title {
       display: flex;
       align-items: center;
@@ -275,14 +255,12 @@
       gap: 6px;
       margin-bottom: 2px;
     }
-
     .spot-main-title strong {
       font-size: 12px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
     .spot-vote-pill {
       border-radius: 999px;
       padding: 2px 6px;
@@ -292,7 +270,6 @@
       color: var(--text-dim);
       flex-shrink: 0;
     }
-
     .spot-desc {
       font-size: 11px;
       color: var(--text-dim);
@@ -300,7 +277,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
     .spot-meta {
       margin-top: 2px;
       font-size: 10px;
@@ -309,7 +285,6 @@
       justify-content: space-between;
       gap: 6px;
     }
-
     /* ADD PANEL */
     .form-row {
       display: flex;
@@ -317,12 +292,10 @@
       gap: 3px;
       margin-bottom: 6px;
     }
-
     .form-row label {
       font-size: 11px;
       color: var(--text-dim);
     }
-
     .input, .textarea, .select {
       width: 100%;
       border-radius: 12px;
@@ -333,33 +306,27 @@
       font-size: 12px;
       outline: none;
     }
-
     .textarea {
       min-height: 54px;
       resize: vertical;
     }
-
     .input::placeholder,
     .textarea::placeholder {
       color: rgba(107, 114, 128, 0.95);
     }
-
     .cols {
       display: flex;
       gap: 6px;
     }
-
     .cols .form-row {
       flex: 1;
     }
-
     .actions-row {
       display: flex;
       justify-content: flex-end;
       gap: 8px;
       margin-top: 8px;
     }
-
     .btn {
       border-radius: 999px;
       border: none;
@@ -371,24 +338,20 @@
       gap: 6px;
       font-weight: 500;
     }
-
     .btn-primary {
       background: linear-gradient(to right, #2563eb, #3b82f6);
       color: #f9fafb;
       box-shadow: 0 10px 24px rgba(37, 99, 235, 0.9);
     }
-
     .btn-secondary {
       background: rgba(15, 23, 42, 0.95);
       color: var(--text-dim);
       border: 1px solid rgba(55, 65, 81, 1);
     }
-
     .btn:active {
       transform: translateY(1px) scale(0.99);
       box-shadow: none;
     }
-
     /* SETTINGS */
     .settings-section {
       margin-bottom: 10px;
@@ -397,19 +360,16 @@
       padding: 8px 9px;
       background: radial-gradient(circle at top, rgba(15, 23, 42, 1), rgba(15, 23, 42, 0.96));
     }
-
     .settings-section-title {
       font-size: 12px;
       font-weight: 600;
       margin-bottom: 2px;
     }
-
     .settings-section-desc {
       font-size: 11px;
       color: var(--text-dim);
       margin-bottom: 6px;
     }
-
     .settings-row {
       display: flex;
       align-items: center;
@@ -417,16 +377,13 @@
       margin-bottom: 6px;
       font-size: 12px;
     }
-
     .settings-row label {
       flex: 1;
     }
-
     .settings-row .input,
     .settings-row .select {
       flex: 1;
     }
-
     #importTextarea,
     #exportTextarea {
       width: 100%;
@@ -439,26 +396,22 @@
       min-height: 70px;
       resize: vertical;
     }
-
     .settings-buttons-row {
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
       margin-top: 4px;
     }
-
     /* MISSION PANEL */
     #missionBodyTitle {
       font-size: 12px;
       margin-bottom: 4px;
     }
-
     #missionBodyCoords {
       font-size: 11px;
       color: var(--text-dim);
       margin-bottom: 8px;
     }
-
     #missionText {
       width: 100%;
       border-radius: 10px;
@@ -470,7 +423,6 @@
       min-height: 90px;
       resize: vertical;
     }
-
     /* TOAST */
     #toast {
       position: fixed;
@@ -488,19 +440,17 @@
       transition: opacity 0.3s ease, transform 0.3s ease;
       z-index: 90;
     }
-
     #toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(-4px);
     }
-
     /* POPUP LEAFLET CUSTOM */
     .ltu-popup .popup-title {
       font-weight: 600;
       margin-bottom: 4px;
       font-size: 13px;
+      color: #ffffff !important; /* MODIFICATO: colore bianco */
     }
-
     .ltu-popup .popup-desc {
       font-size: 11px;
       margin-bottom: 4px;
@@ -508,23 +458,19 @@
       max-width: 220px;
       white-space: normal;
     }
-
     .ltu-popup .popup-meta {
       font-size: 10px;
       color: rgba(148, 163, 184, 0.95);
       margin-bottom: 4px;
     }
-
     .ltu-popup a {
       font-size: 11px;
       color: #93c5fd;
       text-decoration: none;
     }
-
     .ltu-popup a:hover {
       text-decoration: underline;
     }
-
     /* legend Leaflet */
     .info.legend {
       padding: 6px 8px;
@@ -535,7 +481,6 @@
       color: var(--text-dim);
       font-size: 10px;
     }
-
     .info.legend .legend-row {
       display: flex;
       flex-direction: row;
@@ -543,7 +488,6 @@
       gap: 4px;
       margin-bottom: 2px;
     }
-
     .info.legend i {
       width: 10px;
       height: 10px;
@@ -558,7 +502,7 @@
       width: 26px !important;
       height: 36px !important;
     }
-    
+   
     /* Popup Leaflet in stile LTU dark premium */
     .leaflet-popup-content-wrapper {
       background: var(--bg-panel) !important;
@@ -567,24 +511,73 @@
       border: 1px solid var(--border-soft) !important;
       padding: 0 !important;
     }
-    
+   
     .leaflet-popup-content {
       margin: 0 !important;
       padding: 14px 16px !important;
       min-width: 260px !important;
     }
-    
+   
     .leaflet-popup-tip {
       background: var(--bg-panel) !important;
       border: 1px solid var(--border-soft) !important;
       box-shadow: var(--shadow-strong) !important;
     }
-    
+   
     .leaflet-popup-close-button {
       color: var(--text-dim) !important;
       font-size: 18px !important;
       top: 8px !important;
       right: 10px !important;
+    }
+    /* STREETVIEW IFRAME */
+    #streetviewContainer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #streetviewIframe {
+      width: 90%;
+      height: 80%;
+      border: 2px solid var(--border-soft);
+      border-radius: 8px;
+    }
+    #closeStreetview {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    /* IMPORT LINK OVERLAY */
+    #importLinkPanel .overlay-body {
+      padding: 15px;
+    }
+    #importLinkPanel .instructions {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+    #importLinkPanel .link-input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-soft);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-main);
+      margin-bottom: 10px;
+      font-size: 14px;
     }
     /* MOBILE ADJUSTMENTS */
     @media (max-width: 640px) {
@@ -593,9 +586,12 @@
         width: calc(100% - 16px);
         max-height: calc(100% - 24px);
       }
-
       #rightDock {
         right: 6px;
+      }
+      #streetviewIframe {
+        width: 95%;
+        height: 70%;
       }
     }
   </style>
@@ -603,10 +599,11 @@
 <body>
   <!-- MAPPA -->
   <div id="map"></div>
-  <div id="crosshair">+</div>
-
+  <div id="crosshair"></div>
   <!-- DOCK DESTRO -->
   <div id="rightDock">
+    <button id="streetviewBtn" class="dock-btn" title="StreetView">🌍</button>
+    <button id="importLinkBtn" class="dock-btn" title="Importa link">📎</button>
     <button id="settingsBtn" class="dock-btn" title="Impostazioni">⚙️</button>
     <button id="crosshairToggleBtn" class="dock-btn" title="Mostra/Nascondi mirino">🎯</button>
     <button id="btnList" class="dock-btn" title="Lista spot">📋</button>
@@ -614,7 +611,6 @@
     <button id="btnRandom" class="dock-btn" title="Random spot">🎲</button>
     <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
   </div>
-
   <!-- LIST PANEL -->
   <div id="listPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -635,7 +631,6 @@
       </div>
     </div>
   </div>
-
   <!-- ADD PANEL -->
   <div id="addPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -687,7 +682,6 @@
       </div>
     </div>
   </div>
-
   <!-- EDIT PANEL -->
   <div id="editPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -701,7 +695,7 @@
       </div>
       <div class="overlay-body">
         <form id="editForm">
-          <input type="hidden" id="editSpotId" />  <!-- ID nascosto per il submit -->
+          <input type="hidden" id="editSpotId" /> <!-- ID nascosto per il submit -->
           <div class="form-row">
             <label for="editFieldName">Nome</label>
             <input id="editFieldName" class="input" type="text" placeholder="Es. Villa, Casetta, Hotel..." required />
@@ -740,7 +734,6 @@
       </div>
     </div>
   </div>
-
   <!-- SETTINGS PANEL -->
   <div id="settingsPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -767,7 +760,6 @@
             </select>
           </div>
         </section>
-
         <section class="settings-section">
           <div class="settings-section-title">Random & missioni</div>
           <div class="settings-section-desc">
@@ -780,7 +772,6 @@
             <input id="randomLowRatedCheckbox" type="checkbox" />
           </div>
         </section>
-
         <section class="settings-section">
           <div class="settings-section-title">Import / Export</div>
           <div class="settings-section-desc">
@@ -800,7 +791,6 @@
       </div>
     </div>
   </div>
-
   <!-- MISSION PANEL -->
   <div id="missionPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -822,30 +812,69 @@
       </div>
     </div>
   </div>
-
+  <!-- IMPORT LINK PANEL -->
+  <div id="importLinkPanel" class="overlay hidden">
+    <div class="overlay-backdrop"></div>
+    <div class="overlay-card">
+      <div class="overlay-header">
+        <div class="overlay-header-title">
+          <strong>Importa da link Google Maps</strong>
+          <small>Incolla un link per estrarre coordinate</small>
+        </div>
+        <button id="btnCloseImportLink" class="icon-btn">✕</button>
+      </div>
+      <div class="overlay-body">
+        <div class="instructions">
+          Incolla qui un link di Google Maps (es. https://maps.app.goo.gl/HY2ynACBvCrSzqxd7) 
+          per estrarre automaticamente le coordinate.
+        </div>
+        <input type="text" id="linkInput" class="link-input" placeholder="https://maps.app.goo.gl/..." />
+        <div class="actions-row">
+          <button type="button" id="btnDecodeLink" class="btn btn-primary">Decodifica link</button>
+        </div>
+        <div id="linkResult" style="margin-top: 10px; display: none;">
+          <div class="form-row">
+            <label>Coordinate trovate:</label>
+            <div style="font-size: 12px; color: #10b981;" id="coordsFound"></div>
+          </div>
+          <div class="form-row">
+            <label for="linkSpotName">Nome spot</label>
+            <input type="text" id="linkSpotName" class="input" placeholder="Nome dello spot..." />
+          </div>
+          <div class="form-row">
+            <label for="linkSpotDesc">Descrizione</label>
+            <textarea id="linkSpotDesc" class="textarea" placeholder="Descrizione..."></textarea>
+          </div>
+          <div class="actions-row">
+            <button type="button" id="btnAddFromLink" class="btn btn-primary">Aggiungi spot</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- STREETVIEW CONTAINER -->
+  <div id="streetviewContainer" class="hidden">
+    <iframe id="streetviewIframe" frameborder="0"></iframe>
+    <button id="closeStreetview">Chiudi StreetView</button>
+  </div>
   <!-- TOAST -->
   <div id="toast"></div>
-
   <!-- Leaflet JS -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin="anonymous"
   ></script>
-
   <script>
     // =========================
-    //  UTILS
+    // UTILS
     // =========================
-
     function parseCSVRow(line) {
       const result = [];
       let current = "";
       let inQuotes = false;
-
       for (let i = 0; i < line.length; i++) {
         const char = line[i];
-
         if (char === '"') {
           if (inQuotes && line[i + 1] === '"') {
             current += '"';
@@ -863,7 +892,6 @@
       result.push(current);
       return result;
     }
-
     function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
       const rows = [];
@@ -873,7 +901,6 @@
       }
       return rows;
     }
-
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, function (c) {
         switch (c) {
@@ -886,7 +913,6 @@
         }
       });
     }
-
     function extractVoto(desc) {
       if (!desc) return null;
       const match = desc.match(/Voto:\s*([0-9]+)\s*\/\s*6/i);
@@ -895,7 +921,6 @@
       if (v >= 1 && v <= 6) return v;
       return null;
     }
-
     // nuovi colori in stile LTU (come nel tuo script originale)
     function getRatingColor(r) {
       if (typeof r !== "number" || !isFinite(r)) return "#64748b";
@@ -907,10 +932,8 @@
       if (r === 6) return "#a855f7";
       return "#64748b";
     }
-
     function getTipo(name, desc) {
       const text = (name + " " + (desc || "")).toLowerCase();
-
       if (text.includes("hotel") || text.includes("ostello") || text.includes("residence")) return "hotel";
       if (text.includes("villa") || text.includes("villone") || text.includes("villino") || text.includes("villetta") || text.includes("ville")) return "villa";
       if (text.includes("casa") || text.includes("casetta") || text.includes("casone") || text.includes("case") || text.includes("cascina") || text.includes("casolare")) return "casa";
@@ -924,10 +947,8 @@
       if (text.includes("nave")) return "nave";
       if (text.includes("diga")) return "diga";
       if (text.includes("base nato")) return "militare";
-
       return "altro";
     }
-
     function getEmojiByTipo(tipo) {
       switch (tipo) {
         case "hotel": return "🏨";
@@ -946,7 +967,6 @@
         default: return "📍";
       }
     }
-
     function showToast(msg) {
       const t = document.getElementById("toast");
       if (!t) return;
@@ -954,11 +974,9 @@
       t.classList.add("show");
       setTimeout(() => t.classList.remove("show"), 1700);
     }
-
     // =========================
-    //  GLOBAL STATE
+    // GLOBAL STATE
     // =========================
-
     let map;
     let markersLayer;
     let baseLayers = {};
@@ -967,11 +985,11 @@
       mapStyle: "default",
       randomIncludeLowRated: false
     };
-
-    let allSpots = [];       // tutti (csv + extra)
-    let currentSpot = null;  // ultimo spot cliccato (per missioni / random)
-    let missions = {};       // localStorage
-
+    let allSpots = []; // tutti (csv + extra)
+    let currentSpot = null; // ultimo spot cliccato (per missioni / random)
+    let missions = {}; // localStorage
+    let lastAddedSpotId = null; // per centrare spot appena aggiunto
+    
     function loadMissions() {
       try {
         const raw = localStorage.getItem("ltu_missions_v1");
@@ -984,17 +1002,17 @@
         missions = {};
       }
     }
-
+    
     function saveMissions() {
       try {
         localStorage.setItem("ltu_missions_v1", JSON.stringify(missions));
       } catch (e) {}
     }
-
+    
     function spotKey(p) {
       return `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
     }
-
+    
     async function loadSettings() {
       try {
         const res = await fetch("/api/settings");
@@ -1005,7 +1023,7 @@
         console.warn("Impossibile caricare settings, uso default.");
       }
     }
-
+    
     async function saveSettings(partial) {
       appSettings = Object.assign({}, appSettings, partial || {});
       try {
@@ -1022,7 +1040,7 @@
         console.warn("Errore salvataggio settings", e);
       }
     }
-
+    
     async function loadBaseSpots() {
       const res = await fetch("/spots.csv");
       if (!res.ok) throw new Error("Impossibile caricare spots.csv");
@@ -1030,7 +1048,6 @@
       const rows = parseCSV(text);
       const dataRows = rows.slice(1);
       const points = [];
-
       dataRows.forEach(cols => {
         if (cols.length < 4) return;
         const name = cols[0] || "";
@@ -1040,12 +1057,21 @@
         if (Number.isNaN(lat) || Number.isNaN(lng)) return;
         const voto = extractVoto(desc);
         const tipo = getTipo(name, desc);
-        points.push({ name, desc, lat, lng, voto, tipo, source: "csv" });
+        // Aggiungi ID univoco anche per gli spot CSV
+        points.push({ 
+          id: `csv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name, 
+          desc, 
+          lat, 
+          lng, 
+          voto, 
+          tipo, 
+          source: "csv" 
+        });
       });
-
       return points;
     }
-
+    
     async function loadExtraSpots() {
       try {
         const res = await fetch("/api/spots-extra");
@@ -1077,7 +1103,7 @@
         return [];
       }
     }
-
+    
     async function reloadAllSpots() {
       try {
         const [base, extra] = await Promise.all([loadBaseSpots(), loadExtraSpots()]);
@@ -1089,24 +1115,20 @@
         showToast("Errore nel caricamento degli spot.");
       }
     }
-
+    
     // =========================
-    //  MAPPA
+    // MAPPA
     // =========================
-
     function initMap() {
       map = L.map("map", { zoomControl: false });
-
       const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors"
       });
-
       const osmHot = L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors, Tiles style by HOT"
       });
-
       const esriSatellite = L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
@@ -1114,22 +1136,17 @@
           attribution: "Tiles &copy; Esri"
         }
       );
-
       baseLayers = {
         osm,
         osmHot,
         satellite: esriSatellite
       };
-
       // Applica baseLayer da settings
       let chosen = baseLayers[appSettings.baseLayer] || osm;
       chosen.addTo(map);
-
       markersLayer = L.layerGroup().addTo(map);
-
       // fit di base
       map.setView([44.5, 8.9], 7);
-
       // click sulla mappa per compilare lat/lng
       map.on("click", function (e) {
         const latInput = document.getElementById("fieldLat");
@@ -1139,7 +1156,6 @@
           lngInput.value = e.latlng.lng.toFixed(6);
         }
       });
-
       // legenda Leaflet
       const legend = L.control({ position: "topleft" });
       legend.onAdd = function () {
@@ -1157,7 +1173,7 @@
       };
       legend.addTo(map);
     }
-
+    
     function switchBaseLayer(key) {
       if (!map || !baseLayers[key]) return;
       Object.values(baseLayers).forEach(layer => {
@@ -1165,7 +1181,7 @@
       });
       baseLayers[key].addTo(map);
     }
-    
+   
     function buildPopupHtml(p) {
       const title = escapeHtml(p.name || "Spot senza nome");
       const desc = p.desc ? escapeHtml(p.desc).replace(/\n/g, '<br>') : "";
@@ -1173,32 +1189,27 @@
       const votoText = p.voto ? `${p.voto}` : "n.d.";
       const color = getRatingColor(p.voto || 0);
       const emoji = getEmojiByTipo(p.tipo);
-      const spotId = p.id || '';  // ID per modifica/elimina
-
+      const spotId = p.id || '';
       return `
         <div class="ltu-popup">
           <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
             <div style="font-size:36px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${emoji}</div>
             <div style="flex:1;">
-              <div style="font-size:15px; font-weight:700; margin-bottom:4px;">${title}</div>
+              <div class="popup-title" style="font-size:15px; font-weight:700; margin-bottom:4px; color:#ffffff !important;">${title}</div>
               ${p.voto ? `<span style="background:${color}; color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">${votoText} ★</span>` : ''}
             </div>
           </div>
-
           ${desc ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:12px; color:#e5e7eb;">${desc}</div>` : ''}
-
           <div style="font-size:11px; color:var(--text-dim); margin-bottom:14px;">
             ${coords}
             ${p.source === "extra" ? " • LTU extra" : ""}
           </div>
-
-          <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" 
-             target="_blank" 
+          <a href="https://www.google.com/maps?q=${p.lat},${p.lng}"
+             target="_blank"
              rel="noopener"
              style="background:#2563eb; color:white; padding:9px 16px; border-radius:999px; text-decoration:none; display:block; text-align:center; font-weight:600; font-size:13px;">
             Apri in Google Maps ↗
           </a>
-
           ${spotId ? `
             <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
               <button id="edit-btn-${spotId}" data-spot-id="${spotId}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
@@ -1208,21 +1219,22 @@
         </div>
       `;
     }
+    
     function renderMarkers() {
       if (!markersLayer) return;
       markersLayer.clearLayers();
       let bounds = [];
-    
+   
       allSpots.forEach(p => {
         const color = getRatingColor(p.voto || 0);
         const emoji = getEmojiByTipo(p.tipo);
-    
+   
         const iconHtml = `
           <div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
             <svg width="26" height="36" viewBox="0 0 26 36" xmlns="http://www.w3.org/2000/svg">
               <!-- Goccia esterna (forma Google Maps 2024/2025) senza stroke per evitare glitch -->
-              <path d="M13,0 C5.373,0 0,5.373 0,13 C0,21.938 13,36 13,36 C13,36 26,21.938 26,13 C26,5.373 20.627,0 13,0 Z" 
-                    fill="${color}" 
+              <path d="M13,0 C5.373,0 0,5.373 0,13 C0,21.938 13,36 13,36 C13,36 26,21.938 26,13 C26,5.373 20.627,0 13,0 Z"
+                    fill="${color}"
                     stroke="none"/>
               <!-- Cerchio bianco interno -->
               <circle cx="13" cy="12.5" r="8" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
@@ -1231,105 +1243,95 @@
             </svg>
           </div>
         `;
-    
+   
         const icon = L.divIcon({
           html: iconHtml,
-          className: "ltu-custom-pin",   // fondamentale
+          className: "ltu-custom-pin",
           iconSize: [26, 36],
-          iconAnchor: [13, 36],     // punta esattamente sul punto
-          popupAnchor: [0, -32]     // popup vicinissimo al pin
+          iconAnchor: [13, 36],
+          popupAnchor: [0, -32]
         });
-    
+   
         const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
         marker.bindPopup(buildPopupHtml(p));
-    
+   
         p._marker = marker;
         marker.on("click", () => {
           currentSpot = p;
         });
         bounds.push([p.lat, p.lng]);
       });
-    
-      if (bounds.length > 0) {
+   
+      // Se c'è uno spot appena aggiunto, centra su di esso
+      if (lastAddedSpotId) {
+        const newSpot = allSpots.find(s => s.id === lastAddedSpotId);
+        if (newSpot && newSpot._marker) {
+          map.setView([newSpot.lat, newSpot.lng], 16);
+          newSpot._marker.openPopup();
+          lastAddedSpotId = null;
+        }
+      } else if (bounds.length > 0) {
         map.fitBounds(bounds, { padding: [40, 40] });
       } else {
         map.setView([44.5, 8.9], 7);
       }
     }
-    
-
+   
     // =========================
-    //  LISTA
+    // LISTA
     // =========================
-
     function renderList() {
       const listEl = document.getElementById("listContent");
       const searchEl = document.getElementById("listSearch");
       const summaryEl = document.getElementById("listSummary");
       if (!listEl || !searchEl || !summaryEl) return;
-
       const q = (searchEl.value || "").toLowerCase().trim();
       let filtered = allSpots;
-
       if (q) {
         filtered = allSpots.filter(p => {
           const txt = (p.name + " " + (p.desc || "")).toLowerCase();
           return txt.includes(q);
         });
       }
-
       filtered.sort((a, b) => {
         const va = a.voto || 0;
         const vb = b.voto || 0;
         if (va !== vb) return vb - va;
         return a.name.localeCompare(b.name);
       });
-
       summaryEl.textContent = `${filtered.length} spot su ${allSpots.length} totali`;
-
       listEl.innerHTML = "";
       filtered.forEach(p => {
         const row = document.createElement("li");
         row.className = "spot-row";
-
         const emojiDiv = document.createElement("div");
         emojiDiv.className = "spot-emoji";
         emojiDiv.textContent = getEmojiByTipo(p.tipo);
-
         const mainDiv = document.createElement("div");
         mainDiv.className = "spot-main";
-
         const titleRow = document.createElement("div");
         titleRow.className = "spot-main-title";
-
         const title = document.createElement("strong");
         title.textContent = p.name || "(senza nome)";
-
         const vote = document.createElement("div");
         vote.className = "spot-vote-pill";
         vote.textContent = p.voto ? `${p.voto}` : "-";
-
         titleRow.appendChild(title);
         titleRow.appendChild(vote);
-
         const desc = document.createElement("div");
         desc.className = "spot-desc";
         desc.textContent = p.desc || "";
-
         const meta = document.createElement("div");
         meta.className = "spot-meta";
         meta.innerHTML = `
           <span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>
           <span>${p.source === "extra" ? "LTU extra" : "Importato"}</span>
         `;
-
         mainDiv.appendChild(titleRow);
         mainDiv.appendChild(desc);
         mainDiv.appendChild(meta);
-
         row.appendChild(emojiDiv);
         row.appendChild(mainDiv);
-
         row.addEventListener("click", () => {
           currentSpot = p;
           map.setView([p.lat, p.lng], 16);
@@ -1338,15 +1340,13 @@
           }
           document.getElementById("listPanel").classList.add("hidden");
         });
-
         listEl.appendChild(row);
       });
     }
-
+    
     // =========================
-    //  ADD SPOT
+    // ADD SPOT
     // =========================
-
     async function handleAddSubmit(evt) {
       evt.preventDefault();
       const name = document.getElementById("fieldName").value.trim();
@@ -1354,40 +1354,36 @@
       const latStr = document.getElementById("fieldLat").value.trim();
       const lngStr = document.getElementById("fieldLng").value.trim();
       const votoStr = document.getElementById("fieldVoto").value.trim();
-
       if (!name || !latStr || !lngStr) {
         alert("Nome, latitudine e longitudine sono obbligatori.");
         return;
       }
-
       const lat = parseFloat(latStr.replace(",", "."));
       const lng = parseFloat(lngStr.replace(",", "."));
       if (Number.isNaN(lat) || Number.isNaN(lng)) {
         alert("Coordinate non valide.");
         return;
       }
-
       let voto = null;
       if (votoStr) {
         const v = parseInt(votoStr, 10);
         if (v >= 1 && v <= 6) voto = v;
       }
-
       const tipo = getTipo(name, desc);
-
       const payload = { name, desc, lat, lng, voto, tipo };
-
       try {
         const res = await fetch("/api/spots-extra", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": "Basic " + btoa("unit:ltunit")
+          },
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error("Errore HTTP " + res.status);
         const saved = await res.json();
         const latSaved = parseFloat(saved.lat);
         const lngSaved = parseFloat(saved.lng);
-
         const spot = {
           id: saved.id,
           name: saved.name || name,
@@ -1399,8 +1395,9 @@
           source: "extra",
           createdAt: saved.createdAt || null
         };
-
         allSpots.push(spot);
+        // Imposta l'ultimo spot aggiunto per centrare dopo renderMarkers
+        lastAddedSpotId = spot.id;
         renderMarkers();
         renderList();
         document.getElementById("addPanel").classList.add("hidden");
@@ -1411,33 +1408,29 @@
         alert("Errore nel salvataggio dello spot.");
       }
     }
-
+    
     function useMapCenter() {
       const center = map.getCenter();
       document.getElementById("fieldLat").value = center.lat.toFixed(6);
       document.getElementById("fieldLng").value = center.lng.toFixed(6);
     }
-
+    
     // =========================
-    //  RANDOM SPOT
+    // RANDOM SPOT
     // =========================
-
     function pickRandomSpot() {
       if (!allSpots.length) {
         showToast("Nessuno spot disponibile.");
         return;
       }
-
       let candidates = allSpots;
       if (!appSettings.randomIncludeLowRated) {
         const filtered = allSpots.filter(p => !p.voto || p.voto >= 3);
         if (filtered.length) candidates = filtered;
       }
-
       const idx = Math.floor(Math.random() * candidates.length);
       const chosen = candidates[idx];
       if (!chosen) return;
-
       currentSpot = chosen;
       map.setView([chosen.lat, chosen.lng], 16);
       if (chosen._marker) {
@@ -1445,11 +1438,10 @@
       }
       showToast("Random LTU: " + (chosen.name || "spot"));
     }
-
+    
     // =========================
-    //  MISSIONI
+    // MISSIONI
     // =========================
-
     function openMissionPanel() {
       if (!currentSpot) {
         showToast("Seleziona prima uno spot dalla mappa.");
@@ -1460,14 +1452,12 @@
       const titleEl = document.getElementById("missionBodyTitle");
       const coordsEl = document.getElementById("missionBodyCoords");
       const textEl = document.getElementById("missionText");
-
       titleEl.textContent = "Spot: " + (currentSpot.name || "(senza nome)");
       coordsEl.textContent = `${currentSpot.lat.toFixed(6)}, ${currentSpot.lng.toFixed(6)}`;
       textEl.value = missions[key]?.text || "";
-
       panel.classList.remove("hidden");
     }
-
+    
     function saveMissionForCurrent() {
       if (!currentSpot) return;
       const key = spotKey(currentSpot);
@@ -1477,11 +1467,119 @@
       showToast("Missione salvata.");
       document.getElementById("missionPanel").classList.add("hidden");
     }
-
+    
     // =========================
-    //  SETTINGS: IMPORT / EXPORT
+    // STREETVIEW
     // =========================
-
+    function openStreetView() {
+      const center = map.getCenter();
+      const lat = center.lat;
+      const lng = center.lng;
+      const url = `https://www.google.com/maps/embed/v1/streetview?key=AIzaSyD3E1D9b-Z7pR1ALe3M7d17QR7K2QJk6Nw&location=${lat},${lng}&heading=210&pitch=10&fov=90`;
+      document.getElementById("streetviewIframe").src = url;
+      document.getElementById("streetviewContainer").classList.remove("hidden");
+    }
+    
+    // =========================
+    // IMPORT LINK
+    // =========================
+    function openImportLinkPanel() {
+      document.getElementById("importLinkPanel").classList.remove("hidden");
+    }
+    
+    async function decodeGoogleMapsLink() {
+      const url = document.getElementById("linkInput").value.trim();
+      if (!url) {
+        alert("Incolla un link di Google Maps.");
+        return;
+      }
+      
+      try {
+        const response = await fetch("/api/decode-gmaps-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+        
+        if (!response.ok) {
+          const err = await response.text();
+          throw new Error(err);
+        }
+        
+        const data = await response.json();
+        document.getElementById("coordsFound").textContent = `${data.lat}, ${data.lng}`;
+        document.getElementById("linkResult").style.display = "block";
+        
+        // Popola i campi lat/lng automaticamente
+        document.getElementById("fieldLat").value = data.lat;
+        document.getElementById("fieldLng").value = data.lng;
+        
+        showToast("Coordinate estratte con successo!");
+      } catch (error) {
+        console.error("Errore decodifica:", error);
+        alert("Impossibile decodificare il link. Assicurati che sia un link Google Maps valido.");
+      }
+    }
+    
+    async function addSpotFromLink() {
+      const name = document.getElementById("linkSpotName").value.trim();
+      const desc = document.getElementById("linkSpotDesc").value.trim();
+      const lat = parseFloat(document.getElementById("fieldLat").value);
+      const lng = parseFloat(document.getElementById("fieldLng").value);
+      
+      if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
+        alert("Nome e coordinate valide sono obbligatori.");
+        return;
+      }
+      
+      const voto = null; // Puoi aggiungere un campo per il voto se vuoi
+      const tipo = getTipo(name, desc);
+      const payload = { name, desc, lat, lng, voto, tipo };
+      
+      try {
+        const res = await fetch("/api/spots-extra", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": "Basic " + btoa("unit:ltunit")
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) throw new Error("Errore HTTP " + res.status);
+        
+        const saved = await res.json();
+        const spot = {
+          id: saved.id,
+          name: saved.name || name,
+          desc: saved.desc || desc,
+          lat: saved.lat,
+          lng: saved.lng,
+          voto: saved.voto,
+          tipo: saved.tipo || tipo,
+          source: "extra",
+          createdAt: saved.createdAt || null
+        };
+        
+        allSpots.push(spot);
+        lastAddedSpotId = spot.id;
+        renderMarkers();
+        renderList();
+        document.getElementById("importLinkPanel").classList.add("hidden");
+        document.getElementById("linkInput").value = "";
+        document.getElementById("linkSpotName").value = "";
+        document.getElementById("linkSpotDesc").value = "";
+        document.getElementById("linkResult").style.display = "none";
+        showToast("Spot aggiunto dal link!");
+      } catch (e) {
+        console.error(e);
+        alert("Errore nel salvataggio dello spot.");
+      }
+    }
+    
+    // =========================
+    // SETTINGS: IMPORT / EXPORT
+    // =========================
     async function handleImportJson() {
       const raw = document.getElementById("importTextarea").value.trim();
       if (!raw) {
@@ -1495,7 +1593,6 @@
         alert("JSON non valido.");
         return;
       }
-
       let arr = [];
       if (Array.isArray(obj)) {
         arr = obj;
@@ -1505,7 +1602,6 @@
         alert("Formato JSON non riconosciuto.");
         return;
       }
-
       let importedCount = 0;
       for (const place of arr) {
         const name = place.name || place.title || "";
@@ -1515,12 +1611,14 @@
         if (!name || Number.isNaN(lat) || Number.isNaN(lng)) continue;
         const voto = place.voto != null ? parseInt(place.voto, 10) : extractVoto(desc);
         const tipo = place.tipo || getTipo(name, desc);
-
         const payload = { name, desc, lat, lng, voto, tipo };
         try {
           const res = await fetch("/api/spots-extra", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": "Basic " + btoa("unit:ltunit")
+            },
             body: JSON.stringify(payload)
           });
           if (!res.ok) continue;
@@ -1544,14 +1642,13 @@
           console.warn("Import fallito per uno spot", e);
         }
       }
-
       if (importedCount > 0) {
         renderMarkers();
         renderList();
       }
       showToast(`Importati ${importedCount} spot.`);
     }
-
+    
     function handleExportCsv() {
       if (!allSpots.length) {
         alert("Nessuno spot da esportare.");
@@ -1566,17 +1663,15 @@
       document.getElementById("exportTextarea").value = csv;
       showToast("CSV generato.");
     }
-
+    
     // =========================
-    //  UI INIT
+    // UI INIT
     // =========================
-
     function initUI() {
       const btnList = document.getElementById("btnList");
       const btnCloseList = document.getElementById("btnCloseList");
       const listPanel = document.getElementById("listPanel");
       const listSearch = document.getElementById("listSearch");
-
       btnList.addEventListener("click", () => {
         const hidden = listPanel.classList.contains("hidden");
         if (hidden) {
@@ -1586,37 +1681,30 @@
           listPanel.classList.add("hidden");
         }
       });
-
       btnCloseList.addEventListener("click", () => {
         listPanel.classList.add("hidden");
       });
-
       listSearch.addEventListener("input", () => {
         renderList();
       });
-
       // ADD
       const btnAdd = document.getElementById("btnAdd");
       const btnCloseAdd = document.getElementById("btnCloseAdd");
       const addPanel = document.getElementById("addPanel");
       const addForm = document.getElementById("addForm");
       const btnUseCenter = document.getElementById("btnUseCenter");
-
       btnAdd.addEventListener("click", () => {
         addPanel.classList.remove("hidden");
         useMapCenter();
       });
-
       btnCloseAdd.addEventListener("click", () => {
         addPanel.classList.add("hidden");
       });
-
       addForm.addEventListener("submit", handleAddSubmit);
       btnUseCenter.addEventListener("click", (e) => {
         e.preventDefault();
         useMapCenter();
       });
-
       // SETTINGS
       const settingsBtn = document.getElementById("settingsBtn");
       const settingsPanel = document.getElementById("settingsPanel");
@@ -1625,7 +1713,6 @@
       const randomLowRatedCheckbox = document.getElementById("randomLowRatedCheckbox");
       const btnImportJson = document.getElementById("btnImportJson");
       const btnExportCsv = document.getElementById("btnExportCsv");
-
       settingsBtn.addEventListener("click", () => {
         // sync UI con settings correnti
         mapStyleSelect.value = appSettings.baseLayer || "osm";
@@ -1633,32 +1720,26 @@
         settingsPanel.classList.remove("hidden");
         settingsBtn.classList.add("active");
       });
-
       btnCloseSettings.addEventListener("click", () => {
         settingsPanel.classList.add("hidden");
         settingsBtn.classList.remove("active");
       });
-
       mapStyleSelect.addEventListener("change", (e) => {
         const val = e.target.value;
         switchBaseLayer(val);
         saveSettings({ baseLayer: val });
         showToast("Stile mappa aggiornato.");
       });
-
       randomLowRatedCheckbox.addEventListener("change", (e) => {
         const checked = e.target.checked;
         saveSettings({ randomIncludeLowRated: checked });
         showToast("Impostazione random aggiornata.");
       });
-
       btnImportJson.addEventListener("click", handleImportJson);
       btnExportCsv.addEventListener("click", handleExportCsv);
-
       // RANDOM
       const btnRandom = document.getElementById("btnRandom");
       btnRandom.addEventListener("click", pickRandomSpot);
-
       // CROSSHAIR TOGGLE
       const crosshairToggleBtn = document.getElementById("crosshairToggleBtn");
       const crosshairEl = document.getElementById("crosshair");
@@ -1672,50 +1753,70 @@
           showToast("Mirino nascosto.");
         }
       });
-
       // MISSIONI
       const missionBtn = document.getElementById("missionBtn");
       const missionPanel = document.getElementById("missionPanel");
       const btnCloseMission = document.getElementById("btnCloseMission");
       const btnSaveMission = document.getElementById("btnSaveMission");
-
       missionBtn.addEventListener("click", openMissionPanel);
       btnCloseMission.addEventListener("click", () => {
         missionPanel.classList.add("hidden");
       });
       btnSaveMission.addEventListener("click", saveMissionForCurrent);
-
+      // STREETVIEW
+      const streetviewBtn = document.getElementById("streetviewBtn");
+      const closeStreetviewBtn = document.getElementById("closeStreetview");
+      streetviewBtn.addEventListener("click", openStreetView);
+      closeStreetviewBtn.addEventListener("click", () => {
+        document.getElementById("streetviewContainer").classList.add("hidden");
+        document.getElementById("streetviewIframe").src = "";
+      });
+      // IMPORT LINK
+      const importLinkBtn = document.getElementById("importLinkBtn");
+      const importLinkPanel = document.getElementById("importLinkPanel");
+      const btnCloseImportLink = document.getElementById("btnCloseImportLink");
+      const btnDecodeLink = document.getElementById("btnDecodeLink");
+      const btnAddFromLink = document.getElementById("btnAddFromLink");
+      importLinkBtn.addEventListener("click", openImportLinkPanel);
+      btnCloseImportLink.addEventListener("click", () => {
+        importLinkPanel.classList.add("hidden");
+        document.getElementById("linkInput").value = "";
+        document.getElementById("linkResult").style.display = "none";
+      });
+      btnDecodeLink.addEventListener("click", decodeGoogleMapsLink);
+      btnAddFromLink.addEventListener("click", addSpotFromLink);
       // EVENTI PER MODIFICA/ELIMINA (delegation per popup dinamici)
       document.addEventListener('click', async (e) => {
         if (e.target.id && e.target.id.startsWith('delete-btn-')) {
           e.preventDefault();
           const spotId = e.target.dataset.spotId;
           if (!spotId) return showToast('Spot non modificabile.');
-
           if (!confirm('Sicuro di eliminare questo spot? Non si può annullare.')) return;
-
           try {
-            const res = await fetch(`/api/spots-extra/${spotId}`, { method: 'DELETE' });
+            const res = await fetch(`/api/spots-extra/${spotId}`, { 
+              method: 'DELETE',
+              headers: {
+                "Authorization": "Basic " + btoa("unit:ltunit")
+              }
+            });
             if (!res.ok) throw new Error('Errore server');
-            
+           
             // Rimuovi dall'array e aggiorna
             allSpots = allSpots.filter(s => s.id !== spotId);
             renderMarkers();
             renderList();
-            map.closePopup();  // Chiudi popup
+            map.closePopup();
             showToast('Spot eliminato.');
           } catch (err) {
             console.error(err);
             showToast('Errore eliminazione.');
           }
         }
-
         if (e.target.id && e.target.id.startsWith('edit-btn-')) {
           e.preventDefault();
           const spotId = e.target.dataset.spotId;
           const spot = allSpots.find(s => s.id === spotId);
           if (!spot) return showToast('Spot non trovato.');
-
           // Apri pannello edit con dati precompilati
           document.getElementById('editSpotId').value = spotId;
           document.getElementById('editFieldName').value = spot.name || '';
@@ -1723,18 +1824,16 @@
           document.getElementById('editFieldVoto').value = spot.voto || '';
           document.getElementById('editFieldLat').value = spot.lat.toFixed(6);
           document.getElementById('editFieldLng').value = spot.lng.toFixed(6);
-          
+         
           document.getElementById('editPanel').classList.remove('hidden');
-          currentSpot = spot;  // Per missioni, ecc.
+          currentSpot = spot;
         }
       });
-
       // SUBMIT EDIT FORM
       const editForm = document.getElementById('editForm');
       const btnCloseEdit = document.getElementById('btnCloseEdit');
       const editPanel = document.getElementById('editPanel');
       const btnUseCenterEdit = document.getElementById('btnUseCenterEdit');
-
       editForm.addEventListener('submit', async (evt) => {
         evt.preventDefault();
         const spotId = document.getElementById('editSpotId').value;
@@ -1743,45 +1842,39 @@
         const latStr = document.getElementById('editFieldLat').value.trim();
         const lngStr = document.getElementById('editFieldLng').value.trim();
         const votoStr = document.getElementById('editFieldVoto').value.trim();
-
         if (!name || !latStr || !lngStr) {
           alert('Nome, latitudine e longitudine sono obbligatori.');
           return;
         }
-
         const lat = parseFloat(latStr.replace(',', '.'));
         const lng = parseFloat(lngStr.replace(',', '.'));
         if (Number.isNaN(lat) || Number.isNaN(lng)) {
           alert('Coordinate non valide.');
           return;
         }
-
         let voto = null;
         if (votoStr) {
           const v = parseInt(votoStr, 10);
           if (v >= 1 && v <= 6) voto = v;
         }
-
-        const tipo = getTipo(name, desc);  // Ricomputa tipo
-
+        const tipo = getTipo(name, desc);
         const payload = { name, desc, lat, lng, voto, tipo };
-
         try {
           const res = await fetch(`/api/spots-extra/${spotId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              "Authorization": "Basic " + btoa("unit:ltunit")
+            },
             body: JSON.stringify(payload)
           });
           if (!res.ok) throw new Error('Errore HTTP ' + res.status);
-
           const updatedSpot = await res.json();
-
           // Aggiorna nell'array
           const index = allSpots.findIndex(s => s.id === spotId);
           if (index !== -1) {
             allSpots[index] = { ...updatedSpot, source: 'extra' };
           }
-
           renderMarkers();
           renderList();
           editPanel.classList.add('hidden');
@@ -1792,11 +1885,9 @@
           alert('Errore nel salvataggio delle modifiche.');
         }
       });
-
       btnCloseEdit.addEventListener('click', () => {
         editPanel.classList.add('hidden');
       });
-
       btnUseCenterEdit.addEventListener('click', (e) => {
         e.preventDefault();
         const center = map.getCenter();
@@ -1804,11 +1895,10 @@
         document.getElementById('editFieldLng').value = center.lng.toFixed(6);
       });
     }
-
+    
     // =========================
-    //  BOOT
+    // BOOT
     // =========================
-
     document.addEventListener("DOMContentLoaded", async () => {
       loadMissions();
       await loadSettings();
