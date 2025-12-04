@@ -240,10 +240,11 @@ app.post("/api/settings", authMiddleware, (req, res) => {
     const current = readSettings();
     const updated = { ...current };
 
-    // Aggiorna solo i campi validi
     if (incoming.baseLayer && [
       "osm", "osmHot", "satellite", "topo", "dark", 
-      "cycle", "transport", "watercolor", "terrain", "satelliteHybrid"
+      "cycle", "transport", "watercolor", "terrain", "satelliteHybrid",
+      "cartoLight", "stamenToner", "esriTopo", "esriOcean", "esriGray",
+      "satellite2", "satellite3"
     ].includes(incoming.baseLayer)) {
       updated.baseLayer = incoming.baseLayer;
     }
