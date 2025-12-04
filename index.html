@@ -688,6 +688,59 @@
     </div>
   </div>
 
+  <!-- EDIT PANEL -->
+  <div id="editPanel" class="overlay hidden">
+    <div class="overlay-backdrop"></div>
+    <div class="overlay-card">
+      <div class="overlay-header">
+        <div class="overlay-header-title">
+          <strong>Modifica spot</strong>
+          <small>Lost Trace Unit – aggiorna i dettagli</small>
+        </div>
+        <button id="btnCloseEdit" class="icon-btn">✕</button>
+      </div>
+      <div class="overlay-body">
+        <form id="editForm">
+          <input type="hidden" id="editSpotId" />  <!-- ID nascosto per il submit -->
+          <div class="form-row">
+            <label for="editFieldName">Nome</label>
+            <input id="editFieldName" class="input" type="text" placeholder="Es. Villa, Casetta, Hotel..." required />
+          </div>
+          <div class="form-row">
+            <label for="editFieldDesc">Descrizione</label>
+            <textarea id="editFieldDesc" class="textarea" placeholder="Note, accesso, storia, warning..."></textarea>
+          </div>
+          <div class="cols">
+            <div class="form-row">
+              <label for="editFieldVoto">Voto (1–6)</label>
+              <input id="editFieldVoto" class="input" type="number" min="1" max="6" placeholder="Es. 4" />
+            </div>
+            <div class="form-row">
+              <label>&nbsp;</label>
+              <div style="font-size:11px;color:var(--text-dim);padding-top:4px;">
+                Se vuoto, il voto non viene mostrato.
+              </div>
+            </div>
+          </div>
+          <div class="cols">
+            <div class="form-row">
+              <label for="editFieldLat">Latitudine</label>
+              <input id="editFieldLat" class="input" type="text" placeholder="Clicca sulla mappa o usa il mirino" required />
+            </div>
+            <div class="form-row">
+              <label for="editFieldLng">Longitudine</label>
+              <input id="editFieldLng" class="input" type="text" placeholder="Clicca sulla mappa o usa il mirino" required />
+            </div>
+          </div>
+          <div class="actions-row">
+            <button type="button" id="btnUseCenterEdit" class="btn btn-secondary">Usa centro mappa</button>
+            <button type="submit" class="btn btn-primary">Salva modifiche</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- SETTINGS PANEL -->
   <div id="settingsPanel" class="overlay hidden">
     <div class="overlay-backdrop"></div>
@@ -1008,6 +1061,7 @@
           const voto = raw.voto != null ? parseInt(raw.voto, 10) : extractVoto(desc);
           const tipo = raw.tipo || getTipo(name, desc);
           return {
+            id: raw.id,
             name,
             desc,
             lat,
@@ -1119,7 +1173,8 @@
       const votoText = p.voto ? `${p.voto}` : "n.d.";
       const color = getRatingColor(p.voto || 0);
       const emoji = getEmojiByTipo(p.tipo);
-    
+      const spotId = p.id || '';  // ID per modifica/elimina
+
       return `
         <div class="ltu-popup">
           <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
@@ -1129,14 +1184,14 @@
               ${p.voto ? `<span style="background:${color}; color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">${votoText} ★</span>` : ''}
             </div>
           </div>
-    
+
           ${desc ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:12px; color:#e5e7eb;">${desc}</div>` : ''}
-    
+
           <div style="font-size:11px; color:var(--text-dim); margin-bottom:14px;">
             ${coords}
             ${p.source === "extra" ? " • LTU extra" : ""}
           </div>
-    
+
           <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" 
              target="_blank" 
              rel="noopener"
@@ -1144,10 +1199,12 @@
             Apri in Google Maps ↗
           </a>
 
-          <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
-            <button style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
-            <button style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Elimina</button>
-          </div>
+          ${spotId ? `
+            <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
+              <button id="edit-btn-${spotId}" data-spot-id="${spotId}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
+              <button id="delete-btn-${spotId}" data-spot-id="${spotId}" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Elimina</button>
+            </div>
+          ` : ''}
         </div>
       `;
     }
@@ -1332,6 +1389,7 @@
         const lngSaved = parseFloat(saved.lng);
 
         const spot = {
+          id: saved.id,
           name: saved.name || name,
           desc: saved.desc || desc,
           lat: Number.isNaN(latSaved) ? lat : latSaved,
@@ -1470,6 +1528,7 @@
           const latSaved = parseFloat(saved.lat);
           const lngSaved = parseFloat(saved.lng);
           const spot = {
+            id: saved.id,
             name: saved.name || name,
             desc: saved.desc || desc,
             lat: Number.isNaN(latSaved) ? lat : latSaved,
@@ -1625,6 +1684,125 @@
         missionPanel.classList.add("hidden");
       });
       btnSaveMission.addEventListener("click", saveMissionForCurrent);
+
+      // EVENTI PER MODIFICA/ELIMINA (delegation per popup dinamici)
+      document.addEventListener('click', async (e) => {
+        if (e.target.id && e.target.id.startsWith('delete-btn-')) {
+          e.preventDefault();
+          const spotId = e.target.dataset.spotId;
+          if (!spotId) return showToast('Spot non modificabile.');
+
+          if (!confirm('Sicuro di eliminare questo spot? Non si può annullare.')) return;
+
+          try {
+            const res = await fetch(`/api/spots-extra/${spotId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Errore server');
+            
+            // Rimuovi dall'array e aggiorna
+            allSpots = allSpots.filter(s => s.id !== spotId);
+            renderMarkers();
+            renderList();
+            map.closePopup();  // Chiudi popup
+            showToast('Spot eliminato.');
+          } catch (err) {
+            console.error(err);
+            showToast('Errore eliminazione.');
+          }
+        }
+
+        if (e.target.id && e.target.id.startsWith('edit-btn-')) {
+          e.preventDefault();
+          const spotId = e.target.dataset.spotId;
+          const spot = allSpots.find(s => s.id === spotId);
+          if (!spot) return showToast('Spot non trovato.');
+
+          // Apri pannello edit con dati precompilati
+          document.getElementById('editSpotId').value = spotId;
+          document.getElementById('editFieldName').value = spot.name || '';
+          document.getElementById('editFieldDesc').value = spot.desc || '';
+          document.getElementById('editFieldVoto').value = spot.voto || '';
+          document.getElementById('editFieldLat').value = spot.lat.toFixed(6);
+          document.getElementById('editFieldLng').value = spot.lng.toFixed(6);
+          
+          document.getElementById('editPanel').classList.remove('hidden');
+          currentSpot = spot;  // Per missioni, ecc.
+        }
+      });
+
+      // SUBMIT EDIT FORM
+      const editForm = document.getElementById('editForm');
+      const btnCloseEdit = document.getElementById('btnCloseEdit');
+      const editPanel = document.getElementById('editPanel');
+      const btnUseCenterEdit = document.getElementById('btnUseCenterEdit');
+
+      editForm.addEventListener('submit', async (evt) => {
+        evt.preventDefault();
+        const spotId = document.getElementById('editSpotId').value;
+        const name = document.getElementById('editFieldName').value.trim();
+        const desc = document.getElementById('editFieldDesc').value.trim();
+        const latStr = document.getElementById('editFieldLat').value.trim();
+        const lngStr = document.getElementById('editFieldLng').value.trim();
+        const votoStr = document.getElementById('editFieldVoto').value.trim();
+
+        if (!name || !latStr || !lngStr) {
+          alert('Nome, latitudine e longitudine sono obbligatori.');
+          return;
+        }
+
+        const lat = parseFloat(latStr.replace(',', '.'));
+        const lng = parseFloat(lngStr.replace(',', '.'));
+        if (Number.isNaN(lat) || Number.isNaN(lng)) {
+          alert('Coordinate non valide.');
+          return;
+        }
+
+        let voto = null;
+        if (votoStr) {
+          const v = parseInt(votoStr, 10);
+          if (v >= 1 && v <= 6) voto = v;
+        }
+
+        const tipo = getTipo(name, desc);  // Ricomputa tipo
+
+        const payload = { name, desc, lat, lng, voto, tipo };
+
+        try {
+          const res = await fetch(`/api/spots-extra/${spotId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error('Errore HTTP ' + res.status);
+
+          const updatedSpot = await res.json();
+
+          // Aggiorna nell'array
+          const index = allSpots.findIndex(s => s.id === spotId);
+          if (index !== -1) {
+            allSpots[index] = { ...updatedSpot, source: 'extra' };
+          }
+
+          renderMarkers();
+          renderList();
+          editPanel.classList.add('hidden');
+          editForm.reset();
+          showToast('Spot modificato.');
+        } catch (err) {
+          console.error(err);
+          alert('Errore nel salvataggio delle modifiche.');
+        }
+      });
+
+      btnCloseEdit.addEventListener('click', () => {
+        editPanel.classList.add('hidden');
+      });
+
+      btnUseCenterEdit.addEventListener('click', (e) => {
+        e.preventDefault();
+        const center = map.getCenter();
+        document.getElementById('editFieldLat').value = center.lat.toFixed(6);
+        document.getElementById('editFieldLng').value = center.lng.toFixed(6);
+      });
     }
 
     // =========================
