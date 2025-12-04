@@ -1224,38 +1224,46 @@
       if (!markersLayer) return;
       markersLayer.clearLayers();
       let bounds = [];
-
+    
       allSpots.forEach(p => {
         const color = getRatingColor(p.voto || 0);
         const emoji = getEmojiByTipo(p.tipo);
-
+    
+        // === SVG PIN STILE GOOGLE MAPS (bellissimo) ===
         const iconHtml = `
-          <div class="custom-pin" style="background:${color};border-color:${color};">
-            <div class="pin-emoji">${emoji}</div>
+          <div style="filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.65));">
+            <svg width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">
+              <!-- Pin colorato -->
+              <path d="M20,0 C8.95,0 0,8.95 0,20 C0,35 20,52 20,52 C20,52 40,35 40,20 C40,8.95 31.05,0 20,0 Z" 
+                    fill="${color}" 
+                    stroke="#111" 
+                    stroke-width="2"/>
+              <!-- Cerchio bianco interno -->
+              <circle cx="20" cy="18" r="10" fill="#ffffff"/>
+              <!-- Emoji centrata -->
+              <text x="20" y="23" font-size="18" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+            </svg>
           </div>
         `;
-
+    
         const icon = L.divIcon({
           html: iconHtml,
-          className: "custom-pin-wrapper",
-          iconSize: [30, 42],
-          iconAnchor: [15, 42],
-          popupAnchor: [0, -36]
+          className: "ltu-custom-pin",   // importante: rimuove lo stile di default di Leaflet
+          iconSize: [40, 52],
+          iconAnchor: [20, 52],    // punta esattamente sul punto
+          popupAnchor: [0, -48]
         });
-
+    
         const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
         marker.bindPopup(buildPopupHtml(p));
-
-        // tieni riferimento per random/list
+    
         p._marker = marker;
-
         marker.on("click", () => {
           currentSpot = p;
         });
-
         bounds.push([p.lat, p.lng]);
       });
-
+    
       if (bounds.length > 0) {
         map.fitBounds(bounds, { padding: [40, 40] });
       } else {
@@ -1703,3 +1711,4 @@
   </script>
 </body>
 </html>
+
