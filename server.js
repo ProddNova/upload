@@ -240,7 +240,11 @@ app.post("/api/settings", authMiddleware, (req, res) => {
     const current = readSettings();
     const updated = { ...current };
 
-    if (incoming.baseLayer && ["osm", "osmHot", "satellite"].includes(incoming.baseLayer)) {
+    // Aggiorna solo i campi validi
+    if (incoming.baseLayer && [
+      "osm", "osmHot", "satellite", "topo", "dark", 
+      "cycle", "transport", "watercolor", "terrain", "satelliteHybrid"
+    ].includes(incoming.baseLayer)) {
       updated.baseLayer = incoming.baseLayer;
     }
     if (incoming.mapStyle && typeof incoming.mapStyle === "string") {
