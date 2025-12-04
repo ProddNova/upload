@@ -99,6 +99,9 @@
     #rightDock.collapsed .dock-btn:not(#dockToggleBtn) {
       display: none;
     }
+    #rightDock.collapsed #legendContainer {
+      display: none;
+    }
     .dock-btn {
       width: 34px;
       height: 34px;
@@ -122,35 +125,39 @@
       border-color: rgba(59, 130, 246, 0.9);
       box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 0 0 2px rgba(37, 99, 235, 0.7);
     }
-    /* LEGENDA POSIZIONATA IN BASSO A DESTRA */
-    .info.legend {
-      position: fixed;
-      right: 10px;
-      bottom: 60px;
-      z-index: 30;
-      padding: 6px 8px;
-      background: rgba(15, 23, 42, 0.9);
-      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.95);
+    /* LEGENDA STILE BOTTONE */
+    #legendContainer {
+      width: 34px;
+      height: auto;
       border-radius: 999px;
       border: 1px solid rgba(148, 163, 184, 0.7);
-      color: var(--text-dim);
-      font-size: 10px;
-      max-width: 120px;
-    }
-    .info.legend .legend-row {
+      background: rgba(15, 23, 42, 0.9);
+      box-shadow: 0 12px 25px rgba(15, 23, 42, 0.9);
+      padding: 8px 0;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       align-items: center;
       gap: 4px;
-      margin-bottom: 2px;
     }
-    .info.legend i {
-      width: 10px;
-      height: 10px;
+    .legend-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
       border-radius: 999px;
       display: inline-block;
       border: 1px solid #020617;
-      flex-shrink: 0;
+      margin: 0;
+    }
+    .legend-number {
+      font-size: 9px;
+      color: var(--text-dim);
+      margin-left: 4px;
+      min-width: 8px;
     }
     /* OVERLAY PANELS */
     .overlay {
@@ -582,6 +589,38 @@
     .tipo-option-name {
       font-size: 12px;
     }
+    /* STREETVIEW IFRAME */
+    #streetviewContainer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #streetviewIframe {
+      width: 95%;
+      height: 85%;
+      border: 2px solid var(--border-soft);
+      border-radius: 12px;
+      background: #000;
+    }
+    #closeStreetview {
+      margin-top: 15px;
+      padding: 8px 20px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
     /* MOBILE ADJUSTMENTS */
     @media (max-width: 640px) {
       .overlay-card {
@@ -592,9 +631,12 @@
       #rightDock {
         right: 6px;
       }
-      .info.legend {
-        right: 6px;
-        bottom: 50px;
+      #streetviewIframe {
+        width: 98%;
+        height: 80%;
+      }
+      .legend-number {
+        font-size: 8px;
       }
     }
   </style>
@@ -604,7 +646,7 @@
   <div id="map"></div>
   <div id="crosshair"></div>
   
-  <!-- DOCK DESTRO CON TOGGLE -->
+  <!-- DOCK DESTRO CON TOGGLE E LEGENDA -->
   <div id="rightDock">
     <button id="streetviewBtn" class="dock-btn" title="StreetView">🌍</button>
     <button id="importLinkBtn" class="dock-btn" title="Importa link">📎</button>
@@ -614,17 +656,15 @@
     <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
     <button id="btnRandom" class="dock-btn" title="Random spot">🎲</button>
     <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
+    <div id="legendContainer">
+      <div class="legend-row"><div class="legend-dot" style="background:#b91c1c"></div><span class="legend-number">1</span></div>
+      <div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span class="legend-number">2</span></div>
+      <div class="legend-row"><div class="legend-dot" style="background:#eab308"></div><span class="legend-number">3</span></div>
+      <div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><span class="legend-number">4</span></div>
+      <div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-number">5</span></div>
+      <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span class="legend-number">6</span></div>
+    </div>
     <button id="dockToggleBtn" class="dock-btn" title="Mostra/Nascondi pulsanti">⬆️</button>
-  </div>
-  
-  <!-- LEGENDA -->
-  <div class="info legend">
-    <div class="legend-row"><i style="background:#b91c1c"></i><span>1 ★</span></div>
-    <div class="legend-row"><i style="background:#f97316"></i><span>2 ★</span></div>
-    <div class="legend-row"><i style="background:#eab308"></i><span>3 ★</span></div>
-    <div class="legend-row"><i style="background:#2563eb"></i><span>4 ★</span></div>
-    <div class="legend-row"><i style="background:#16a34a"></i><span>5 ★</span></div>
-    <div class="legend-row"><i style="background:#a855f7"></i><span>6 ★</span></div>
   </div>
   
   <!-- LIST PANEL -->
@@ -900,6 +940,12 @@
         </div>
       </div>
     </div>
+  </div>
+  
+  <!-- STREETVIEW CONTAINER -->
+  <div id="streetviewContainer" class="hidden">
+    <iframe id="streetviewIframe" frameborder="0"></iframe>
+    <button id="closeStreetview">Chiudi StreetView</button>
   </div>
   
   <!-- TOAST -->
@@ -1515,15 +1561,25 @@
     }
     
     // =========================
-    // STREETVIEW (SENZA API KEY)
+    // STREETVIEW (SENZA API KEY - IFRAME)
     // =========================
     function openStreetView() {
       const center = map.getCenter();
       const lat = center.lat;
       const lng = center.lng;
-      // Usa l'URL di Google Maps Street View senza API key (apre in nuova scheda)
+      
+      // URL di StreetView senza API key usando un trucco
+      // Questo URL cerca di accedere alla vista panoramica di Google Maps senza chiave
       const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
-      window.open(url, '_blank');
+      
+      // Mostra il container con iframe
+      const container = document.getElementById('streetviewContainer');
+      const iframe = document.getElementById('streetviewIframe');
+      
+      iframe.src = url;
+      container.classList.remove('hidden');
+      
+      showToast("StreetView caricato. Potrebbe non funzionare in alcuni browser.");
     }
     
     // =========================
@@ -1822,7 +1878,12 @@
       
       // STREETVIEW
       const streetviewBtn = document.getElementById("streetviewBtn");
+      const closeStreetviewBtn = document.getElementById("closeStreetview");
       streetviewBtn.addEventListener("click", openStreetView);
+      closeStreetviewBtn.addEventListener("click", () => {
+        document.getElementById("streetviewContainer").classList.add("hidden");
+        document.getElementById("streetviewIframe").src = "";
+      });
       
       // IMPORT LINK
       const importLinkBtn = document.getElementById("importLinkBtn");
