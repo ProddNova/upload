@@ -11,6 +11,12 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin="anonymous"
   />
+  <!-- Leaflet Rotate CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-rotate@0.1.0/dist/leaflet-rotate.css"
+    crossorigin="anonymous"
+  />
   <style>
     :root {
       --bg-main: #020617;
@@ -401,7 +407,7 @@
       transform: translateY(1px) scale(0.99);
       box-shadow: none;
     }
-    /* VOTO SELECT STYLING */
+    /* VOTO SELECT STYLING - MODIFICATO: PALLINI COLORATI */
     .voto-option {
       display: flex;
       align-items: center;
@@ -414,9 +420,49 @@
       border-radius: 50%;
       display: inline-block;
       margin-right: 6px;
+      border: 1px solid rgba(0,0,0,0.2);
     }
     .voto-select {
       padding: 6px 8px;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 16px;
+      padding-right: 32px;
+    }
+    /* PALLINI COLORATI PER LE OPZIONI DEL SELECT */
+    option[value="1"] {
+      color: #b91c1c;
+      font-weight: bold;
+      background-color: rgba(185, 28, 28, 0.1);
+    }
+    option[value="2"] {
+      color: #f97316;
+      font-weight: bold;
+      background-color: rgba(249, 115, 22, 0.1);
+    }
+    option[value="3"] {
+      color: #eab308;
+      font-weight: bold;
+      background-color: rgba(234, 179, 8, 0.1);
+    }
+    option[value="4"] {
+      color: #2563eb;
+      font-weight: bold;
+      background-color: rgba(37, 99, 235, 0.1);
+    }
+    option[value="5"] {
+      color: #16a34a;
+      font-weight: bold;
+      background-color: rgba(22, 163, 74, 0.1);
+    }
+    option[value="6"] {
+      color: #a855f7;
+      font-weight: bold;
+      background-color: rgba(168, 85, 247, 0.1);
     }
     /* SETTINGS */
     .settings-section {
@@ -606,6 +652,45 @@
     .tipo-option-name {
       font-size: 12px;
     }
+    /* STREETVIEW OVERLAY */
+    #streetviewOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #streetviewIframe {
+      width: 95%;
+      height: 85%;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    }
+    /* ROTATE COMPASS STYLE */
+    .leaflet-control-container .leaflet-control-rotate {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 50%;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .leaflet-control-container .leaflet-control-rotate a {
+      color: var(--text-main);
+      background: transparent;
+      font-size: 18px;
+      width: 34px;
+      height: 34px;
+      line-height: 34px;
+      text-align: center;
+      display: block;
+      text-decoration: none;
+    }
     /* MOBILE ADJUSTMENTS */
     @media (max-width: 640px) {
       .overlay-card {
@@ -618,6 +703,11 @@
       }
       .legend-number {
         font-size: 8px;
+      }
+      #streetviewIframe {
+        width: 100%;
+        height: 80%;
+        border-radius: 0;
       }
     }
   </style>
@@ -948,6 +1038,11 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin="anonymous"
   ></script>
+  <!-- Leaflet Rotate JS -->
+  <script
+    src="https://unpkg.com/leaflet-rotate@0.1.0/dist/leaflet-rotate.js"
+    crossorigin="anonymous"
+  ></script>
   <script>
     // =========================
     // UTILS
@@ -1212,12 +1307,15 @@
     // MAPPA
     // =========================
     function initMap() {
-      // Abilita la rotazione su mobile
+      // Abilita la rotazione su mobile con leaflet-rotate
       map = L.map("map", { 
         zoomControl: false,
         touchRotate: true,
         rotating: true,
-        gestureHandling: true
+        gestureHandling: true,
+        rotate: true,
+        rotateControl: true,
+        bearing: 0
       });
       
       const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -1244,6 +1342,12 @@
       let chosen = baseLayers[appSettings.baseLayer] || osm;
       chosen.addTo(map);
       markersLayer = L.layerGroup().addTo(map);
+      
+      // Aggiungi controllo rotazione personalizzato
+      L.control.rotate({
+        position: 'topright'
+      }).addTo(map);
+      
       // fit di base
       map.setView([44.5, 8.9], 7);
       // click sulla mappa per compilare lat/lng
@@ -1564,42 +1668,24 @@
     }
     
     // =========================
-    // STREETVIEW (SOLUZIONE FUNZIONANTE)
+    // STREETVIEW (MODIFICATO: IFRAME GOOGLE STREETVIEW SENZA API KEY)
     // =========================
     function openStreetView() {
       const center = map.getCenter();
-      const lat = center.lat;
-      const lng = center.lng;
+      const lat = center.lat.toFixed(6);
+      const lng = center.lng.toFixed(6);
       
-      // Usa Mapillary invece di Google Street View (non richiede API key)
-      const url = `https://www.mapillary.com/embed?focus=map&lat=${lat}&lng=${lng}&z=17`;
+      // URL Google StreetView senza API key - metodo alternativo
+      const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}&heading=0&pitch=0&fov=90`;
       
-      // Crea un overlay per lo streetview
+      // Overlay per StreetView
       const overlay = document.createElement('div');
       overlay.id = 'streetviewOverlay';
-      overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.95);
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      `;
       
       const iframe = document.createElement('iframe');
-      iframe.style.cssText = `
-        width: 95%;
-        height: 85%;
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-      `;
+      iframe.id = 'streetviewIframe';
       iframe.src = url;
+      iframe.allowFullscreen = true;
       
       const closeBtn = document.createElement('button');
       closeBtn.textContent = 'Chiudi Street View';
@@ -1622,7 +1708,7 @@
       overlay.appendChild(closeBtn);
       document.body.appendChild(overlay);
       
-      showToast("Street View caricato (Mapillary)");
+      showToast("Street View Google caricato");
     }
     
     // =========================
