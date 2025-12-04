@@ -51,109 +51,10 @@
       display: none !important;
     }
 
-    /* TOPBAR BRAND */
-    #topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 52px;
-      padding: 8px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: linear-gradient(
-        to right,
-        rgba(15, 23, 42, 0.98),
-        rgba(15, 23, 42, 0.96)
-      );
-      border-bottom: 1px solid rgba(15, 23, 42, 1);
-      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.9);
-      z-index: 50;
-    }
-
-    #brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #brandMark {
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      background: conic-gradient(
-        from 210deg,
-        #f97316,
-        #facc15,
-        #22c55e,
-        #3b82f6,
-        #a855f7,
-        #f97316
-      );
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 700;
-      color: #020617;
-      border: 2px solid rgba(15, 23, 42, 0.95);
-      box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 12px 25px rgba(15, 23, 42, 0.9);
-    }
-
-    #brandText {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-
-    #brandTitle {
-      font-size: 13px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    #brandSubtitle {
-      font-size: 11px;
-      color: var(--text-dim);
-    }
-
-    #btnRandom {
-      border-radius: 999px;
-      border: 1px solid rgba(59, 130, 246, 0.7);
-      background: radial-gradient(circle at top, #2563eb, #1d4ed8);
-      color: #f9fafb;
-      font-size: 12px;
-      padding: 7px 14px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      box-shadow: 0 15px 35px rgba(37, 99, 235, 0.85);
-    }
-
-    #btnRandom span.icon {
-      font-size: 14px;
-    }
-
-    #btnRandom:active {
-      transform: translateY(1px) scale(0.99);
-      box-shadow: none;
-    }
-
-    @media (max-width: 480px) {
-      #brandSubtitle {
-        display: none;
-      }
-      #btnRandom span.text {
-        display: none;
-      }
-    }
-
     /* MAPPA */
     #map {
       position: fixed;
-      top: 52px;
+      top: 0;
       left: 0;
       right: 0;
       bottom: 0;
@@ -186,7 +87,7 @@
     #rightDock {
       position: fixed;
       right: 10px;
-      top: 64px;
+      top: 10px;
       z-index: 30;
       display: flex;
       flex-direction: column;
@@ -635,19 +536,12 @@
       font-size: 10px;
     }
 
-    .info.legend .legend-title {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 2px;
-      color: var(--text-main);
-    }
-
     .info.legend .legend-row {
-      display: inline-flex;
+      display: flex;
+      flex-direction: row;
       align-items: center;
       gap: 4px;
-      margin-right: 4px;
+      margin-bottom: 2px;
     }
 
     .info.legend i {
@@ -705,21 +599,6 @@
   </style>
 </head>
 <body>
-  <!-- TOPBAR -->
-  <div id="topbar">
-    <div id="brand">
-      <div id="brandMark">LTU</div>
-      <div id="brandText">
-        <div id="brandTitle">Lost Trace Unit</div>
-        <div id="brandSubtitle">Urban exploration map</div>
-      </div>
-    </div>
-    <button id="btnRandom">
-      <span class="icon">🎲</span>
-      <span class="text">Random spot</span>
-    </button>
-  </div>
-
   <!-- MAPPA -->
   <div id="map"></div>
   <div id="crosshair">+</div>
@@ -730,6 +609,7 @@
     <button id="crosshairToggleBtn" class="dock-btn" title="Mostra/Nascondi mirino">🎯</button>
     <button id="btnList" class="dock-btn" title="Lista spot">📋</button>
     <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
+    <button id="btnRandom" class="dock-btn" title="Random spot">🎲</button>
     <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
   </div>
 
@@ -1159,7 +1039,7 @@
     // =========================
 
     function initMap() {
-      map = L.map("map");
+      map = L.map("map", { zoomControl: false });
 
       const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
@@ -1205,10 +1085,9 @@
       });
 
       // legenda Leaflet
-      const legend = L.control({ position: "bottomright" });
+      const legend = L.control({ position: "topleft" });
       legend.onAdd = function () {
         const div = L.DomUtil.create("div", "info legend");
-        div.innerHTML += '<div class="legend-title">Voto</div>';
         const grades = [1, 2, 3, 4, 5, 6];
         grades.forEach(v => {
           const color = getRatingColor(v);
@@ -1275,17 +1154,17 @@
         const emoji = getEmojiByTipo(p.tipo);
     
         const iconHtml = `
-          <div style="filter: drop-shadow(0px 6px 12px rgba(0,0,0,0.75)); margin-top: -8px;">
-            <svg width="32" height="44" viewBox="0 0 32 44" xmlns="http://www.w3.org/2000/svg">
+          <div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
+            <svg width="24" height="34" viewBox="0 0 24 34" xmlns="http://www.w3.org/2000/svg">
               <!-- Goccia esterna (forma Google Maps 2024/2025) -->
-              <path d="M16,0 C7.163,0 0,7.163 0,16 C0,27.125 16,44 16,44 C16,44 32,27.125 32,16 C32,7.163 24.837,0 16,0 Z" 
+              <path d="M12,0 C5.373,0 0,5.373 0,12 C0,20.938 12,34 12,34 C12,34 24,20.938 24,12 C24,5.373 18.627,0 12,0 Z" 
                     fill="${color}" 
                     stroke="#000000" 
-                    stroke-width="1.8"/>
+                    stroke-width="1"/>
               <!-- Cerchio bianco interno -->
-              <circle cx="16" cy="15" r="10" fill="#ffffff" stroke="#00000011" stroke-width="1"/>
+              <circle cx="12" cy="11.5" r="7.5" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
               <!-- Emoji perfettamente centrata -->
-              <text x="16" y="19" font-size="16" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
+              <text x="12" y="15" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
             </svg>
           </div>
         `;
@@ -1293,9 +1172,9 @@
         const icon = L.divIcon({
           html: iconHtml,
           className: "ltu-custom-pin",   // fondamentale
-          iconSize: [32, 44],
-          iconAnchor: [16, 44],     // punta esattamente sul punto
-          popupAnchor: [0, -40]     // popup vicinissimo al pin
+          iconSize: [24, 34],
+          iconAnchor: [12, 34],     // punta esattamente sul punto
+          popupAnchor: [0, -30]     // popup vicinissimo al pin
         });
     
         const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
@@ -1756,6 +1635,3 @@
   </script>
 </body>
 </html>
-
-
-
