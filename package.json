@@ -1,11 +1,13 @@
 {
-  "name": "mappa-abbandonati",
+  "name": "lost-trace-unit",
   "version": "1.0.0",
+  "description": "LTU Mappa Spot Abbandonati",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "basic-auth": "^2.0.1"
   }
 }
