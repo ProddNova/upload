@@ -1229,29 +1229,27 @@
         const color = getRatingColor(p.voto || 0);
         const emoji = getEmojiByTipo(p.tipo);
     
-        // === SVG PIN STILE GOOGLE MAPS (bellissimo) ===
+        // === SVG PIN STILE GOOGLE MAPS (versione migliorata) ===
         const iconHtml = `
-          <div style="filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.65));">
-            <svg width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">
+          <div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));">
+            <svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
               <!-- Pin colorato -->
-              <path d="M20,0 C8.95,0 0,8.95 0,20 C0,35 20,52 20,52 C20,52 40,35 40,20 C40,8.95 31.05,0 20,0 Z" 
+              <path d="M15,0 C6.5,0 0,6.5 0,15 C0,25 15,40 15,40 C15,40 30,25 30,15 C30,6.5 23.5,0 15,0 Z" 
                     fill="${color}" 
                     stroke="#111" 
-                    stroke-width="2"/>
-              <!-- Cerchio bianco interno -->
-              <circle cx="20" cy="18" r="10" fill="#ffffff"/>
+                    stroke-width="1"/>
               <!-- Emoji centrata -->
-              <text x="20" y="23" font-size="18" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+              <text x="15" y="20" font-size="12" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
             </svg>
           </div>
         `;
     
         const icon = L.divIcon({
           html: iconHtml,
-          className: "ltu-custom-pin",   // importante: rimuove lo stile di default di Leaflet
-          iconSize: [40, 52],
-          iconAnchor: [20, 52],    // punta esattamente sul punto
-          popupAnchor: [0, -48]
+          className: "ltu-custom-pin",  // importante: rimuove lo stile di default di Leaflet
+          iconSize: [30, 40],  // ridotto per somigliare di più a un pin
+          iconAnchor: [15, 40],  // punta esattamente sul punto
+          popupAnchor: [0, -40]  // posiziona il popup sopra il pin
         });
     
         const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
@@ -1270,6 +1268,7 @@
         map.setView([44.5, 8.9], 7);
       }
     }
+
 
     // =========================
     //  LISTA
@@ -1711,4 +1710,5 @@
   </script>
 </body>
 </html>
+
 
