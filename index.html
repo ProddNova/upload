@@ -58,8 +58,9 @@
       right: 0;
       bottom: 0;
       z-index: 1;
+      cursor: crosshair;
     }
-    /* CROSSHAIR - MODIFICATO: CROCE ROSSA CON BORDI NERI */
+    /* CROSSHAIR - VISIBILE SOLO SU MOBILE */
     #crosshair {
       position: fixed;
       top: 50%;
@@ -69,6 +70,7 @@
       height: 24px;
       pointer-events: none;
       z-index: 8;
+      display: none; /* Nascosto di default, visibile solo su mobile */
     }
     #crosshair::before,
     #crosshair::after {
@@ -87,6 +89,31 @@
     #crosshair::after {
       width: 2px;
       height: 16px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    /* TEMPORARY PIN */
+    #temporaryPin {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background: #ff0000;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      z-index: 10;
+      pointer-events: none;
+      display: none;
+      transform: translate(-50%, -50%);
+    }
+    #temporaryPin::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
@@ -692,7 +719,17 @@
       text-decoration: none;
     }
     /* MOBILE ADJUSTMENTS */
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
+      /* Mostra crosshair solo su mobile */
+      #crosshair {
+        display: block !important;
+      }
+      #map {
+        cursor: default;
+      }
+      #temporaryPin {
+        display: none !important;
+      }
       .overlay-card {
         max-width: 100%;
         width: calc(100% - 16px);
@@ -716,6 +753,7 @@
   <!-- MAPPA -->
   <div id="map"></div>
   <div id="crosshair"></div>
+  <div id="temporaryPin"></div>
   
   <!-- DOCK DESTRO CON TOGGLE E LEGENDA -->
   <div id="rightDock">
@@ -817,15 +855,15 @@
           <div class="cols">
             <div class="form-row">
               <label for="fieldLat">Latitudine</label>
-              <input id="fieldLat" class="input" type="text" placeholder="Clicca sulla mappa o usa il mirino" required />
+              <input id="fieldLat" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
             </div>
             <div class="form-row">
               <label for="fieldLng">Longitudine</label>
-              <input id="fieldLng" class="input" type="text" placeholder="Clicca sulla mappa o usa il mirino" required />
+              <input id="fieldLng" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
             </div>
           </div>
           <div class="actions-row">
-            <button type="button" id="btnUseCenter" class="btn btn-secondary">Usa centro mappa</button>
+            <button type="button" id="btnUseCurrentPin" class="btn btn-secondary">Usa pin corrente</button>
             <button type="submit" class="btn btn-primary">Salva spot</button>
           </div>
         </form>
@@ -892,15 +930,15 @@
           <div class="cols">
             <div class="form-row">
               <label for="editFieldLat">Latitudine</label>
-              <input id="editFieldLat" class="input" type="text" placeholder="Clicca sulla mappa o usa il mirino" required />
+              <input id="editFieldLat" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
             </div>
             <div class="form-row">
               <label for="editFieldLng">Longitudine</label>
-              <input id="editFieldLng" class="input" type="text" placeholder="Clicca sulla mappa o usa il mirino" required />
+              <input id="editFieldLng" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
             </div>
           </div>
           <div class="actions-row">
-            <button type="button" id="btnUseCenterEdit" class="btn btn-secondary">Usa centro mappa</button>
+            <button type="button" id="btnUseCurrentPinEdit" class="btn btn-secondary">Usa pin corrente</button>
             <button type="submit" class="btn btn-primary">Salva modifiche</button>
           </div>
         </form>
@@ -931,7 +969,18 @@
               <option value="osm">OSM Standard</option>
               <option value="osmHot">OSM Humanitarian</option>
               <option value="satellite">Satellite Esri</option>
+              <option value="topo">OpenTopoMap</option>
+              <option value="dark">Carto Dark</option>
+              <option value="cycle">OpenCycleMap</option>
+              <option value="transport">Transport Map</option>
+              <option value="watercolor">Watercolor</option>
+              <option value="terrain">Terrain</option>
+              <option value="satelliteHybrid">Satellite Hybrid</option>
             </select>
+          </div>
+          <div class="settings-row">
+            <label for="crosshairEnabled">Abilita mirino (mobile)</label>
+            <input id="crosshairEnabled" type="checkbox" />
           </div>
         </section>
         <section class="settings-section">
@@ -962,6 +1011,9 @@
           </div>
           <textarea id="exportTextarea" placeholder="Qui apparirà il CSV generato..." readonly></textarea>
         </section>
+        <div class="actions-row">
+          <button id="btnSaveAllSettings" class="btn btn-primary">💾 Salva tutte le impostazioni</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1169,13 +1221,17 @@
     let appSettings = {
       baseLayer: "osm",
       mapStyle: "default",
-      randomIncludeLowRated: false
+      randomIncludeLowRated: false,
+      crosshairEnabled: false
     };
     let allSpots = []; // tutti (csv + extra)
     let currentSpot = null; // ultimo spot cliccato (per missioni / random)
     let missions = {}; // localStorage
     let lastAddedSpotId = null; // per centrare spot appena aggiunto
     let spotToHighlight = null; // ID dello spot da evidenziare nella lista
+    let temporaryPin = { lat: null, lng: null }; // Pin temporaneo per PC
+    let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    let ctrlPressed = false; // Stato del tasto Ctrl
     
     function loadMissions() {
       try {
@@ -1206,6 +1262,13 @@
         if (!res.ok) return;
         const data = await res.json();
         appSettings = Object.assign({}, appSettings, data || {});
+        
+        // Carica impostazioni locali
+        const localSettings = localStorage.getItem("ltu_local_settings");
+        if (localSettings) {
+          const local = JSON.parse(localSettings);
+          appSettings.crosshairEnabled = local.crosshairEnabled || false;
+        }
       } catch (e) {
         console.warn("Impossibile caricare settings, uso default.");
       }
@@ -1217,14 +1280,30 @@
         const res = await fetch("/api/settings", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(appSettings)
+          body: JSON.stringify({
+            baseLayer: appSettings.baseLayer,
+            mapStyle: appSettings.mapStyle,
+            randomIncludeLowRated: appSettings.randomIncludeLowRated
+          })
         });
         if (res.ok) {
           const data = await res.json();
-          appSettings = Object.assign({}, appSettings, data || {});
+          appSettings.baseLayer = data.baseLayer || appSettings.baseLayer;
+          appSettings.mapStyle = data.mapStyle || appSettings.mapStyle;
+          appSettings.randomIncludeLowRated = data.randomIncludeLowRated || appSettings.randomIncludeLowRated;
         }
       } catch (e) {
         console.warn("Errore salvataggio settings", e);
+      }
+    }
+    
+    function saveLocalSettings() {
+      try {
+        localStorage.setItem("ltu_local_settings", JSON.stringify({
+          crosshairEnabled: appSettings.crosshairEnabled
+        }));
+      } catch (e) {
+        console.warn("Errore salvataggio settings locali", e);
       }
     }
     
@@ -1307,25 +1386,34 @@
     // MAPPA
     // =========================
     function initMap() {
-      // Abilita la rotazione su mobile con leaflet-rotate
-      map = L.map("map", { 
+      // Configurazione mappa con rotazione
+      const mapOptions = { 
         zoomControl: false,
-        touchRotate: true,
-        rotating: true,
         gestureHandling: true,
         rotate: true,
         rotateControl: true,
         bearing: 0
-      });
+      };
       
+      // Su mobile, aggiungi touchRotate
+      if (isMobile) {
+        mapOptions.touchRotate = true;
+        mapOptions.rotating = true;
+      }
+      
+      map = L.map("map", mapOptions);
+      
+      // Definisci tutti i layer di mappa
       const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors"
       });
+      
       const osmHot = L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors, Tiles style by HOT"
       });
+      
       const esriSatellite = L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
@@ -1333,32 +1421,185 @@
           attribution: "Tiles &copy; Esri"
         }
       );
+      
+      const openTopoMap = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+        maxZoom: 17,
+        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+      });
+      
+      const cartoDark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      });
+      
+      const openCycleMap = L.tileLayer("https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey={apikey}", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        apikey: '9e4c15f0d7334e9b9ef20795b7b88c0d'
+      });
+      
+      const transportMap = L.tileLayer("https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey={apikey}", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        apikey: '9e4c15f0d7334e9b9ef20795b7b88c0d'
+      });
+      
+      const watercolor = L.tileLayer("https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg", {
+        maxZoom: 18,
+        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      });
+      
+      const terrain = L.tileLayer("https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg", {
+        maxZoom: 18,
+        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      });
+      
+      const satelliteHybrid = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 19,
+        attribution: "Tiles &copy; Esri"
+      });
+      
       baseLayers = {
         osm,
         osmHot,
-        satellite: esriSatellite
+        satellite: esriSatellite,
+        topo: openTopoMap,
+        dark: cartoDark,
+        cycle: openCycleMap,
+        transport: transportMap,
+        watercolor,
+        terrain,
+        satelliteHybrid
       };
+      
       // Applica baseLayer da settings
       let chosen = baseLayers[appSettings.baseLayer] || osm;
       chosen.addTo(map);
+      
       markersLayer = L.layerGroup().addTo(map);
       
-      // Aggiungi controllo rotazione personalizzato
+      // Aggiungi controllo rotazione
       L.control.rotate({
         position: 'topright'
       }).addTo(map);
       
-      // fit di base
+      // Inizializza con vista Italia
       map.setView([44.5, 8.9], 7);
-      // click sulla mappa per compilare lat/lng
+      
+      // Gestione click sulla mappa per PC e mobile
       map.on("click", function (e) {
-        const latInput = document.getElementById("fieldLat");
-        const lngInput = document.getElementById("fieldLng");
-        if (latInput && lngInput) {
-          latInput.value = e.latlng.lat.toFixed(6);
-          lngInput.value = e.latlng.lng.toFixed(6);
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
+        // Salva coordinate per pin temporaneo
+        temporaryPin = { lat, lng };
+        
+        // Mostra pin temporaneo su PC
+        if (!isMobile) {
+          showTemporaryPin(lat, lng);
         }
+        
+        // Aggiorna i campi dei form se aperti
+        updateFormCoordinates(lat, lng);
       });
+      
+      // Gestione rotazione con Ctrl su PC
+      if (!isMobile) {
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Control') {
+            ctrlPressed = true;
+            map.dragging.disable();
+            document.getElementById('map').style.cursor = 'grab';
+          }
+        });
+        
+        document.addEventListener('keyup', function(e) {
+          if (e.key === 'Control') {
+            ctrlPressed = false;
+            map.dragging.enable();
+            document.getElementById('map').style.cursor = 'crosshair';
+          }
+        });
+        
+        // Gestione mouse per rotazione
+        let isRotating = false;
+        let lastX = 0;
+        
+        map.getContainer().addEventListener('mousedown', function(e) {
+          if (ctrlPressed && e.button === 0) {
+            isRotating = true;
+            lastX = e.clientX;
+            document.getElementById('map').style.cursor = 'grabbing';
+            e.preventDefault();
+          }
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+          if (isRotating && ctrlPressed) {
+            const deltaX = e.clientX - lastX;
+            const currentBearing = map.getBearing();
+            map.setBearing(currentBearing + deltaX * 0.5);
+            lastX = e.clientX;
+            e.preventDefault();
+          }
+        });
+        
+        document.addEventListener('mouseup', function(e) {
+          if (isRotating) {
+            isRotating = false;
+            document.getElementById('map').style.cursor = ctrlPressed ? 'grab' : 'crosshair';
+          }
+        });
+      }
+      
+      // Inizializza crosshair in base alle impostazioni
+      updateCrosshairVisibility();
+    }
+    
+    function showTemporaryPin(lat, lng) {
+      const pinEl = document.getElementById('temporaryPin');
+      if (!pinEl) return;
+      
+      const point = map.latLngToContainerPoint([lat, lng]);
+      pinEl.style.left = point.x + 'px';
+      pinEl.style.top = point.y + 'px';
+      pinEl.style.display = 'block';
+    }
+    
+    function hideTemporaryPin() {
+      const pinEl = document.getElementById('temporaryPin');
+      if (pinEl) {
+        pinEl.style.display = 'none';
+      }
+    }
+    
+    function updateFormCoordinates(lat, lng) {
+      // Aggiorna i campi dei form se aperti
+      const latInput = document.getElementById("fieldLat");
+      const lngInput = document.getElementById("fieldLng");
+      const editLatInput = document.getElementById("editFieldLat");
+      const editLngInput = document.getElementById("editFieldLng");
+      
+      if (latInput && lngInput) {
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+      }
+      
+      if (editLatInput && editLngInput) {
+        editLatInput.value = lat.toFixed(6);
+        editLngInput.value = lng.toFixed(6);
+      }
+    }
+    
+    function updateCrosshairVisibility() {
+      const crosshairEl = document.getElementById('crosshair');
+      if (!crosshairEl) return;
+      
+      if (isMobile && appSettings.crosshairEnabled) {
+        crosshairEl.style.display = 'block';
+      } else {
+        crosshairEl.style.display = 'none';
+      }
     }
     
     function switchBaseLayer(key) {
@@ -1367,6 +1608,8 @@
         if (map.hasLayer(layer)) map.removeLayer(layer);
       });
       baseLayers[key].addTo(map);
+      appSettings.baseLayer = key;
+      saveSettings({ baseLayer: key });
     }
    
     function buildPopupHtml(p) {
@@ -1420,13 +1663,10 @@
         const iconHtml = `
           <div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
             <svg width="26" height="36" viewBox="0 0 26 36" xmlns="http://www.w3.org/2000/svg">
-              <!-- Goccia esterna (forma Google Maps 2024/2025) senza stroke per evitare glitch -->
               <path d="M13,0 C5.373,0 0,5.373 0,13 C0,21.938 13,36 13,36 C13,36 26,21.938 26,13 C26,5.373 20.627,0 13,0 Z"
                     fill="${color}"
                     stroke="none"/>
-              <!-- Cerchio bianco interno -->
               <circle cx="13" cy="12.5" r="8" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
-              <!-- Emoji perfettamente centrata -->
               <text x="13" y="16" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
             </svg>
           </div>
@@ -1593,7 +1833,6 @@
           createdAt: saved.createdAt || null
         };
         allSpots.push(spot);
-        // Imposta l'ultimo spot aggiunto per centrare dopo renderMarkers
         lastAddedSpotId = spot.id;
         renderMarkers();
         renderList();
@@ -1608,10 +1847,13 @@
       }
     }
     
-    function useMapCenter() {
-      const center = map.getCenter();
-      document.getElementById("fieldLat").value = center.lat.toFixed(6);
-      document.getElementById("fieldLng").value = center.lng.toFixed(6);
+    function useCurrentPin() {
+      if (temporaryPin.lat && temporaryPin.lng) {
+        updateFormCoordinates(temporaryPin.lat, temporaryPin.lng);
+      } else {
+        const center = map.getCenter();
+        updateFormCoordinates(center.lat, center.lng);
+      }
     }
     
     // =========================
@@ -1668,24 +1910,53 @@
     }
     
     // =========================
-    // STREETVIEW (MODIFICATO: IFRAME GOOGLE STREETVIEW SENZA API KEY)
+    // STREETVIEW (SOLUZIONE FUNZIONANTE CON MAPILLARY)
     // =========================
     function openStreetView() {
-      const center = map.getCenter();
-      const lat = center.lat.toFixed(6);
-      const lng = center.lng.toFixed(6);
+      let lat, lng;
       
-      // URL Google StreetView senza API key - metodo alternativo
-      const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}&heading=0&pitch=0&fov=90`;
+      // Usa le coordinate del pin temporaneo se disponibili, altrimenti centro mappa
+      if (temporaryPin.lat && temporaryPin.lng) {
+        lat = temporaryPin.lat;
+        lng = temporaryPin.lng;
+      } else {
+        const center = map.getCenter();
+        lat = center.lat;
+        lng = center.lng;
+      }
       
-      // Overlay per StreetView
+      // Usa Mapillary (funziona senza API key)
+      const url = `https://www.mapillary.com/embed?focus=map&lat=${lat}&lng=${lng}&z=17`;
+      
+      // Crea un overlay per lo streetview
       const overlay = document.createElement('div');
       overlay.id = 'streetviewOverlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.95);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      `;
       
       const iframe = document.createElement('iframe');
       iframe.id = 'streetviewIframe';
+      iframe.style.cssText = `
+        width: 95%;
+        height: 85%;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      `;
       iframe.src = url;
-      iframe.allowFullscreen = true;
+      iframe.setAttribute('allow', 'fullscreen');
+      iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
       
       const closeBtn = document.createElement('button');
       closeBtn.textContent = 'Chiudi Street View';
@@ -1708,7 +1979,7 @@
       overlay.appendChild(closeBtn);
       document.body.appendChild(overlay);
       
-      showToast("Street View Google caricato");
+      showToast("Street View Mapillary caricato");
     }
     
     // =========================
@@ -1742,8 +2013,7 @@
         document.getElementById("linkResult").style.display = "block";
         
         // Popola i campi lat/lng automaticamente
-        document.getElementById("fieldLat").value = data.lat;
-        document.getElementById("fieldLng").value = data.lng;
+        updateFormCoordinates(data.lat, data.lng);
         
         showToast("Coordinate estratte con successo!");
       } catch (error) {
@@ -1932,18 +2202,18 @@
       const btnCloseAdd = document.getElementById("btnCloseAdd");
       const addPanel = document.getElementById("addPanel");
       const addForm = document.getElementById("addForm");
-      const btnUseCenter = document.getElementById("btnUseCenter");
+      const btnUseCurrentPin = document.getElementById("btnUseCurrentPin");
       btnAdd.addEventListener("click", () => {
         addPanel.classList.remove("hidden");
-        useMapCenter();
+        useCurrentPin();
       });
       btnCloseAdd.addEventListener("click", () => {
         addPanel.classList.add("hidden");
       });
       addForm.addEventListener("submit", handleAddSubmit);
-      btnUseCenter.addEventListener("click", (e) => {
+      btnUseCurrentPin.addEventListener("click", (e) => {
         e.preventDefault();
-        useMapCenter();
+        useCurrentPin();
       });
       
       // SETTINGS
@@ -1952,32 +2222,55 @@
       const btnCloseSettings = document.getElementById("btnCloseSettings");
       const mapStyleSelect = document.getElementById("mapStyleSelect");
       const randomLowRatedCheckbox = document.getElementById("randomLowRatedCheckbox");
+      const crosshairEnabledCheckbox = document.getElementById("crosshairEnabled");
       const btnImportJson = document.getElementById("btnImportJson");
       const btnExportCsv = document.getElementById("btnExportCsv");
+      const btnSaveAllSettings = document.getElementById("btnSaveAllSettings");
+      
       settingsBtn.addEventListener("click", () => {
         // sync UI con settings correnti
         mapStyleSelect.value = appSettings.baseLayer || "osm";
         randomLowRatedCheckbox.checked = !!appSettings.randomIncludeLowRated;
+        crosshairEnabledCheckbox.checked = !!appSettings.crosshairEnabled;
         settingsPanel.classList.remove("hidden");
         settingsBtn.classList.add("active");
       });
+      
       btnCloseSettings.addEventListener("click", () => {
         settingsPanel.classList.add("hidden");
         settingsBtn.classList.remove("active");
       });
+      
       mapStyleSelect.addEventListener("change", (e) => {
         const val = e.target.value;
         switchBaseLayer(val);
-        saveSettings({ baseLayer: val });
         showToast("Stile mappa aggiornato.");
       });
+      
       randomLowRatedCheckbox.addEventListener("change", (e) => {
         const checked = e.target.checked;
-        saveSettings({ randomIncludeLowRated: checked });
+        appSettings.randomIncludeLowRated = checked;
         showToast("Impostazione random aggiornata.");
       });
+      
+      crosshairEnabledCheckbox.addEventListener("change", (e) => {
+        const checked = e.target.checked;
+        appSettings.crosshairEnabled = checked;
+        updateCrosshairVisibility();
+        showToast("Impostazione mirino aggiornata.");
+      });
+      
       btnImportJson.addEventListener("click", handleImportJson);
       btnExportCsv.addEventListener("click", handleExportCsv);
+      
+      btnSaveAllSettings.addEventListener("click", () => {
+        saveSettings({
+          baseLayer: mapStyleSelect.value,
+          randomIncludeLowRated: randomLowRatedCheckbox.checked
+        });
+        saveLocalSettings();
+        showToast("Tutte le impostazioni salvate!");
+      });
       
       // RANDOM
       const btnRandom = document.getElementById("btnRandom");
@@ -1985,16 +2278,11 @@
       
       // CROSSHAIR TOGGLE
       const crosshairToggleBtn = document.getElementById("crosshairToggleBtn");
-      const crosshairEl = document.getElementById("crosshair");
       crosshairToggleBtn.addEventListener("click", () => {
-        const hidden = crosshairEl.classList.contains("hidden");
-        if (hidden) {
-          crosshairEl.classList.remove("hidden");
-          showToast("Mirino attivo.");
-        } else {
-          crosshairEl.classList.add("hidden");
-          showToast("Mirino nascosto.");
-        }
+        appSettings.crosshairEnabled = !appSettings.crosshairEnabled;
+        updateCrosshairVisibility();
+        crosshairEnabledCheckbox.checked = appSettings.crosshairEnabled;
+        showToast(appSettings.crosshairEnabled ? "Mirino attivo." : "Mirino disattivato.");
       });
       
       // MISSIONI
@@ -2105,7 +2393,7 @@
       const editForm = document.getElementById('editForm');
       const btnCloseEdit = document.getElementById('btnCloseEdit');
       const editPanel = document.getElementById('editPanel');
-      const btnUseCenterEdit = document.getElementById('btnUseCenterEdit');
+      const btnUseCurrentPinEdit = document.getElementById('btnUseCurrentPinEdit');
       editForm.addEventListener('submit', async (evt) => {
         evt.preventDefault();
         const spotId = document.getElementById('editSpotId').value;
@@ -2166,11 +2454,18 @@
       btnCloseEdit.addEventListener('click', () => {
         editPanel.classList.add('hidden');
       });
-      btnUseCenterEdit.addEventListener('click', (e) => {
+      btnUseCurrentPinEdit.addEventListener('click', (e) => {
         e.preventDefault();
-        const center = map.getCenter();
-        document.getElementById('editFieldLat').value = center.lat.toFixed(6);
-        document.getElementById('editFieldLng').value = center.lng.toFixed(6);
+        useCurrentPin();
+      });
+      
+      // Nascondi pin temporaneo quando si apre un overlay
+      document.querySelectorAll('.overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+          if (e.target.classList.contains('overlay-backdrop')) {
+            hideTemporaryPin();
+          }
+        });
       });
     }
     
