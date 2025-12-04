@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
   <meta charset="UTF-8" />
   <title>Lost Trace Unit – Mappa spot abbandonati</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="anonymous"
+  />
 
   <style>
     :root {
@@ -27,18 +31,8 @@
     * {
       box-sizing: border-box;
     }
-    #map {
-      position: fixed;
-      top: 52px; /* spazio per la barra superiore */
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 1;
-      height: 100vh;  /* Assicurati che prenda tutta l'altezza */
-    }
 
-    html,
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       height: 100%;
@@ -68,9 +62,11 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: linear-gradient(to right,
-          rgba(15, 23, 42, 0.98),
-          rgba(15, 23, 42, 0.96));
+      background: linear-gradient(
+        to right,
+        rgba(15, 23, 42, 0.98),
+        rgba(15, 23, 42, 0.96)
+      );
       border-bottom: 1px solid rgba(15, 23, 42, 1);
       box-shadow: 0 14px 30px rgba(15, 23, 42, 0.9);
       z-index: 50;
@@ -85,15 +81,16 @@
     #brandMark {
       width: 30px;
       height: 30px;
-      background: radial-gradient(circle, #dc2626, #991b1b);
-      color: white;
-      border-radius: 999px(from 210deg,
-          #f97316,
-          #facc15,
-          #22c55e,
-          #3b82f6,
-          #a855f7,
-          #f97316);
+      border-radius: 999px;
+      background: conic-gradient(
+        from 210deg,
+        #f97316,
+        #facc15,
+        #22c55e,
+        #3b82f6,
+        #a855f7,
+        #f97316
+      );
       display: flex;
       align-items: center;
       justify-content: center;
@@ -148,7 +145,6 @@
       #brandSubtitle {
         display: none;
       }
-
       #btnRandom span.text {
         display: none;
       }
@@ -240,13 +236,19 @@
       -webkit-backdrop-filter: blur(18px);
     }
 
-    #listPanel .overlay-card {
-      max-width: none;
-      width: 100vw;
-      height: 100vh;
-      max-height: none;
-      border-radius: 0;
-      border: none;
+    .overlay-card {
+      position: relative;
+      z-index: 81;
+      background: var(--bg-panel);
+      border-radius: var(--radius-card);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-strong);
+      max-width: 480px;
+      width: calc(100% - 24px);
+      max-height: calc(100% - 40px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .overlay-header {
@@ -420,9 +422,7 @@
       color: var(--text-dim);
     }
 
-    .input,
-    .textarea,
-    .select {
+    .input, .textarea, .select {
       width: 100%;
       border-radius: 12px;
       border: 1px solid rgba(55, 65, 81, 1);
@@ -672,7 +672,6 @@
     }
   </style>
 </head>
-
 <body>
   <!-- TOPBAR -->
   <div id="topbar">
@@ -693,7 +692,6 @@
   <div id="map"></div>
   <div id="crosshair">+</div>
 
-  UI
   <!-- DOCK DESTRO -->
   <div id="rightDock">
     <button id="settingsBtn" class="dock-btn" title="Impostazioni">⚙️</button>
@@ -701,7 +699,6 @@
     <button id="btnList" class="dock-btn" title="Lista spot">📋</button>
     <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
     <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
-    <button id="logoutBtn" class="dock-btn" title="Logout">🚪</button>
   </div>
 
   <!-- LIST PANEL -->
@@ -719,31 +716,6 @@
       </div>
       <div class="overlay-body">
         <input id="listSearch" type="text" placeholder="Filtra per nome o descrizione..." />
-        <div style="display:flex; gap:8px; margin:10px 0; flex-wrap:wrap;">
-          <select id="filterTipo" style="flex:1; min-width:120px; padding:8px; border-radius:12px; border:1px solid #374151; background:#0f172a; color:white;">
-            <option value="">Tutti i tipi</option>
-            <option value="hotel">🏨 Hotel</option>
-            <option value="villa">🏡 Villa</option>
-            <option value="casa">🏠 Casa</option>
-            <option value="industria">🏭 Fabbrica</option>
-            <option value="scuola">🏫 Scuola</option>
-            <option value="chiesa">⛪ Chiesa</option>
-            <option value="colonia">🏚️ Colonia</option>
-            <option value="istituzione">🏥 Ospedale/Manicomio</option>
-            <option value="svago">🎭 Discoteca/Bar</option>
-            <option value="castello">🏰 Castello</option>
-            <option value="altro">📍 Altro</option>
-          </select>
-          <select id="filterVoto" style="flex:1; min-width:120px; padding:8px; border-radius:12px; border:1px solid #374151; background:#0f172a; color:white;">
-            <option value="">Tutti i voti</option>
-            <option value="6">6/6</option>
-            <option value="5">5/6</option>
-            <option value="4">4/6</option>
-            <option value="3">3/6</option>
-            <option value="2">2/6</option>
-            <option value="1">1/6</option>
-          </select>
-        </div>
         <div id="listSummary"></div>
         <ul id="listContent"></ul>
       </div>
@@ -888,7 +860,11 @@
   <div id="toast"></div>
 
   <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin="anonymous"
+  ></script>
 
   <script>
     // =========================
@@ -932,20 +908,14 @@
     }
 
     function escapeHtml(str) {
-      return String(str).replace(/[&<>"']/g, function(c) {
+      return String(str).replace(/[&<>"']/g, function (c) {
         switch (c) {
-          case "&":
-            return "&amp;";
-          case "<":
-            return "&lt;";
-          case ">":
-            return "&gt;";
-          case '"':
-            return "&quot;";
-          case "'":
-            return "&#39;";
-          default:
-            return c;
+          case "&": return "&amp;";
+          case "<": return "&lt;";
+          case ">": return "&gt;";
+          case '"': return "&quot;";
+          case "'": return "&#39;";
+          default: return c;
         }
       });
     }
@@ -993,34 +963,20 @@
 
     function getEmojiByTipo(tipo) {
       switch (tipo) {
-        case "hotel":
-          return "🏨";
-        case "villa":
-          return "🏡";
-        case "casa":
-          return "🏠";
-        case "industria":
-          return "🏭";
-        case "scuola":
-          return "🏫";
-        case "chiesa":
-          return "⛪";
-        case "colonia":
-          return "🏚️";
-        case "istituzione":
-          return "🏥";
-        case "svago":
-          return "🎭";
-        case "castello":
-          return "🏰";
-        case "nave":
-          return "🚢";
-        case "diga":
-          return "💧";
-        case "militare":
-          return "🪖";
-        default:
-          return "📍";
+        case "hotel": return "🏨";
+        case "villa": return "🏡";
+        case "casa": return "🏠";
+        case "industria": return "🏭";
+        case "scuola": return "🏫";
+        case "chiesa": return "⛪";
+        case "colonia": return "🏚️";
+        case "istituzione": return "🏥";
+        case "svago": return "🎭";
+        case "castello": return "🏰";
+        case "nave": return "🚢";
+        case "diga": return "💧";
+        case "militare": return "🪖";
+        default: return "📍";
       }
     }
 
@@ -1037,7 +993,7 @@
     // =========================
 
     let map;
-    let markersLayer = L.layerGroup();
+    let markersLayer;
     let baseLayers = {};
     let appSettings = {
       baseLayer: "osm",
@@ -1045,9 +1001,9 @@
       randomIncludeLowRated: false
     };
 
-    let allSpots = []; // tutti (csv + extra)
-    let currentSpot = null; // ultimo spot cliccato (per missioni / random)
-    let missions = {}; // localStorage
+    let allSpots = [];       // tutti (csv + extra)
+    let currentSpot = null;  // ultimo spot cliccato (per missioni / random)
+    let missions = {};       // localStorage
 
     function loadMissions() {
       try {
@@ -1088,9 +1044,7 @@
       try {
         const res = await fetch("/api/settings", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(appSettings)
         });
         if (res.ok) {
@@ -1119,15 +1073,7 @@
         if (Number.isNaN(lat) || Number.isNaN(lng)) return;
         const voto = extractVoto(desc);
         const tipo = getTipo(name, desc);
-        points.push({
-          name,
-          desc,
-          lat,
-          lng,
-          voto,
-          tipo,
-          source: "csv"
-        });
+        points.push({ name, desc, lat, lng, voto, tipo, source: "csv" });
       });
 
       return points;
@@ -1181,47 +1127,43 @@
     // =========================
 
     function initMap() {
-      map = L.map("map").setView([41.9028, 12.4964], 13); // Esempio di coordinata (Roma)
-      
-      const osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      map = L.map("map");
+
+      const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors"
-      }).addTo(map);
-    
+      });
+
+      const osmHot = L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors, Tiles style by HOT"
+      });
+
+      const esriSatellite = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          maxZoom: 19,
+          attribution: "Tiles &copy; Esri"
+        }
+      );
+
+      baseLayers = {
+        osm,
+        osmHot,
+        satellite: esriSatellite
+      };
+
+      // Applica baseLayer da settings
+      let chosen = baseLayers[appSettings.baseLayer] || osm;
+      chosen.addTo(map);
+
       markersLayer = L.layerGroup().addTo(map);
-    }
 
-
-    // DEFINIZIONE CORRETTA DEI TILE LAYER
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    });
-
-    const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a>'
-    });
-
-    const satellitare = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-    });
-
-    baseLayers = {
-      osm: osm,
-      osmHot: osmHot,
-      satellite: satellitare
-    };
-
-    // Applica il layer scelto (default osm)
-    const layerScelto = baseLayers[appSettings.baseLayer] || osm;
-    layerScelto.addTo(map);
-
-    // Fit iniziale sull'Italia
-    map.setView([42.5, 12.0], 6);
+      // fit di base
+      map.setView([44.5, 8.9], 7);
 
       // click sulla mappa per compilare lat/lng
-      map.on("click", function(e) {
+      map.on("click", function (e) {
         const latInput = document.getElementById("fieldLat");
         const lngInput = document.getElementById("fieldLng");
         if (latInput && lngInput) {
@@ -1231,270 +1173,364 @@
       });
 
       // legenda Leaflet
-      const legend = L.control({
-        position: "topleft"
-      });
-      legend.onAdd = function() {
+      const legend = L.control({ position: "bottomright" });
+      legend.onAdd = function () {
         const div = L.DomUtil.create("div", "info legend");
-        div.style = "background:rgba(15,23,42,0.95); border-radius:12px; padding:10px 8px; writing-mode:vertical-rl; text-orientation:mixed; transform:rotate(180deg);";
-
-        const grades = [6, 5, 4, 3, 2, 1];
+        div.innerHTML += '<div class="legend-title">Voto</div>';
+        const grades = [1, 2, 3, 4, 5, 6];
         grades.forEach(v => {
           const color = getRatingColor(v);
-          div.innerHTML += `<div style="display:flex; align-items:center; gap:6px; margin:8px 0;">
-      <i style="width:14px; height:14px; border-radius:50%; background:${color}; display:inline-block;"></i>
-      <span style="font-size:11px; color:white;">${v}</span>
-    </div>`;
+          div.innerHTML += `
+            <div class="legend-row">
+              <i style="background:${color}"></i><span>${v}/6</span>
+            </div>
+          `;
         });
         return div;
       };
       legend.addTo(map);
+    }
 
-      function switchBaseLayer(key) {
-        if (!map || !baseLayers[key]) return;
-        Object.values(baseLayers).forEach(layer => {
-          if (map.hasLayer(layer)) map.removeLayer(layer);
-        });
-        baseLayers[key].addTo(map);
-      }
+    function switchBaseLayer(key) {
+      if (!map || !baseLayers[key]) return;
+      Object.values(baseLayers).forEach(layer => {
+        if (map.hasLayer(layer)) map.removeLayer(layer);
+      });
+      baseLayers[key].addTo(map);
+    }
 
-      function buildPopupHtml(p) {
-        const votoText = p.voto ? `<span style="background:${getRatingColor(p.voto)}; color:white; padding:2px 8px; border-radius:999px; font-size:11px;">${p.voto}/6</span>` : "<span style='color:#64748b'>n.d.</span>";
+    function buildPopupHtml(p) {
+      const title = escapeHtml(p.name || "");
+      const desc = escapeHtml(p.desc || "");
+      const coords = `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+      const votoText = p.voto ? `${p.voto}/6` : "n.d.";
 
-        let editBtn = "";
-        if (p.source === "extra" && p.id) {
-          editBtn = `<button onclick="openEditPanel(allSpots.find(s=>s.id=== '${p.id}'))" style="background:#2563eb; color:white; border:none; padding:6px 12px; border-radius:999px; font-size:12px; margin-top:8px; cursor:pointer;">✏️ Modifica</button>`;
-        }
+      return `
+        <div class="ltu-popup">
+          <div class="popup-title">${title}</div>
+          <div class="popup-desc">${desc}</div>
+          <div class="popup-meta">
+            <span>${coords}</span> ·
+            <span>Voto: ${votoText}</span>
+          </div>
+          <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener noreferrer">
+            Apri in Google Maps
+          </a>
+        </div>
+      `;
+    }
 
-        return `
-    <div style="font-family:system-ui; min-width:200px;">
-      <div style="font-weight:700; font-size:14px; margin-bottom:4px;">${escapeHtml(p.name || "Senza nome")}</div>
-      <div style="font-size:12px; color:#cbd5e1; margin-bottom:8px; line-height:1.4;">${escapeHtml(p.desc || "").replace(/\n/g, "<br>")}</div>
-      <div style="font-size:11px; color:#94a3b8; margin-bottom:8px;">
-        ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)} · Voto: ${votoText}
-      </div>
-      <div style="display:flex; gap:8px;">
-        <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" style="color:#93c5fd; font-size:11px; text-decoration:none;">Apri in Google Maps ↗</a>
-      </div>
-      ${editBtn}
-    </div>
-  `;
-      }
+    function renderMarkers() {
+      if (!markersLayer) return;
+      markersLayer.clearLayers();
+      let bounds = [];
 
-      function renderMarkers() {
-        if (!markersLayer) return;
-        markersLayer.clearLayers();
-        let bounds = [];
+      allSpots.forEach(p => {
+        const color = getRatingColor(p.voto || 0);
+        const emoji = getEmojiByTipo(p.tipo);
 
-        allSpots.forEach(p => {
-          const color = getRatingColor(p.voto || 0);
-          const emoji = getEmojiByTipo(p.tipo);
+        const iconHtml = `
+          <div class="custom-pin" style="background:${color};border-color:${color};">
+            <div class="pin-emoji">${emoji}</div>
+          </div>
+        `;
 
-          const iconHtml = `
-  <div style="position:relative; width:32px; height:42px;">
-    <svg width="32" height="42" viewBox="0 0 24 34" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 0C5.373 0 0 5.373 0 12c0 10.5 12 22 12 22s12-11.5 12-22C24 5.373 18.627 0 12 0z" fill="${color}" stroke="#000" stroke-width="1.5"/>
-      <circle cx="12" cy="12" r="7" fill="rgba(0,0,0,0.4)"/>
-      <text x="12" y="16" font-size="12" text-anchor="middle" fill="white" font-weight="bold">${emoji}</text>
-    </svg>
-  </div>
-`;
-
-          const icon = L.divIcon({
-            html: iconHtml,
-            className: "custom-pin-wrapper",
-            iconSize: [30, 42],
-            iconAnchor: [15, 42],
-            popupAnchor: [0, -36]
-          });
-
-          const marker = L.marker([p.lat, p.lng], {
-            icon
-          }).addTo(markersLayer);
-          marker.bindPopup(buildPopupHtml(p));
-
-          // tieni riferimento per random/list
-          p._marker = marker;
-
-          marker.on("click", () => {
-            currentSpot = p;
-          });
-
-          bounds.push([p.lat, p.lng]);
+        const icon = L.divIcon({
+          html: iconHtml,
+          className: "custom-pin-wrapper",
+          iconSize: [30, 42],
+          iconAnchor: [15, 42],
+          popupAnchor: [0, -36]
         });
 
-        if (bounds.length > 0) {
-          map.fitBounds(bounds, {
-            padding: [40, 40]
-          });
-        } else {
-          map.setView([44.5, 8.9], 7);
-        }
-      }
+        const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
+        marker.bindPopup(buildPopupHtml(p));
 
-      // =========================
-      //  LISTA
-      // =========================
+        // tieni riferimento per random/list
+        p._marker = marker;
 
-      function renderList() {
-        const listEl = document.getElementById("listContent");
-        const searchEl = document.getElementById("listSearch");
-        const summaryEl = document.getElementById("listSummary");
-        if (!listEl || !searchEl || !summaryEl) return;
-
-        const q = (searchEl.value || "").toLowerCase().trim();
-        let filtered = allSpots;
-
-        if (q) {
-          filtered = allSpots.filter(p => {
-            const txt = (p.name + " " + (p.desc || "")).toLowerCase();
-            return txt.includes(q);
-          });
-        }
-
-        filtered.sort((a, b) => {
-          const va = a.voto || 0;
-          const vb = b.voto || 0;
-          if (va !== vb) return vb - va;
-          return a.name.localeCompare(b.name);
+        marker.on("click", () => {
+          currentSpot = p;
         });
 
-        summaryEl.textContent = `${filtered.length} spot su ${allSpots.length} totali`;
+        bounds.push([p.lat, p.lng]);
+      });
 
-        listEl.innerHTML = "";
-        filtered.forEach(p => {
-          const row = document.createElement("li");
-          row.className = "spot-row";
-          if (p.source === "extra") row.style.borderLeft = "3px solid #2563eb";
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [40, 40] });
+      } else {
+        map.setView([44.5, 8.9], 7);
+      }
+    }
 
-          const emojiDiv = document.createElement("div");
-          emojiDiv.className = "spot-emoji";
-          emojiDiv.textContent = getEmojiByTipo(p.tipo);
+    // =========================
+    //  LISTA
+    // =========================
 
-          const mainDiv = document.createElement("div");
-          mainDiv.className = "spot-main";
+    function renderList() {
+      const listEl = document.getElementById("listContent");
+      const searchEl = document.getElementById("listSearch");
+      const summaryEl = document.getElementById("listSummary");
+      if (!listEl || !searchEl || !summaryEl) return;
 
-          const titleRow = document.createElement("div");
-          titleRow.className = "spot-main-title";
-          const title = document.createElement("strong");
-          title.textContent = p.name || "(senza nome)";
-          const vote = document.createElement("div");
-          vote.className = "spot-vote-pill";
-          vote.textContent = p.voto ? `${p.voto}/6` : "-";
-          titleRow.appendChild(title);
-          titleRow.appendChild(vote);
+      const q = (searchEl.value || "").toLowerCase().trim();
+      let filtered = allSpots;
 
-          const desc = document.createElement("div");
-          desc.className = "spot-desc";
-          desc.textContent = p.desc || "";
+      if (q) {
+        filtered = allSpots.filter(p => {
+          const txt = (p.name + " " + (p.desc || "")).toLowerCase();
+          return txt.includes(q);
+        });
+      }
 
-          const meta = document.createElement("div");
-          meta.className = "spot-meta";
-          meta.innerHTML = `<span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>`;
+      filtered.sort((a, b) => {
+        const va = a.voto || 0;
+        const vb = b.voto || 0;
+        if (va !== vb) return vb - va;
+        return a.name.localeCompare(b.name);
+      });
 
-          if (p.source === "extra") {
-            const actions = document.createElement("div");
-            actions.style = "margin-left:auto; display:flex; gap:4px;";
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "✏️";
-            editBtn.style = "background:none; border:none; font-size:14px; cursor:pointer;";
-            editBtn.onclick = (e) => {
-              e.stopPropagation();
-              openEditPanel(p);
-            };
-            const delBtn = document.createElement("button");
-            delBtn.textContent = "🗑️";
-            delBtn.style = "background:none; border:none; font-size:14px; cursor:pointer;";
-            delBtn.onclick = (e) => {
-              e.stopPropagation();
-              deleteSpot(p);
-            };
-            actions.appendChild(editBtn);
-            actions.appendChild(delBtn);
-            titleRow.appendChild(actions);
+      summaryEl.textContent = `${filtered.length} spot su ${allSpots.length} totali`;
+
+      listEl.innerHTML = "";
+      filtered.forEach(p => {
+        const row = document.createElement("li");
+        row.className = "spot-row";
+
+        const emojiDiv = document.createElement("div");
+        emojiDiv.className = "spot-emoji";
+        emojiDiv.textContent = getEmojiByTipo(p.tipo);
+
+        const mainDiv = document.createElement("div");
+        mainDiv.className = "spot-main";
+
+        const titleRow = document.createElement("div");
+        titleRow.className = "spot-main-title";
+
+        const title = document.createElement("strong");
+        title.textContent = p.name || "(senza nome)";
+
+        const vote = document.createElement("div");
+        vote.className = "spot-vote-pill";
+        vote.textContent = p.voto ? `${p.voto}/6` : "-";
+
+        titleRow.appendChild(title);
+        titleRow.appendChild(vote);
+
+        const desc = document.createElement("div");
+        desc.className = "spot-desc";
+        desc.textContent = p.desc || "";
+
+        const meta = document.createElement("div");
+        meta.className = "spot-meta";
+        meta.innerHTML = `
+          <span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>
+          <span>${p.source === "extra" ? "LTU extra" : "Importato"}</span>
+        `;
+
+        mainDiv.appendChild(titleRow);
+        mainDiv.appendChild(desc);
+        mainDiv.appendChild(meta);
+
+        row.appendChild(emojiDiv);
+        row.appendChild(mainDiv);
+
+        row.addEventListener("click", () => {
+          currentSpot = p;
+          map.setView([p.lat, p.lng], 16);
+          if (p._marker) {
+            p._marker.openPopup();
           }
-
-          mainDiv.appendChild(titleRow);
-          mainDiv.appendChild(desc);
-          mainDiv.appendChild(meta);
-          row.appendChild(emojiDiv);
-          row.appendChild(mainDiv);
-
-          row.addEventListener("click", () => {
-            currentSpot = p;
-            map.setView([p.lat, p.lng], 16);
-            if (p._marker) p._marker.openPopup();
-          });
-
-          listEl.appendChild(row);
+          document.getElementById("listPanel").classList.add("hidden");
         });
+
+        listEl.appendChild(row);
+      });
+    }
+
+    // =========================
+    //  ADD SPOT
+    // =========================
+
+    async function handleAddSubmit(evt) {
+      evt.preventDefault();
+      const name = document.getElementById("fieldName").value.trim();
+      const desc = document.getElementById("fieldDesc").value.trim();
+      const latStr = document.getElementById("fieldLat").value.trim();
+      const lngStr = document.getElementById("fieldLng").value.trim();
+      const votoStr = document.getElementById("fieldVoto").value.trim();
+
+      if (!name || !latStr || !lngStr) {
+        alert("Nome, latitudine e longitudine sono obbligatori.");
+        return;
       }
 
-      // =========================
-      //  ADD SPOT
-      // =========================
+      const lat = parseFloat(latStr.replace(",", "."));
+      const lng = parseFloat(lngStr.replace(",", "."));
+      if (Number.isNaN(lat) || Number.isNaN(lng)) {
+        alert("Coordinate non valide.");
+        return;
+      }
 
-      async function handleAddSubmit(evt) {
-        evt.preventDefault();
-        const name = document.getElementById("fieldName").value.trim();
-        const desc = document.getElementById("fieldDesc").value.trim();
-        const latStr = document.getElementById("fieldLat").value.trim();
-        const lngStr = document.getElementById("fieldLng").value.trim();
-        const votoStr = document.getElementById("fieldVoto").value.trim();
+      let voto = null;
+      if (votoStr) {
+        const v = parseInt(votoStr, 10);
+        if (v >= 1 && v <= 6) voto = v;
+      }
 
-        if (!name || !latStr || !lngStr) {
-          alert("Nome, latitudine e longitudine sono obbligatori.");
-          return;
-        }
+      const tipo = getTipo(name, desc);
 
-        // Accetta qualsiasi formato tipo: 45.123456, 9.123456 oppure 45,123456 9,123456 oppure 45.123 9.123 etc.
-        const coordsText = `${latStr} ${lngStr}`;
-        const match = coordsText.match(/([0-9\-\+\.]+)[\s,°°′′"N]*\s*([0-9\-\+\.]+)/i);
-        if (!match) {
-          alert("Coordinate non riconosciute. Usa formato normale (es. 45.123456, 9.123456)");
-          return;
-        }
-        const lat = parseFloat(match[1].replace(",", "."));
-        const lng = parseFloat(match[2].replace(",", "."));
-        if (Number.isNaN(lat) || Number.isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-          alert("Coordinate non valide");
-          return;
-        }
-        if (Number.isNaN(lat) || Number.isNaN(lng)) {
-          alert("Coordinate non valide.");
-          return;
-        }
+      const payload = { name, desc, lat, lng, voto, tipo };
 
-        let voto = null;
-        if (votoStr) {
-          const v = parseInt(votoStr, 10);
-          if (v >= 1 && v <= 6) voto = v;
-        }
+      try {
+        const res = await fetch("/api/spots-extra", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error("Errore HTTP " + res.status);
+        const saved = await res.json();
+        const latSaved = parseFloat(saved.lat);
+        const lngSaved = parseFloat(saved.lng);
 
-        const tipo = getTipo(name, desc);
-
-        const payload = {
-          name,
-          desc,
-          lat,
-          lng,
-          voto,
-          tipo
+        const spot = {
+          name: saved.name || name,
+          desc: saved.desc || desc,
+          lat: Number.isNaN(latSaved) ? lat : latSaved,
+          lng: Number.isNaN(lngSaved) ? lng : lngSaved,
+          voto: saved.voto != null ? saved.voto : voto,
+          tipo: saved.tipo || tipo,
+          source: "extra",
+          createdAt: saved.createdAt || null
         };
 
+        allSpots.push(spot);
+        renderMarkers();
+        renderList();
+        document.getElementById("addPanel").classList.add("hidden");
+        document.getElementById("addForm").reset();
+        showToast("Spot aggiunto.");
+      } catch (e) {
+        console.error(e);
+        alert("Errore nel salvataggio dello spot.");
+      }
+    }
+
+    function useMapCenter() {
+      const center = map.getCenter();
+      document.getElementById("fieldLat").value = center.lat.toFixed(6);
+      document.getElementById("fieldLng").value = center.lng.toFixed(6);
+    }
+
+    // =========================
+    //  RANDOM SPOT
+    // =========================
+
+    function pickRandomSpot() {
+      if (!allSpots.length) {
+        showToast("Nessuno spot disponibile.");
+        return;
+      }
+
+      let candidates = allSpots;
+      if (!appSettings.randomIncludeLowRated) {
+        const filtered = allSpots.filter(p => !p.voto || p.voto >= 3);
+        if (filtered.length) candidates = filtered;
+      }
+
+      const idx = Math.floor(Math.random() * candidates.length);
+      const chosen = candidates[idx];
+      if (!chosen) return;
+
+      currentSpot = chosen;
+      map.setView([chosen.lat, chosen.lng], 16);
+      if (chosen._marker) {
+        chosen._marker.openPopup();
+      }
+      showToast("Random LTU: " + (chosen.name || "spot"));
+    }
+
+    // =========================
+    //  MISSIONI
+    // =========================
+
+    function openMissionPanel() {
+      if (!currentSpot) {
+        showToast("Seleziona prima uno spot dalla mappa.");
+        return;
+      }
+      const key = spotKey(currentSpot);
+      const panel = document.getElementById("missionPanel");
+      const titleEl = document.getElementById("missionBodyTitle");
+      const coordsEl = document.getElementById("missionBodyCoords");
+      const textEl = document.getElementById("missionText");
+
+      titleEl.textContent = "Spot: " + (currentSpot.name || "(senza nome)");
+      coordsEl.textContent = `${currentSpot.lat.toFixed(6)}, ${currentSpot.lng.toFixed(6)}`;
+      textEl.value = missions[key]?.text || "";
+
+      panel.classList.remove("hidden");
+    }
+
+    function saveMissionForCurrent() {
+      if (!currentSpot) return;
+      const key = spotKey(currentSpot);
+      const text = document.getElementById("missionText").value;
+      missions[key] = { text };
+      saveMissions();
+      showToast("Missione salvata.");
+      document.getElementById("missionPanel").classList.add("hidden");
+    }
+
+    // =========================
+    //  SETTINGS: IMPORT / EXPORT
+    // =========================
+
+    async function handleImportJson() {
+      const raw = document.getElementById("importTextarea").value.trim();
+      if (!raw) {
+        alert("Incolla prima il JSON.");
+        return;
+      }
+      let obj;
+      try {
+        obj = JSON.parse(raw);
+      } catch (e) {
+        alert("JSON non valido.");
+        return;
+      }
+
+      let arr = [];
+      if (Array.isArray(obj)) {
+        arr = obj;
+      } else if (Array.isArray(obj.places)) {
+        arr = obj.places;
+      } else {
+        alert("Formato JSON non riconosciuto.");
+        return;
+      }
+
+      let importedCount = 0;
+      for (const place of arr) {
+        const name = place.name || place.title || "";
+        const desc = place.desc || place.description || "";
+        const lat = parseFloat(place.lat ?? place.latitude);
+        const lng = parseFloat(place.lng ?? place.longitude);
+        if (!name || Number.isNaN(lat) || Number.isNaN(lng)) continue;
+        const voto = place.voto != null ? parseInt(place.voto, 10) : extractVoto(desc);
+        const tipo = place.tipo || getTipo(name, desc);
+
+        const payload = { name, desc, lat, lng, voto, tipo };
         try {
           const res = await fetch("/api/spots-extra", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
           });
-          if (!res.ok) throw new Error("Errore HTTP " + res.status);
+          if (!res.ok) continue;
           const saved = await res.json();
           const latSaved = parseFloat(saved.lat);
           const lngSaved = parseFloat(saved.lng);
-
           const spot = {
             name: saved.name || name,
             desc: saved.desc || desc,
@@ -1505,356 +1541,165 @@
             source: "extra",
             createdAt: saved.createdAt || null
           };
-
           allSpots.push(spot);
-          renderMarkers();
+          importedCount++;
+        } catch (e) {
+          console.warn("Import fallito per uno spot", e);
+        }
+      }
+
+      if (importedCount > 0) {
+        renderMarkers();
+        renderList();
+      }
+      showToast(`Importati ${importedCount} spot.`);
+    }
+
+    function handleExportCsv() {
+      if (!allSpots.length) {
+        alert("Nessuno spot da esportare.");
+        return;
+      }
+      let csv = "Name,Description,Latitude,Longitude\n";
+      allSpots.forEach(p => {
+        const name = (p.name || "").replace(/"/g, '""');
+        const desc = (p.desc || "").replace(/"/g, '""');
+        csv += `"${name}","${desc}",${p.lat},${p.lng}\n`;
+      });
+      document.getElementById("exportTextarea").value = csv;
+      showToast("CSV generato.");
+    }
+
+    // =========================
+    //  UI INIT
+    // =========================
+
+    function initUI() {
+      const btnList = document.getElementById("btnList");
+      const btnCloseList = document.getElementById("btnCloseList");
+      const listPanel = document.getElementById("listPanel");
+      const listSearch = document.getElementById("listSearch");
+
+      btnList.addEventListener("click", () => {
+        const hidden = listPanel.classList.contains("hidden");
+        if (hidden) {
           renderList();
-          document.getElementById("addPanel").classList.add("hidden");
-          document.getElementById("addForm").reset();
-          showToast("Spot aggiunto.");
-        } catch (e) {
-          console.error(e);
-          alert("Errore nel salvataggio dello spot.");
-        }
-      }
-
-      function useMapCenter() {
-        const center = map.getCenter();
-        document.getElementById("fieldLat").value = center.lat.toFixed(6);
-        document.getElementById("fieldLng").value = center.lng.toFixed(6);
-      }
-
-      // =========================
-      //  RANDOM SPOT
-      // =========================
-
-      function pickRandomSpot() {
-        if (!allSpots.length) {
-          showToast("Nessuno spot disponibile.");
-          return;
-        }
-
-        let candidates = allSpots;
-        if (!appSettings.randomIncludeLowRated) {
-          const filtered = allSpots.filter(p => !p.voto || p.voto >= 3);
-          if (filtered.length) candidates = filtered;
-        }
-
-        const idx = Math.floor(Math.random() * candidates.length);
-        const chosen = candidates[idx];
-        if (!chosen) return;
-
-        currentSpot = chosen;
-        map.setView([chosen.lat, chosen.lng], 16);
-        if (chosen._marker) {
-          chosen._marker.openPopup();
-        }
-        showToast("Random LTU: " + (chosen.name || "spot"));
-      }
-
-      // =========================
-      //  MISSIONI
-      // =========================
-
-      function openMissionPanel() {
-        if (!currentSpot) {
-          showToast("Seleziona prima uno spot dalla mappa.");
-          return;
-        }
-        const key = spotKey(currentSpot);
-        const panel = document.getElementById("missionPanel");
-        const titleEl = document.getElementById("missionBodyTitle");
-        const coordsEl = document.getElementById("missionBodyCoords");
-        const textEl = document.getElementById("missionText");
-
-        titleEl.textContent = "Spot: " + (currentSpot.name || "(senza nome)");
-        coordsEl.textContent = `${currentSpot.lat.toFixed(6)}, ${currentSpot.lng.toFixed(6)}`;
-        textEl.value = missions[key]?.text || "";
-
-        panel.classList.remove("hidden");
-      }
-
-      function saveMissionForCurrent() {
-        if (!currentSpot) return;
-        const key = spotKey(currentSpot);
-        const text = document.getElementById("missionText").value;
-        missions[key] = {
-          text
-        };
-        saveMissions();
-        showToast("Missione salvata.");
-        document.getElementById("missionPanel").classList.add("hidden");
-      }
-
-      // =========================
-      //  SETTINGS: IMPORT / EXPORT
-      // =========================
-
-      async function handleImportJson() {
-        const raw = document.getElementById("importTextarea").value.trim();
-        if (!raw) {
-          alert("Incolla prima il JSON.");
-          return;
-        }
-        let obj;
-        try {
-          obj = JSON.parse(raw);
-        } catch (e) {
-          alert("JSON non valido.");
-          return;
-        }
-
-        let arr = [];
-        if (Array.isArray(obj)) {
-          arr = obj;
-        } else if (Array.isArray(obj.places)) {
-          arr = obj.places;
+          listPanel.classList.remove("hidden");
         } else {
-          alert("Formato JSON non riconosciuto.");
-          return;
-        }
-
-        let importedCount = 0;
-        for (const place of arr) {
-          const name = place.name || place.title || "";
-          const desc = place.desc || place.description || "";
-          const lat = parseFloat(place.lat ?? place.latitude);
-          const lng = parseFloat(place.lng ?? place.longitude);
-          if (!name || Number.isNaN(lat) || Number.isNaN(lng)) continue;
-          const voto = place.voto != null ? parseInt(place.voto, 10) : extractVoto(desc);
-          const tipo = place.tipo || getTipo(name, desc);
-
-          const payload = {
-            name,
-            desc,
-            lat,
-            lng,
-            voto,
-            tipo
-          };
-          try {
-            const res = await fetch("/api/spots-extra", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify(payload)
-            });
-            if (!res.ok) continue;
-            const saved = await res.json();
-            const latSaved = parseFloat(saved.lat);
-            const lngSaved = parseFloat(saved.lng);
-            const spot = {
-              name: saved.name || name,
-              desc: saved.desc || desc,
-              lat: Number.isNaN(latSaved) ? lat : latSaved,
-              lng: Number.isNaN(lngSaved) ? lng : lngSaved,
-              voto: saved.voto != null ? saved.voto : voto,
-              tipo: saved.tipo || tipo,
-              source: "extra",
-              createdAt: saved.createdAt || null
-            };
-            allSpots.push(spot);
-            importedCount++;
-          } catch (e) {
-            console.warn("Import fallito per uno spot", e);
-          }
-        }
-
-        if (importedCount > 0) {
-          renderMarkers();
-          renderList();
-        }
-        showToast(`Importati ${importedCount} spot.`);
-      }
-
-      function handleExportCsv() {
-        if (!allSpots.length) {
-          alert("Nessuno spot da esportare.");
-          return;
-        }
-        let csv = "Name,Description,Latitude,Longitude\n";
-        allSpots.forEach(p => {
-          const name = (p.name || "").replace(/"/g, '""');
-          const desc = (p.desc || "").replace(/"/g, '""');
-          csv += `"${name}","${desc}",${p.lat},${p.lng}\n`;
-        });
-        document.getElementById("exportTextarea").value = csv;
-        showToast("CSV generato.");
-      }
-
-      // =========================
-      //  UI INIT
-      // =========================
-
-      function initUI() {
-        const btnList = document.getElementById("btnList");
-        const btnCloseList = document.getElementById("btnCloseList");
-        const listPanel = document.getElementById("listPanel");
-        const listSearch = document.getElementById("listSearch");
-
-        btnList.addEventListener("click", () => {
-          const hidden = listPanel.classList.contains("hidden");
-          if (hidden) {
-            renderList();
-            listPanel.classList.remove("hidden");
-          } else {
-            listPanel.classList.add("hidden");
-          }
-        });
-
-        btnCloseList.addEventListener("click", () => {
           listPanel.classList.add("hidden");
-        });
-
-        listSearch.addEventListener("input", () => {
-          renderList();
-        });
-
-        // ADD
-        const btnAdd = document.getElementById("btnAdd");
-        const btnCloseAdd = document.getElementById("btnCloseAdd");
-        const addPanel = document.getElementById("addPanel");
-        const addForm = document.getElementById("addForm");
-        const btnUseCenter = document.getElementById("btnUseCenter");
-
-        btnAdd.addEventListener("click", () => {
-          addPanel.classList.remove("hidden");
-          useMapCenter();
-        });
-
-        btnCloseAdd.addEventListener("click", () => {
-          addPanel.classList.add("hidden");
-        });
-
-        addForm.addEventListener("submit", handleAddSubmit);
-        btnUseCenter.addEventListener("click", (e) => {
-          e.preventDefault();
-          useMapCenter();
-        });
-
-        // SETTINGS
-        const settingsBtn = document.getElementById("settingsBtn");
-        const settingsPanel = document.getElementById("settingsPanel");
-        const btnCloseSettings = document.getElementById("btnCloseSettings");
-        const mapStyleSelect = document.getElementById("mapStyleSelect");
-        const randomLowRatedCheckbox = document.getElementById("randomLowRatedCheckbox");
-        const btnImportJson = document.getElementById("btnImportJson");
-        const btnExportCsv = document.getElementById("btnExportCsv");
-
-        settingsBtn.addEventListener("click", () => {
-          // sync UI con settings correnti
-          mapStyleSelect.value = appSettings.baseLayer || "osm";
-          randomLowRatedCheckbox.checked = !!appSettings.randomIncludeLowRated;
-          settingsPanel.classList.remove("hidden");
-          settingsBtn.classList.add("active");
-        });
-
-        btnCloseSettings.addEventListener("click", () => {
-          settingsPanel.classList.add("hidden");
-          settingsBtn.classList.remove("active");
-        });
-
-        mapStyleSelect.addEventListener("change", (e) => {
-          const val = e.target.value;
-          switchBaseLayer(val);
-          saveSettings({
-            baseLayer: val
-          });
-          showToast("Stile mappa aggiornato.");
-        });
-
-        randomLowRatedCheckbox.addEventListener("change", (e) => {
-          const checked = e.target.checked;
-          saveSettings({
-            randomIncludeLowRated: checked
-          });
-          showToast("Impostazione random aggiornata.");
-        });
-
-        btnImportJson.addEventListener("click", handleImportJson);
-        btnExportCsv.addEventListener("click", handleExportCsv);
-
-        // RANDOM
-        const btnRandom = document.getElementById("btnRandom");
-        btnRandom.addEventListener("click", pickRandomSpot);
-
-        // CROSSHAIR TOGGLE
-        const crosshairToggleBtn = document.getElementById("crosshairToggleBtn");
-        const crosshairEl = document.getElementById("crosshair");
-        crosshairToggleBtn.addEventListener("click", () => {
-          const hidden = crosshairEl.classList.contains("hidden");
-          if (hidden) {
-            crosshairEl.classList.remove("hidden");
-            showToast("Mirino attivo.");
-          } else {
-            crosshairEl.classList.add("hidden");
-            showToast("Mirino nascosto.");
-          }
-        });
-
-        // MISSIONI
-        const missionBtn = document.getElementById("missionBtn");
-        const missionPanel = document.getElementById("missionPanel");
-        const btnCloseMission = document.getElementById("btnCloseMission");
-        const btnSaveMission = document.getElementById("btnSaveMission");
-
-        missionBtn.addEventListener("click", openMissionPanel);
-        btnCloseMission.addEventListener("click", () => {
-          missionPanel.classList.add("hidden");
-        });
-        btnSaveMission.addEventListener("click", saveMissionForCurrent);
-        const logoutBtn = document.getElementById("logoutBtn");
-        logoutBtn.addEventListener("click", () => {
-          localStorage.removeItem("ltu_login");
-          window.location.href = "login.html";
-        });
-      }
-
-      // =========================
-      //  BOOT
-      // =========================
-
-      document.addEventListener("DOMContentLoaded", async () => {
-        try {
-          loadMissions();
-          await loadSettings();
-          initMap();  // Inizializza la mappa
-          initUI();
-          reloadAllSpots();  // Carica i dati per gli spot
-        } catch (e) {
-          console.error("Errore nel caricamento:", e);
         }
       });
 
-      async function deleteSpot(p) {
-        if (p.source !== "extra") return showToast("Non puoi eliminare spot base");
-        if (!confirm(`Eliminare "${p.name}"?`)) return;
+      btnCloseList.addEventListener("click", () => {
+        listPanel.classList.add("hidden");
+      });
 
-        try {
-          await fetch(`/api/spots-extra/${p.id}`, {
-            method: "DELETE"
-          });
-          allSpots = allSpots.filter(s => s.id !== p.id);
-          renderMarkers();
-          renderList();
-          showToast("Spot eliminato");
-        } catch (err) {
-          console.error(err);
-          showToast("Errore aggiornamento");
+      listSearch.addEventListener("input", () => {
+        renderList();
+      });
+
+      // ADD
+      const btnAdd = document.getElementById("btnAdd");
+      const btnCloseAdd = document.getElementById("btnCloseAdd");
+      const addPanel = document.getElementById("addPanel");
+      const addForm = document.getElementById("addForm");
+      const btnUseCenter = document.getElementById("btnUseCenter");
+
+      btnAdd.addEventListener("click", () => {
+        addPanel.classList.remove("hidden");
+        useMapCenter();
+      });
+
+      btnCloseAdd.addEventListener("click", () => {
+        addPanel.classList.add("hidden");
+      });
+
+      addForm.addEventListener("submit", handleAddSubmit);
+      btnUseCenter.addEventListener("click", (e) => {
+        e.preventDefault();
+        useMapCenter();
+      });
+
+      // SETTINGS
+      const settingsBtn = document.getElementById("settingsBtn");
+      const settingsPanel = document.getElementById("settingsPanel");
+      const btnCloseSettings = document.getElementById("btnCloseSettings");
+      const mapStyleSelect = document.getElementById("mapStyleSelect");
+      const randomLowRatedCheckbox = document.getElementById("randomLowRatedCheckbox");
+      const btnImportJson = document.getElementById("btnImportJson");
+      const btnExportCsv = document.getElementById("btnExportCsv");
+
+      settingsBtn.addEventListener("click", () => {
+        // sync UI con settings correnti
+        mapStyleSelect.value = appSettings.baseLayer || "osm";
+        randomLowRatedCheckbox.checked = !!appSettings.randomIncludeLowRated;
+        settingsPanel.classList.remove("hidden");
+        settingsBtn.classList.add("active");
+      });
+
+      btnCloseSettings.addEventListener("click", () => {
+        settingsPanel.classList.add("hidden");
+        settingsBtn.classList.remove("active");
+      });
+
+      mapStyleSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        switchBaseLayer(val);
+        saveSettings({ baseLayer: val });
+        showToast("Stile mappa aggiornato.");
+      });
+
+      randomLowRatedCheckbox.addEventListener("change", (e) => {
+        const checked = e.target.checked;
+        saveSettings({ randomIncludeLowRated: checked });
+        showToast("Impostazione random aggiornata.");
+      });
+
+      btnImportJson.addEventListener("click", handleImportJson);
+      btnExportCsv.addEventListener("click", handleExportCsv);
+
+      // RANDOM
+      const btnRandom = document.getElementById("btnRandom");
+      btnRandom.addEventListener("click", pickRandomSpot);
+
+      // CROSSHAIR TOGGLE
+      const crosshairToggleBtn = document.getElementById("crosshairToggleBtn");
+      const crosshairEl = document.getElementById("crosshair");
+      crosshairToggleBtn.addEventListener("click", () => {
+        const hidden = crosshairEl.classList.contains("hidden");
+        if (hidden) {
+          crosshairEl.classList.remove("hidden");
+          showToast("Mirino attivo.");
+        } else {
+          crosshairEl.classList.add("hidden");
+          showToast("Mirino nascosto.");
         }
-      };
+      });
+
+      // MISSIONI
+      const missionBtn = document.getElementById("missionBtn");
+      const missionPanel = document.getElementById("missionPanel");
+      const btnCloseMission = document.getElementById("btnCloseMission");
+      const btnSaveMission = document.getElementById("btnSaveMission");
+
+      missionBtn.addEventListener("click", openMissionPanel);
+      btnCloseMission.addEventListener("click", () => {
+        missionPanel.classList.add("hidden");
+      });
+      btnSaveMission.addEventListener("click", saveMissionForCurrent);
     }
-  </script> <!-- QUI CHIUDI IL PRIMO SCRIPT -->
-  <script>
-    // Redirect se non loggato
-    if (localStorage.getItem("ltu_login") !== "1") {
-      window.location.href = "login.html";
-    }
+
+    // =========================
+    //  BOOT
+    // =========================
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      loadMissions();
+      await loadSettings();
+      initMap();
+      initUI();
+      reloadAllSpots();
+    });
   </script>
 </body>
-
 </html>
-
-
-
