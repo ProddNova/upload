@@ -333,7 +333,7 @@
       justify-content: space-between;
       gap: 6px;
     }
-    /* ADD PANEL */
+    /* FORM STYLES */
     .form-row {
       display: flex;
       flex-direction: column;
@@ -400,6 +400,23 @@
     .btn:active {
       transform: translateY(1px) scale(0.99);
       box-shadow: none;
+    }
+    /* VOTO SELECT STYLING */
+    .voto-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+    }
+    .voto-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .voto-select {
+      padding: 6px 8px;
     }
     /* SETTINGS */
     .settings-section {
@@ -589,38 +606,6 @@
     .tipo-option-name {
       font-size: 12px;
     }
-    /* STREETVIEW IFRAME */
-    #streetviewContainer {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 100;
-      background: rgba(0, 0, 0, 0.95);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    #streetviewIframe {
-      width: 95%;
-      height: 85%;
-      border: 2px solid var(--border-soft);
-      border-radius: 12px;
-      background: #000;
-    }
-    #closeStreetview {
-      margin-top: 15px;
-      padding: 8px 20px;
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-    }
     /* MOBILE ADJUSTMENTS */
     @media (max-width: 640px) {
       .overlay-card {
@@ -630,10 +615,6 @@
       }
       #rightDock {
         right: 6px;
-      }
-      #streetviewIframe {
-        width: 98%;
-        height: 80%;
       }
       .legend-number {
         font-size: 8px;
@@ -712,7 +693,15 @@
           <div class="cols">
             <div class="form-row">
               <label for="fieldVoto">Voto (1–6)</label>
-              <input id="fieldVoto" class="input" type="number" min="1" max="6" placeholder="Es. 4" />
+              <select id="fieldVoto" class="select voto-select">
+                <option value="">Nessun voto</option>
+                <option value="1" style="color:#b91c1c">● 1</option>
+                <option value="2" style="color:#f97316">● 2</option>
+                <option value="3" style="color:#eab308">● 3</option>
+                <option value="4" style="color:#2563eb">● 4</option>
+                <option value="5" style="color:#16a34a">● 5</option>
+                <option value="6" style="color:#a855f7">● 6</option>
+              </select>
             </div>
             <div class="form-row">
               <label for="fieldTipo">Tipologia</label>
@@ -779,7 +768,15 @@
           <div class="cols">
             <div class="form-row">
               <label for="editFieldVoto">Voto (1–6)</label>
-              <input id="editFieldVoto" class="input" type="number" min="1" max="6" placeholder="Es. 4" />
+              <select id="editFieldVoto" class="select voto-select">
+                <option value="">Nessun voto</option>
+                <option value="1" style="color:#b91c1c">● 1</option>
+                <option value="2" style="color:#f97316">● 2</option>
+                <option value="3" style="color:#eab308">● 3</option>
+                <option value="4" style="color:#2563eb">● 4</option>
+                <option value="5" style="color:#16a34a">● 5</option>
+                <option value="6" style="color:#a855f7">● 6</option>
+              </select>
             </div>
             <div class="form-row">
               <label for="editFieldTipo">Tipologia</label>
@@ -940,12 +937,6 @@
         </div>
       </div>
     </div>
-  </div>
-  
-  <!-- STREETVIEW CONTAINER -->
-  <div id="streetviewContainer" class="hidden">
-    <iframe id="streetviewIframe" frameborder="0"></iframe>
-    <button id="closeStreetview">Chiudi StreetView</button>
   </div>
   
   <!-- TOAST -->
@@ -1221,7 +1212,14 @@
     // MAPPA
     // =========================
     function initMap() {
-      map = L.map("map", { zoomControl: false });
+      // Abilita la rotazione su mobile
+      map = L.map("map", { 
+        zoomControl: false,
+        touchRotate: true,
+        rotating: true,
+        gestureHandling: true
+      });
+      
       const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors"
@@ -1442,7 +1440,8 @@
       const desc = document.getElementById("fieldDesc").value.trim();
       const latStr = document.getElementById("fieldLat").value.trim();
       const lngStr = document.getElementById("fieldLng").value.trim();
-      const votoStr = document.getElementById("fieldVoto").value.trim();
+      const votoSelect = document.getElementById("fieldVoto");
+      const votoStr = votoSelect.value;
       const tipoSelect = document.getElementById("fieldTipo");
       const tipo = tipoSelect.value || getTipo(name, desc);
       
@@ -1471,7 +1470,10 @@
           },
           body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error("Errore HTTP " + res.status);
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Errore HTTP ${res.status}: ${errorText}`);
+        }
         const saved = await res.json();
         const latSaved = parseFloat(saved.lat);
         const lngSaved = parseFloat(saved.lng);
@@ -1494,10 +1496,11 @@
         document.getElementById("addPanel").classList.add("hidden");
         document.getElementById("addForm").reset();
         document.getElementById("fieldTipo").value = "";
+        document.getElementById("fieldVoto").value = "";
         showToast("Spot aggiunto.");
       } catch (e) {
         console.error(e);
-        alert("Errore nel salvataggio dello spot.");
+        alert("Errore nel salvataggio dello spot: " + e.message);
       }
     }
     
@@ -1561,25 +1564,65 @@
     }
     
     // =========================
-    // STREETVIEW (SENZA API KEY - IFRAME)
+    // STREETVIEW (SOLUZIONE FUNZIONANTE)
     // =========================
     function openStreetView() {
       const center = map.getCenter();
       const lat = center.lat;
       const lng = center.lng;
       
-      // URL di StreetView senza API key usando un trucco
-      // Questo URL cerca di accedere alla vista panoramica di Google Maps senza chiave
-      const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+      // Usa Mapillary invece di Google Street View (non richiede API key)
+      const url = `https://www.mapillary.com/embed?focus=map&lat=${lat}&lng=${lng}&z=17`;
       
-      // Mostra il container con iframe
-      const container = document.getElementById('streetviewContainer');
-      const iframe = document.getElementById('streetviewIframe');
+      // Crea un overlay per lo streetview
+      const overlay = document.createElement('div');
+      overlay.id = 'streetviewOverlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.95);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      `;
       
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = `
+        width: 95%;
+        height: 85%;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      `;
       iframe.src = url;
-      container.classList.remove('hidden');
       
-      showToast("StreetView caricato. Potrebbe non funzionare in alcuni browser.");
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Chiudi Street View';
+      closeBtn.style.cssText = `
+        margin-top: 20px;
+        padding: 10px 24px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      `;
+      closeBtn.onclick = () => {
+        document.body.removeChild(overlay);
+      };
+      
+      overlay.appendChild(iframe);
+      overlay.appendChild(closeBtn);
+      document.body.appendChild(overlay);
+      
+      showToast("Street View caricato (Mapillary)");
     }
     
     // =========================
@@ -1648,7 +1691,10 @@
           body: JSON.stringify(payload)
         });
         
-        if (!res.ok) throw new Error("Errore HTTP " + res.status);
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Errore HTTP ${res.status}: ${errorText}`);
+        }
         
         const saved = await res.json();
         const spot = {
@@ -1675,7 +1721,7 @@
         showToast("Spot aggiunto dal link!");
       } catch (e) {
         console.error(e);
-        alert("Errore nel salvataggio dello spot.");
+        alert("Errore nel salvataggio dello spot: " + e.message);
       }
     }
     
@@ -1878,12 +1924,7 @@
       
       // STREETVIEW
       const streetviewBtn = document.getElementById("streetviewBtn");
-      const closeStreetviewBtn = document.getElementById("closeStreetview");
       streetviewBtn.addEventListener("click", openStreetView);
-      closeStreetviewBtn.addEventListener("click", () => {
-        document.getElementById("streetviewContainer").classList.add("hidden");
-        document.getElementById("streetviewIframe").src = "";
-      });
       
       // IMPORT LINK
       const importLinkBtn = document.getElementById("importLinkBtn");
@@ -1937,7 +1978,10 @@
                 "Authorization": "Basic " + btoa("unit:ltunit")
               }
             });
-            if (!res.ok) throw new Error('Errore server');
+            if (!res.ok) {
+              const errorText = await res.text();
+              throw new Error(`Errore HTTP ${res.status}: ${errorText}`);
+            }
            
             // Rimuovi dall'array e aggiorna
             allSpots = allSpots.filter(s => s.id !== spotId);
@@ -1947,7 +1991,7 @@
             showToast('Spot eliminato.');
           } catch (err) {
             console.error(err);
-            showToast('Errore eliminazione.');
+            alert('Errore eliminazione: ' + err.message);
           }
         }
         
@@ -1983,7 +2027,8 @@
         const desc = document.getElementById('editFieldDesc').value.trim();
         const latStr = document.getElementById('editFieldLat').value.trim();
         const lngStr = document.getElementById('editFieldLng').value.trim();
-        const votoStr = document.getElementById('editFieldVoto').value.trim();
+        const votoSelect = document.getElementById('editFieldVoto');
+        const votoStr = votoSelect.value;
         const tipoSelect = document.getElementById('editFieldTipo');
         const tipo = tipoSelect.value || getTipo(name, desc);
         
@@ -2012,7 +2057,10 @@
             },
             body: JSON.stringify(payload)
           });
-          if (!res.ok) throw new Error('Errore HTTP ' + res.status);
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Errore HTTP ${res.status}: ${errorText}`);
+          }
           const updatedSpot = await res.json();
           // Aggiorna nell'array
           const index = allSpots.findIndex(s => s.id === spotId);
@@ -2026,7 +2074,7 @@
           showToast('Spot modificato.');
         } catch (err) {
           console.error(err);
-          alert('Errore nel salvataggio delle modifiche.');
+          alert('Errore nel salvataggio delle modifiche: ' + err.message);
         }
       });
       btnCloseEdit.addEventListener('click', () => {
