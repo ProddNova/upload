@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Lost Trace Unit – Mappa spot abbandonati</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <!-- Leaflet CSS -->
   <link
@@ -555,6 +555,8 @@
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
+      width: 26px !important;
+      height: 36px !important;
     }
     
     /* Popup Leaflet in stile LTU dark premium */
@@ -1141,6 +1143,11 @@
              style="background:#2563eb; color:white; padding:9px 16px; border-radius:999px; text-decoration:none; display:block; text-align:center; font-weight:600; font-size:13px;">
             Apri in Google Maps ↗
           </a>
+
+          <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
+            <button style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
+            <button style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Elimina</button>
+          </div>
         </div>
       `;
     }
@@ -1155,16 +1162,15 @@
     
         const iconHtml = `
           <div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
-            <svg width="24" height="34" viewBox="0 0 24 34" xmlns="http://www.w3.org/2000/svg">
-              <!-- Goccia esterna (forma Google Maps 2024/2025) -->
-              <path d="M12,0 C5.373,0 0,5.373 0,12 C0,20.938 12,34 12,34 C12,34 24,20.938 24,12 C24,5.373 18.627,0 12,0 Z" 
+            <svg width="26" height="36" viewBox="0 0 26 36" xmlns="http://www.w3.org/2000/svg">
+              <!-- Goccia esterna (forma Google Maps 2024/2025) senza stroke per evitare glitch -->
+              <path d="M13,0 C5.373,0 0,5.373 0,13 C0,21.938 13,36 13,36 C13,36 26,21.938 26,13 C26,5.373 20.627,0 13,0 Z" 
                     fill="${color}" 
-                    stroke="#000000" 
-                    stroke-width="1"/>
+                    stroke="none"/>
               <!-- Cerchio bianco interno -->
-              <circle cx="12" cy="11.5" r="7.5" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
+              <circle cx="13" cy="12.5" r="8" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
               <!-- Emoji perfettamente centrata -->
-              <text x="12" y="15" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
+              <text x="13" y="16" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
             </svg>
           </div>
         `;
@@ -1172,9 +1178,9 @@
         const icon = L.divIcon({
           html: iconHtml,
           className: "ltu-custom-pin",   // fondamentale
-          iconSize: [24, 34],
-          iconAnchor: [12, 34],     // punta esattamente sul punto
-          popupAnchor: [0, -30]     // popup vicinissimo al pin
+          iconSize: [26, 36],
+          iconAnchor: [13, 36],     // punta esattamente sul punto
+          popupAnchor: [0, -32]     // popup vicinissimo al pin
         });
     
         const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
