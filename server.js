@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const fs = require("fs").promises;
 const https = require("https");
 const { v4: uuidv4 } = require("uuid");
@@ -7,10 +8,7 @@ const { v4: uuidv4 } = require("uuid");
 const app = express();
 
 // ===============================
-// CONFIG: LOGIN E FILE DI STORAGE
-// ===============================
-const USERNAME = process.env.APP_USER || "unit";
-const PASSWORD = process.env.APP_PASSWORD || "ltunit";
+@@ -12,170 +14,696 @@ const PASSWORD = process.env.APP_PASSWORD || "ltunit";
 const EXTRA_FILE = path.join(__dirname, "spots-extra.json");
 const SETTINGS_FILE = path.join(__dirname, "settings.json");
 
@@ -21,9 +19,11 @@ const locks = {
 };
 
 const DEFAULT_SETTINGS = {
+  version: 1,
   version: 2,
-  baseLayer: "osm",
-  mapStyle: "default",
+baseLayer: "osm",
+mapStyle: "default",
+  randomIncludeLowRated: false
   randomIncludeLowRated: false,
   lastUpdated: null
 };
@@ -153,10 +153,12 @@ async function safeWriteJson(filePath, data) {
 // ===============================
 // MIDDLEWARE
 // ===============================
+app.use(express.json());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
 
+// Middleware di autenticazione senza dipendenze esterne
 // CORS middleware completo
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -200,15 +202,23 @@ const authMiddleware = (req, res, next) => {
     return next();
   }
   
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Basic ')) {
-    res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
+const authHeader = req.headers.authorization;
+if (!authHeader || !authHeader.startsWith('Basic ')) {
+res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
+    return res.status(401).json({ error: "Accesso non autorizzato" });
     return res.status(401).json({ 
       error: "Accesso non autorizzato",
       code: "AUTH_REQUIRED"
     });
-  }
+}
+
+  const base64Credentials = authHeader.split(' ')[1];
+  const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+  const [username, password] = credentials.split(':');
   
+  if (username !== USERNAME || password !== PASSWORD) {
+    res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
+    return res.status(401).json({ error: "Accesso non autorizzato" });
   try {
     const base64Credentials = authHeader.split(' ')[1];
     const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
@@ -234,11 +244,28 @@ const authMiddleware = (req, res, next) => {
       error: "Formato autorizzazione non valido",
       code: "INVALID_AUTH_FORMAT"
     });
-  }
+}
+  
+  req.user = { name: username };
+  next();
 };
 
 // Funzione getTipo
 function getTipo(name, desc) {
+  const text = (name + " " + (desc || "")).toLowerCase();
+  if (text.includes("hotel") || text.includes("ostello") || text.includes("residence")) return "hotel";
+  if (text.includes("villa") || text.includes("villone") || text.includes("villino") || text.includes("villetta") || text.includes("ville")) return "villa";
+  if (text.includes("casa") || text.includes("casetta") || text.includes("casone") || text.includes("case") || text.includes("cascina") || text.includes("casolare")) return "casa";
+  if (text.includes("fabbrica") || text.includes("capannone") || text.includes("magazzino") || text.includes("distilleria") || text.includes("cantiere") || text.includes("impresa edile") || text.includes("stazione") || text.includes("centro commerciale")) return "industria";
+  if (text.includes("scuola") || text.includes("itis")) return "scuola";
+  if (text.includes("chiesa")) return "chiesa";
+  if (text.includes("colonia")) return "colonia";
+  if (text.includes("prigione") || text.includes("manicomio") || text.includes("ospedale") || text.includes("clinica") || text.includes("convento")) return "istituzione";
+  if (text.includes("discoteca") || text.includes("bar") || text.includes("ristorante") || text.includes("pizzeria")) return "svago";
+  if (text.includes("castello")) return "castello";
+  if (text.includes("nave")) return "nave";
+  if (text.includes("diga")) return "diga";
+  if (text.includes("base nato")) return "militare";
   const text = ((name || '') + ' ' + (desc || '')).toLowerCase();
   
   const patterns = {
@@ -263,14 +290,20 @@ function getTipo(name, desc) {
     }
   }
   
-  return "altro";
+return "altro";
 }
 
 // ===============================
+// API: SPOT EXTRA
 // API: SPOT EXTRA CON LOCKING
 // ===============================
+app.get("/api/spots-extra", (req, res) => {
 app.get("/api/spots-extra", async (req, res) => {
-  try {
+try {
+    if (!fs.existsSync(EXTRA_FILE)) return res.json([]);
+    const raw = fs.readFileSync(EXTRA_FILE, "utf8");
+    const data = JSON.parse(raw);
+    res.json(Array.isArray(data) ? data : []);
     const data = await withLock('spots', async () => {
       return await safeReadJson(EXTRA_FILE, []);
     });
@@ -281,20 +314,24 @@ app.get("/api/spots-extra", async (req, res) => {
       count: Array.isArray(data) ? data.length : 0,
       timestamp: new Date().toISOString()
     });
-  } catch (err) {
-    console.error("Errore lettura spots-extra:", err);
+} catch (err) {
+console.error("Errore lettura spots-extra:", err);
+    res.status(500).json({ error: "Errore lettura spots-extra" });
     res.status(500).json({ 
       success: false,
       error: "Errore lettura spots-extra",
       message: err.message,
       code: "READ_ERROR"
     });
-  }
+}
 });
 
+app.post("/api/spots-extra", authMiddleware, (req, res) => {
 app.post("/api/spots-extra", authMiddleware, async (req, res) => {
-  try {
-    const { name, desc, lat, lng, voto, tipo } = req.body || {};
+try {
+const { name, desc, lat, lng, voto, tipo } = req.body || {};
+    if (!name || lat == null || lng == null) {
+      return res.status(400).json({ error: "name, lat, lng sono obbligatori" });
     
     // Validazione input
     if (!name || name.trim().length === 0) {
@@ -303,7 +340,8 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
         error: "Il nome è obbligatorio",
         code: "MISSING_NAME"
       });
-    }
+}
+
     
     if (lat == null || lng == null) {
       return res.status(400).json({ 
@@ -313,16 +351,18 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
       });
     }
     
-    const latNum = parseFloat(lat);
-    const lngNum = parseFloat(lng);
+const latNum = parseFloat(lat);
+const lngNum = parseFloat(lng);
     
-    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+      return res.status(400).json({ error: "Coordinate non valide" });
       return res.status(400).json({ 
         success: false,
         error: "Coordinate non valide",
         code: "INVALID_COORDINATES"
       });
-    }
+}
+
     
     // Validazione range coordinate
     if (latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
@@ -333,26 +373,48 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
       });
     }
     
-    let votoNum = null;
+let votoNum = null;
+    if (voto != null) {
     if (voto != null && voto !== "" && !isNaN(voto)) {
-      const v = parseInt(voto, 10);
-      if (v >= 1 && v <= 6) votoNum = v;
+const v = parseInt(voto, 10);
+if (v >= 1 && v <= 6) votoNum = v;
+}
+
+    let current = [];
+    if (fs.existsSync(EXTRA_FILE)) {
+      try {
+        const raw = fs.readFileSync(EXTRA_FILE, "utf8");
+        const data = JSON.parse(raw);
+        if (Array.isArray(data)) current = data;
+      } catch (e) {
+        console.error("Errore parse spots-extra, resetto array:", e);
+      }
     }
+
+    const spot = {
+      id: Date.now().toString(),
+      name: String(name),
+      desc: desc != null ? String(desc) : "",
     
     const newSpot = {
       id: uuidv4(),
       name: String(name).trim(),
       desc: desc != null ? String(desc).trim() : "",
-      lat: latNum,
-      lng: lngNum,
-      voto: votoNum,
-      tipo: tipo ? String(tipo) : getTipo(name, desc),
-      createdAt: new Date().toISOString(),
+lat: latNum,
+lng: lngNum,
+voto: votoNum,
+tipo: tipo ? String(tipo) : getTipo(name, desc),
+createdAt: new Date().toISOString(),
+      createdBy: req.user ? req.user.name : "unit"
       updatedAt: new Date().toISOString(),
       createdBy: req.user ? req.user.name : "anonymous",
       version: 1,
       status: "active"
-    };
+};
+
+    current.push(spot);
+    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2), "utf8");
+    res.status(201).json(spot);
     
     const result = await withLock('spots', async () => {
       let current = await safeReadJson(EXTRA_FILE, []);
@@ -394,8 +456,9 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
       timestamp: newSpot.createdAt
     });
     
-  } catch (err) {
-    console.error("Errore salvataggio spot:", err);
+} catch (err) {
+console.error("Errore salvataggio spot:", err);
+    res.status(500).json({ error: "Errore salvataggio spot" });
     
     if (err.status === 409) {
       return res.status(409).json({
@@ -412,11 +475,15 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
       message: err.message,
       code: "SAVE_ERROR"
     });
-  }
+}
 });
 
+app.delete("/api/spots-extra/:id", authMiddleware, (req, res) => {
 app.delete("/api/spots-extra/:id", authMiddleware, async (req, res) => {
-  try {
+try {
+    let current = [];
+    if (fs.existsSync(EXTRA_FILE)) {
+      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
     const spotId = req.params.id;
     
     if (!spotId || spotId.length < 10) {
@@ -425,7 +492,12 @@ app.delete("/api/spots-extra/:id", authMiddleware, async (req, res) => {
         error: "ID spot non valido",
         code: "INVALID_ID"
       });
-    }
+}
+    current = current.filter(s => s.id !== req.params.id);
+    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: "errore" });
     
     const result = await withLock('spots', async () => {
       let current = await safeReadJson(EXTRA_FILE, []);
@@ -480,11 +552,15 @@ app.delete("/api/spots-extra/:id", authMiddleware, async (req, res) => {
       message: err.message,
       code: "DELETE_ERROR"
     });
-  }
+}
 });
 
+app.put("/api/spots-extra/:id", authMiddleware, (req, res) => {
 app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
-  try {
+try {
+    let current = [];
+    if (fs.existsSync(EXTRA_FILE)) {
+      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
     const spotId = req.params.id;
     const { name, desc, lat, lng, voto, tipo } = req.body || {};
     
@@ -494,7 +570,11 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
         error: "ID spot non valido",
         code: "INVALID_ID"
       });
-    }
+}
+    const index = current.findIndex(s => s.id === req.params.id);
+    if (index === -1) return res.status(404).json({ error: "non trovato" });
+
+    // Correzione: Gestisci voto correttamente (potrebbe essere stringa vuota)
     
     if (!name || name.trim().length === 0) {
       return res.status(400).json({
@@ -523,11 +603,13 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
       });
     }
     
-    let votoNum = null;
+let votoNum = null;
+    if (req.body.voto !== undefined && req.body.voto !== "") {
+      const v = parseInt(req.body.voto, 10);
     if (voto !== undefined && voto !== "" && !isNaN(voto)) {
       const v = parseInt(voto, 10);
-      if (v >= 1 && v <= 6) votoNum = v;
-    }
+if (v >= 1 && v <= 6) votoNum = v;
+}
     
     const result = await withLock('spots', async () => {
       let current = await safeReadJson(EXTRA_FILE, []);
@@ -621,6 +703,21 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
   }
 });
 
+    current[index] = { 
+      ...current[index], 
+      name: req.body.name || current[index].name,
+      desc: req.body.desc !== undefined ? req.body.desc : current[index].desc,
+      lat: parseFloat(req.body.lat) || current[index].lat,
+      lng: parseFloat(req.body.lng) || current[index].lng,
+      voto: votoNum,
+      tipo: req.body.tipo ? String(req.body.tipo) : getTipo(req.body.name || current[index].name, req.body.desc || current[index].desc),
+      updatedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
+    res.json(current[index]);
+  } catch (e) {
+    console.error("Errore aggiornamento spot:", e);
+    res.status(500).json({ error: "errore" });
 // Endpoint per bulk operations (utile per recovery)
 app.post("/api/spots-extra/bulk", authMiddleware, async (req, res) => {
   try {
@@ -704,15 +801,16 @@ app.post("/api/spots-extra/bulk", authMiddleware, async (req, res) => {
       message: err.message,
       code: "BULK_ERROR"
     });
-  }
+}
 });
 
-// ===============================
-// API: DECODE GOOGLE MAPS URL
-// ===============================
+@@ -185,9 +713,16 @@ app.put("/api/spots-extra/:id", authMiddleware, (req, res) => {
 app.post("/api/decode-gmaps-url", async (req, res) => {
-  try {
-    const { url } = req.body;
+try {
+const { url } = req.body;
+    if (!url) return res.status(400).json({ error: "URL richiesto" });
+
+    let finalUrl = url;
     
     if (!url || typeof url !== 'string') {
       return res.status(400).json({
@@ -723,19 +821,19 @@ app.post("/api/decode-gmaps-url", async (req, res) => {
     }
     
     let finalUrl = url.trim();
+
+// Risolvi short URL
+if (url.includes("goo.gl") || url.includes("maps.app.goo.gl")) {
+@@ -198,68 +733,386 @@ app.post("/api/decode-gmaps-url", async (req, res) => {
+console.warn("Impossibile risolvere short URL:", e);
+}
+}
+
     
-    // Risolvi short URL
-    if (url.includes("goo.gl") || url.includes("maps.app.goo.gl")) {
-      try {
-        const resolved = await resolveShortUrl(url);
-        finalUrl = resolved;
-      } catch (e) {
-        console.warn("Impossibile risolvere short URL:", e);
-      }
-    }
-    
-    // Estrai coordinate
-    const coords = extractCoordsFromUrl(finalUrl);
+// Estrai coordinate
+const coords = extractCoordsFromUrl(finalUrl);
+    if (!coords) return res.status(400).json({ error: "Coordinate non trovate nell'URL" });
+
     
     if (!coords) {
       return res.status(400).json({
@@ -746,7 +844,10 @@ app.post("/api/decode-gmaps-url", async (req, res) => {
       });
     }
     
-    res.json({
+res.json({
+      lat: coords.lat,
+      lng: coords.lng,
+      sourceUrl: finalUrl
       success: true,
       data: {
         lat: coords.lat,
@@ -754,22 +855,24 @@ app.post("/api/decode-gmaps-url", async (req, res) => {
         sourceUrl: finalUrl
       },
       timestamp: new Date().toISOString()
-    });
+});
     
-  } catch (err) {
-    console.error("Errore decodifica URL:", err);
+} catch (err) {
+console.error("Errore decodifica URL:", err);
+    res.status(500).json({ error: "Errore decodifica URL" });
     res.status(500).json({
       success: false,
       error: "Errore decodifica URL",
       message: err.message,
       code: "DECODE_ERROR"
     });
-  }
+}
 });
 
 // ===============================
 // API: SETTINGS CONDIVISE
 // ===============================
+function readSettings() {
 async function readSettings() {
   return await withLock('settings', async () => {
     const settings = await safeReadJson(SETTINGS_FILE, DEFAULT_SETTINGS);
@@ -778,7 +881,11 @@ async function readSettings() {
 }
 
 app.get("/api/settings", async (req, res) => {
-  try {
+try {
+    if (!fs.existsSync(SETTINGS_FILE)) return { ...DEFAULT_SETTINGS };
+    const raw = fs.readFileSync(SETTINGS_FILE, "utf8");
+    const data = JSON.parse(raw);
+    return { ...DEFAULT_SETTINGS, ...data };
     const settings = await readSettings();
     
     res.json({
@@ -787,20 +894,29 @@ app.get("/api/settings", async (req, res) => {
       timestamp: new Date().toISOString()
     });
     
-  } catch (err) {
-    console.error("Errore lettura settings:", err);
+} catch (err) {
+console.error("Errore lettura settings:", err);
+    return { ...DEFAULT_SETTINGS };
     res.status(500).json({
       success: false,
       error: "Errore lettura settings",
       message: err.message,
       code: "SETTINGS_READ_ERROR"
     });
-  }
+}
+}
+
+app.get("/api/settings", (req, res) => {
+  const settings = readSettings();
+  res.json(settings);
 });
 
+app.post("/api/settings", authMiddleware, (req, res) => {
 app.post("/api/settings", authMiddleware, async (req, res) => {
-  try {
-    const incoming = req.body || {};
+try {
+const incoming = req.body || {};
+    const current = readSettings();
+    const updated = { ...current };
     
     const result = await withLock('settings', async () => {
       const current = await safeReadJson(SETTINGS_FILE, DEFAULT_SETTINGS);
@@ -851,6 +967,16 @@ app.post("/api/settings", authMiddleware, async (req, res) => {
   }
 });
 
+    if (incoming.baseLayer && [
+      "osm", "osmHot", "satellite", "topo", "dark", 
+      "cycle", "transport", "watercolor", "terrain", "satelliteHybrid",
+      "cartoLight", "stamenToner", "esriTopo", "esriOcean", "esriGray",
+      "satellite2", "satellite3"
+    ].includes(incoming.baseLayer)) {
+      updated.baseLayer = incoming.baseLayer;
+    }
+    if (incoming.mapStyle && typeof incoming.mapStyle === "string") {
+      updated.mapStyle = incoming.mapStyle;
 // ===============================
 // HEALTH CHECK, STATS E BACKUP
 // ===============================
@@ -916,7 +1042,9 @@ app.get("/api/stats", async (req, res) => {
     
     if (!Array.isArray(spots)) {
       throw new Error("Invalid spots data");
-    }
+}
+    if (typeof incoming.randomIncludeLowRated === "boolean") {
+      updated.randomIncludeLowRated = incoming.randomIncludeLowRated;
     
     const stats = {
       total: spots.length,
@@ -1021,7 +1149,7 @@ app.get("/api/backup", authMiddleware, async (req, res) => {
       }
     } catch (e) {
       // Ignora errori di pulizia
-    }
+}
     
     res.json({
       success: true,
@@ -1041,6 +1169,8 @@ app.get("/api/backup", authMiddleware, async (req, res) => {
   }
 });
 
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2), "utf8");
+    res.json(updated);
 // Endpoint per restore da backup
 app.post("/api/restore", authMiddleware, async (req, res) => {
   try {
@@ -1106,46 +1236,55 @@ app.post("/api/restore", authMiddleware, async (req, res) => {
       timestamp: new Date().toISOString()
     });
     
-  } catch (err) {
+} catch (err) {
+    console.error("Errore salvataggio settings:", err);
+    res.status(500).json({ error: "Errore salvataggio settings" });
     console.error("Errore restore:", err);
     res.status(500).json({
       success: false,
       error: "Errore durante il restore",
       message: err.message
     });
-  }
+}
 });
 
-// ===============================
-// HELPER FUNCTIONS
+@@ -268,45 +1121,62 @@ app.post("/api/settings", authMiddleware, (req, res) => {
 // ===============================
 function extractCoordsFromUrl(url) {
-  try {
+try {
+    // Cerca pattern @lat,lng
     if (!url || typeof url !== 'string') return null;
     
     // Pattern 1: @lat,lng
-    const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (atMatch) {
-      return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
-    }
+const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+if (atMatch) {
+return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+}
+
+    // Cerca pattern /place/lat,lng
     
     // Pattern 2: /place/lat,lng
-    const placeMatch = url.match(/place\/(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (placeMatch) {
-      return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
-    }
+const placeMatch = url.match(/place\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+if (placeMatch) {
+return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
+}
+
+    // Cerca pattern ?q=lat,lng
     
     // Pattern 3: ?q=lat,lng
-    const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (qMatch) {
-      return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
-    }
+const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+if (qMatch) {
+return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+}
+
+    // Cerca pattern data=!4d...!3d...
     
     // Pattern 4: data=!4d...!3d...
-    const dataMatch = url.match(/data=!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-    if (dataMatch) {
-      return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) };
-    }
+const dataMatch = url.match(/data=!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+if (dataMatch) {
+return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) };
+}
+
     
     // Pattern 5: /@lat,lng,zoom
     const detailedMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+),(\d+z)/);
@@ -1153,21 +1292,24 @@ function extractCoordsFromUrl(url) {
       return { lat: parseFloat(detailedMatch[1]), lng: parseFloat(detailedMatch[2]) };
     }
     
-    return null;
-  } catch (e) {
+return null;
+} catch (e) {
     console.error("Error extracting coords from URL:", e);
-    return null;
-  }
+return null;
+}
 }
 
 function resolveShortUrl(shortUrl) {
-  return new Promise((resolve, reject) => {
+return new Promise((resolve, reject) => {
+    https.get(shortUrl, (response) => {
     const req = https.get(shortUrl, (response) => {
-      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        resolve(response.headers.location);
-      } else {
+if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+resolve(response.headers.location);
+} else {
+        reject(new Error("Impossibile risolvere short URL"));
         reject(new Error("Impossibile risolvere short URL, nessun redirect"));
-      }
+}
+    }).on("error", reject);
     });
     
     req.on('error', reject);
@@ -1177,14 +1319,11 @@ function resolveShortUrl(shortUrl) {
     });
     
     req.end();
-  });
+});
 }
 
-// ===============================
-// ROUTE PRINCIPALE
-// ===============================
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+@@ -317,11 +1187,289 @@ app.get("/", (req, res) => {
+res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.get("/admin", (req, res) => {
@@ -1395,6 +1534,10 @@ app.use((err, req, res, next) => {
 // AVVIO SERVER
 // ===============================
 const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server attivo su http://localhost:${port}`);
+  console.log(`Login: user="${USERNAME}" password="${PASSWORD}"`);
+});
 
 // Inizializzazione file e directory
 async function initializeServer() {
