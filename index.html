@@ -146,6 +146,71 @@ top: 50%;
 left: 50%;
 transform: translate(-50%, -50%);
 }
+/* FORCE SAVE BUTTON */
+#forceSaveBtn {
+position: fixed;
+top: 10px;
+left: 10px;
+z-index: 30;
+}
+#forceSaveBtn.saving {
+background: linear-gradient(to right, #f59e0b, #f97316);
+animation: pulse 1s infinite;
+}
+@keyframes pulse {
+0% { transform: scale(1); }
+50% { transform: scale(1.05); }
+100% { transform: scale(1); }
+}
+/* FORCE SAVE RESULT OVERLAY */
+#forceSaveResultPanel .overlay-body {
+padding: 15px;
+max-height: 70vh;
+overflow-y: auto;
+}
+.force-save-result {
+margin-top: 10px;
+}
+.result-summary {
+font-size: 14px;
+margin-bottom: 15px;
+padding: 10px;
+border-radius: 8px;
+background: rgba(15, 23, 42, 0.5);
+}
+.result-summary.success {
+border-left: 4px solid #10b981;
+background: rgba(16, 185, 129, 0.1);
+}
+.result-summary.error {
+border-left: 4px solid #ef4444;
+background: rgba(239, 68, 68, 0.1);
+}
+.result-summary.warning {
+border-left: 4px solid #f59e0b;
+background: rgba(245, 158, 11, 0.1);
+}
+.error-list {
+margin-top: 10px;
+}
+.error-item {
+padding: 8px;
+margin-bottom: 5px;
+border-radius: 6px;
+background: rgba(239, 68, 68, 0.05);
+border: 1px solid rgba(239, 68, 68, 0.2);
+font-size: 12px;
+}
+.error-coords {
+font-family: monospace;
+color: #93c5fd;
+margin-top: 3px;
+}
+.error-message {
+color: #fca5a5;
+font-size: 11px;
+margin-top: 2px;
+}
 /* DOCK LATERALE DESTRO */
 #rightDock {
 position: fixed;
@@ -838,90 +903,90 @@ height: 80%;
 border-radius: 0;
 }
 }
-    /* SYNC STATUS INDICATOR */
-    #syncStatus {
-      position: fixed;
-      bottom: 50px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 35;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 10px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    #syncStatus.show {
-      opacity: 1;
-    }
-    #syncStatus.syncing {
-      color: #3b82f6;
-    }
-    #syncStatus.success {
-      color: #10b981;
-    }
-    #syncStatus.error {
-      color: #ef4444;
-    }
-    /* CONFIRM MODAL */
-    .confirm-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .confirm-modal-content {
-      background: var(--bg-panel);
-      border-radius: 16px;
-      padding: 20px;
-      max-width: 400px;
-      width: 90%;
-      border: 1px solid var(--border-soft);
-      box-shadow: var(--shadow-strong);
-    }
-    .confirm-modal-title {
-      font-size: 16px;
-      margin-bottom: 10px;
-      color: var(--text-main);
-    }
-    .confirm-modal-message {
-      font-size: 14px;
-      color: var(--text-dim);
-      margin-bottom: 20px;
-    }
-    .confirm-modal-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-    .confirm-btn {
-      padding: 8px 16px;
-      border-radius: 999px;
-      border: none;
-      font-size: 14px;
-      cursor: pointer;
-      min-width: 80px;
-    }
-    .confirm-btn-cancel {
-      background: rgba(55, 65, 81, 1);
-      color: var(--text-main);
-    }
-    .confirm-btn-confirm {
-      background: #ef4444;
-      color: white;
-    }
+/* SYNC STATUS INDICATOR */
+#syncStatus {
+position: fixed;
+bottom: 50px;
+left: 50%;
+transform: translateX(-50%);
+z-index: 35;
+padding: 4px 10px;
+border-radius: 999px;
+font-size: 10px;
+background: rgba(15, 23, 42, 0.9);
+border: 1px solid rgba(148, 163, 184, 0.4);
+color: var(--text-dim);
+display: flex;
+align-items: center;
+gap: 5px;
+opacity: 0;
+transition: opacity 0.3s;
+}
+#syncStatus.show {
+opacity: 1;
+}
+#syncStatus.syncing {
+color: #3b82f6;
+}
+#syncStatus.success {
+color: #10b981;
+}
+#syncStatus.error {
+color: #ef4444;
+}
+/* CONFIRM MODAL */
+.confirm-modal {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.7);
+z-index: 10000;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.confirm-modal-content {
+background: var(--bg-panel);
+border-radius: 16px;
+padding: 20px;
+max-width: 400px;
+width: 90%;
+border: 1px solid var(--border-soft);
+box-shadow: var(--shadow-strong);
+}
+.confirm-modal-title {
+font-size: 16px;
+margin-bottom: 10px;
+color: var(--text-main);
+}
+.confirm-modal-message {
+font-size: 14px;
+color: var(--text-dim);
+margin-bottom: 20px;
+}
+.confirm-modal-buttons {
+display: flex;
+gap: 10px;
+justify-content: flex-end;
+}
+.confirm-btn {
+padding: 8px 16px;
+border-radius: 999px;
+border: none;
+font-size: 14px;
+cursor: pointer;
+min-width: 80px;
+}
+.confirm-btn-cancel {
+background: rgba(55, 65, 81, 1);
+color: var(--text-main);
+}
+.confirm-btn-confirm {
+background: #ef4444;
+color: white;
+}
 </style>
 </head>
 <body>
@@ -930,8 +995,11 @@ border-radius: 0;
 <div id="crosshair"></div>
 <div id="temporaryPin"></div>
 
-  <!-- SYNC STATUS -->
-  <div id="syncStatus"></div>
+<!-- FORCE SAVE BUTTON -->
+<button id="forceSaveBtn" class="dock-btn" title="Forza salvataggio spot">💾</button>
+
+<!-- SYNC STATUS -->
+<div id="syncStatus"></div>
   
 <!-- DOCK DESTRO CON TOGGLE E LEGENDA -->
 <div id="rightDock">
@@ -1274,6 +1342,23 @@ per estrarre automaticamente le coordinate.
 </div>
 </div>
 
+<!-- FORCE SAVE RESULT PANEL -->
+<div id="forceSaveResultPanel" class="overlay hidden">
+<div class="overlay-backdrop"></div>
+<div class="overlay-card">
+<div class="overlay-header">
+<div class="overlay-header-title">
+<strong>Risultato salvataggio forzato</strong>
+<small>Riepilogo degli spot salvati e non</small>
+</div>
+<button id="btnCloseForceSaveResult" class="icon-btn">✕</button>
+</div>
+<div class="overlay-body">
+<div id="forceSaveResultContent"></div>
+</div>
+</div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -1434,177 +1519,176 @@ default: return "📍";
 }
 }
 
-    function showToast(msg) {
-    function showToast(msg, type = "info") {
+function showToast(msg, type = "info") {
 const t = document.getElementById("toast");
 if (!t) return;
-      
-      // Set color based on type
-      if (type === "error") {
-        t.style.background = "rgba(239, 68, 68, 0.9)";
-        t.style.borderColor = "#ef4444";
-      } else if (type === "success") {
-        t.style.background = "rgba(34, 197, 94, 0.9)";
-        t.style.borderColor = "#22c55e";
-      } else if (type === "warning") {
-        t.style.background = "rgba(245, 158, 11, 0.9)";
-        t.style.borderColor = "#f59e0b";
-      } else {
-        t.style.background = "rgba(15, 23, 42, 0.96)";
-        t.style.borderColor = "rgba(148, 163, 184, 0.6)";
-      }
-      
+  
+// Set color based on type
+if (type === "error") {
+t.style.background = "rgba(239, 68, 68, 0.9)";
+t.style.borderColor = "#ef4444";
+} else if (type === "success") {
+t.style.background = "rgba(34, 197, 94, 0.9)";
+t.style.borderColor = "#22c55e";
+} else if (type === "warning") {
+t.style.background = "rgba(245, 158, 11, 0.9)";
+t.style.borderColor = "#f59e0b";
+} else {
+t.style.background = "rgba(15, 23, 42, 0.96)";
+t.style.borderColor = "rgba(148, 163, 184, 0.6)";
+}
+  
 t.textContent = msg;
 t.classList.add("show");
-      setTimeout(() => t.classList.remove("show"), 1700);
-      setTimeout(() => {
-        t.classList.remove("show");
-        // Reset to default after hiding
-        setTimeout(() => {
-          t.style.background = "";
-          t.style.borderColor = "";
-        }, 300);
-      }, 2500);
-    }
+setTimeout(() => t.classList.remove("show"), 1700);
+setTimeout(() => {
+t.classList.remove("show");
+// Reset to default after hiding
+setTimeout(() => {
+t.style.background = "";
+t.style.borderColor = "";
+}, 300);
+}, 2500);
+}
     
-    // =========================
-    // ENHANCED FETCH WITH RETRY
-    // =========================
-    let retryAttempts = 0;
-    const MAX_RETRIES = 3;
-    const RETRY_DELAY = 1000; // 1 second
+// =========================
+// ENHANCED FETCH WITH RETRY
+// =========================
+let retryAttempts = 0;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
     
-    async function fetchWithRetry(url, options = {}, maxRetries = MAX_RETRIES) {
-      let lastError;
+async function fetchWithRetry(url, options = {}, maxRetries = MAX_RETRIES) {
+let lastError;
       
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-          const response = await fetch(url, options);
+for (let attempt = 0; attempt <= maxRetries; attempt++) {
+try {
+const response = await fetch(url, options);
           
-          // Check for HTTP errors
-          if (!response.ok) {
-            // Try to parse error response
-            let errorData;
-            try {
-              errorData = await response.json();
-            } catch {
-              errorData = { error: `HTTP ${response.status}` };
-            }
+// Check for HTTP errors
+if (!response.ok) {
+// Try to parse error response
+let errorData;
+try {
+errorData = await response.json();
+} catch {
+errorData = { error: `HTTP ${response.status}` };
+}
             
-            // Don't retry on client errors (4xx) except 429
-            if (response.status >= 400 && response.status < 500 && response.status !== 429) {
-              throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
-            }
+// Don't retry on client errors (4xx) except 429
+if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+}
             
-            // Retry on server errors (5xx) or 429
-            if (attempt < maxRetries) {
-              const delay = RETRY_DELAY * Math.pow(2, attempt); // Exponential backoff
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue;
-            }
+// Retry on server errors (5xx) or 429
+if (attempt < maxRetries) {
+const delay = RETRY_DELAY * Math.pow(2, attempt); // Exponential backoff
+await new Promise(resolve => setTimeout(resolve, delay));
+continue;
+}
             
-            throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
-          }
+throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+}
           
-          // Parse successful response
-          const result = await response.json();
+// Parse successful response
+const result = await response.json();
           
-          // Check for backend success flag
-          if (result.success === false) {
-            throw new Error(result.error || result.message || "Operazione fallita");
-          }
+// Check for backend success flag
+if (result.success === false) {
+throw new Error(result.error || result.message || "Operazione fallita");
+}
           
-          return result;
+return result;
           
-        } catch (error) {
-          lastError = error;
+} catch (error) {
+lastError = error;
           
-          // Show sync status
-          updateSyncStatus(`Tentativo ${attempt + 1}/${maxRetries + 1} fallito`, "error");
+// Show sync status
+updateSyncStatus(`Tentativo ${attempt + 1}/${maxRetries + 1} fallito`, "error");
           
-          if (attempt < maxRetries) {
-            const delay = RETRY_DELAY * Math.pow(2, attempt);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
-        }
-      }
+if (attempt < maxRetries) {
+const delay = RETRY_DELAY * Math.pow(2, attempt);
+await new Promise(resolve => setTimeout(resolve, delay));
+}
+}
+}
       
-      throw lastError;
-    }
+throw lastError;
+}
     
-    // =========================
-    // SYNC STATUS INDICATOR
-    // =========================
-    function updateSyncStatus(message, type = "info") {
-      const statusEl = document.getElementById("syncStatus");
-      if (!statusEl) return;
+// =========================
+// SYNC STATUS INDICATOR
+// =========================
+function updateSyncStatus(message, type = "info") {
+const statusEl = document.getElementById("syncStatus");
+if (!statusEl) return;
       
-      statusEl.textContent = message;
-      statusEl.className = type;
-      statusEl.classList.add("show");
+statusEl.textContent = message;
+statusEl.className = type;
+statusEl.classList.add("show");
       
-      // Auto-hide after 3 seconds for success, 5 seconds for error
-      const hideTime = type === "success" ? 3000 : 5000;
-      setTimeout(() => {
-        statusEl.classList.remove("show");
-      }, hideTime);
-    }
+// Auto-hide after 3 seconds for success, 5 seconds for error
+const hideTime = type === "success" ? 3000 : 5000;
+setTimeout(() => {
+statusEl.classList.remove("show");
+}, hideTime);
+}
     
-    // =========================
-    // CONFIRM DIALOG
-    // =========================
-    function showConfirm(title, message) {
-      return new Promise((resolve) => {
-        // Remove existing modal if any
-        const existingModal = document.querySelector('.confirm-modal');
-        if (existingModal) existingModal.remove();
+// =========================
+// CONFIRM DIALOG
+// =========================
+function showConfirm(title, message) {
+return new Promise((resolve) => {
+// Remove existing modal if any
+const existingModal = document.querySelector('.confirm-modal');
+if (existingModal) existingModal.remove();
         
-        const modal = document.createElement('div');
-        modal.className = 'confirm-modal';
-        modal.innerHTML = `
-          <div class="confirm-modal-content">
-            <div class="confirm-modal-title">${title}</div>
-            <div class="confirm-modal-message">${message}</div>
-            <div class="confirm-modal-buttons">
-              <button class="confirm-btn confirm-btn-cancel">Annulla</button>
-              <button class="confirm-btn confirm-btn-confirm">Conferma</button>
-            </div>
-          </div>
-        `;
+const modal = document.createElement('div');
+modal.className = 'confirm-modal';
+modal.innerHTML = `
+<div class="confirm-modal-content">
+<div class="confirm-modal-title">${title}</div>
+<div class="confirm-modal-message">${message}</div>
+<div class="confirm-modal-buttons">
+<button class="confirm-btn confirm-btn-cancel">Annulla</button>
+<button class="confirm-btn confirm-btn-confirm">Conferma</button>
+</div>
+</div>
+`;
         
-        document.body.appendChild(modal);
+document.body.appendChild(modal);
         
-        const cancelBtn = modal.querySelector('.confirm-btn-cancel');
-        const confirmBtn = modal.querySelector('.confirm-btn-confirm');
+const cancelBtn = modal.querySelector('.confirm-btn-cancel');
+const confirmBtn = modal.querySelector('.confirm-btn-confirm');
         
-        cancelBtn.onclick = () => {
-          modal.remove();
-          resolve(false);
-        };
+cancelBtn.onclick = () => {
+modal.remove();
+resolve(false);
+};
         
-        confirmBtn.onclick = () => {
-          modal.remove();
-          resolve(true);
-        };
+confirmBtn.onclick = () => {
+modal.remove();
+resolve(true);
+};
         
-        // Close on backdrop click
-        modal.onclick = (e) => {
-          if (e.target === modal) {
-            modal.remove();
-            resolve(false);
-          }
-        };
+// Close on backdrop click
+modal.onclick = (e) => {
+if (e.target === modal) {
+modal.remove();
+resolve(false);
+}
+};
         
-        // Close on Escape key
-        const handleEscape = (e) => {
-          if (e.key === 'Escape') {
-            modal.remove();
-            document.removeEventListener('keydown', handleEscape);
-            resolve(false);
-          }
-        };
-        document.addEventListener('keydown', handleEscape);
-      });
+// Close on Escape key
+const handleEscape = (e) => {
+if (e.key === 'Escape') {
+modal.remove();
+document.removeEventListener('keydown', handleEscape);
+resolve(false);
+}
+};
+document.addEventListener('keydown', handleEscape);
+});
 }
 
 // =========================
@@ -1631,7 +1715,7 @@ let isRotating = false; // Stato rotazione
 let mapNavigationActive = false; // Stato navigazione mappe
 let mapLayersOrder = []; // Ordine delle mappe per navigazione
 let currentMapIndex = 0; // Indice mappa corrente
-    let pendingOperations = 0; // Contatore operazioni in corso
+let pendingOperations = 0; // Contatore operazioni in corso
 
 function loadMissions() {
 try {
@@ -1658,12 +1742,9 @@ return `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
 
 async function loadSettings() {
 try {
-        const res = await fetch("/api/settings");
-        if (!res.ok) return;
-        const data = await res.json();
-        updateSyncStatus("Caricamento impostazioni...", "syncing");
-        const result = await fetchWithRetry("/api/settings");
-        const data = result.data;
+updateSyncStatus("Caricamento impostazioni...", "syncing");
+const result = await fetchWithRetry("/api/settings");
+const data = result.data;
 appSettings = Object.assign({}, appSettings, data || {});
 
 // Carica impostazioni locali
@@ -1674,50 +1755,41 @@ appSettings.crosshairEnabled = local.crosshairEnabled || false;
 mapNavigationActive = local.mapNavigationActive || false;
 }
         
-        updateSyncStatus("Impostazioni caricate", "success");
+updateSyncStatus("Impostazioni caricate", "success");
 } catch (e) {
 console.warn("Impossibile caricare settings, uso default.");
-        updateSyncStatus("Errore caricamento impostazioni", "error");
+updateSyncStatus("Errore caricamento impostazioni", "error");
 }
 }
 
 async function saveSettings(partial) {
-      appSettings = Object.assign({}, appSettings, partial || {});
+appSettings = Object.assign({}, appSettings, partial || {});
 try {
-        const res = await fetch("/api/settings", {
-        appSettings = Object.assign({}, appSettings, partial || {});
-        updateSyncStatus("Salvataggio impostazioni...", "syncing");
+updateSyncStatus("Salvataggio impostazioni...", "syncing");
         
-        const result = await fetchWithRetry("/api/settings", {
+const result = await fetchWithRetry("/api/settings", {
 method: "POST",
-          headers: { "Content-Type": "application/json" },
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": "Basic " + btoa("unit:ltunit")
-          },
+headers: { 
+"Content-Type": "application/json",
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
 body: JSON.stringify({
 baseLayer: appSettings.baseLayer,
 mapStyle: appSettings.mapStyle,
 randomIncludeLowRated: appSettings.randomIncludeLowRated
 })
 });
-        if (res.ok) {
-          const data = await res.json();
-          appSettings.baseLayer = data.baseLayer || appSettings.baseLayer;
-          appSettings.mapStyle = data.mapStyle || appSettings.mapStyle;
-          appSettings.randomIncludeLowRated = data.randomIncludeLowRated || appSettings.randomIncludeLowRated;
-        }
         
-        const data = result.data;
-        appSettings.baseLayer = data.baseLayer || appSettings.baseLayer;
-        appSettings.mapStyle = data.mapStyle || appSettings.mapStyle;
-        appSettings.randomIncludeLowRated = data.randomIncludeLowRated || appSettings.randomIncludeLowRated;
+const data = result.data;
+appSettings.baseLayer = data.baseLayer || appSettings.baseLayer;
+appSettings.mapStyle = data.mapStyle || appSettings.mapStyle;
+appSettings.randomIncludeLowRated = data.randomIncludeLowRated || appSettings.randomIncludeLowRated;
         
-        updateSyncStatus("Impostazioni salvate", "success");
+updateSyncStatus("Impostazioni salvate", "success");
 } catch (e) {
 console.warn("Errore salvataggio settings", e);
-        updateSyncStatus("Errore salvataggio settings", "error");
-        showToast(`Errore salvataggio settings: ${e.message}`, "error");
+updateSyncStatus("Errore salvataggio settings", "error");
+showToast(`Errore salvataggio settings: ${e.message}`, "error");
 }
 }
 
@@ -1733,84 +1805,52 @@ console.warn("Errore salvataggio settings locali", e);
 }
 
 async function loadBaseSpots() {
-      const res = await fetch("/spots.csv");
-      if (!res.ok) throw new Error("Impossibile caricare spots.csv");
-      const text = await res.text();
-      const rows = parseCSV(text);
-      const dataRows = rows.slice(1);
-      const points = [];
-      dataRows.forEach(cols => {
-        if (cols.length < 4) return;
-        const name = cols[0] || "";
-        const desc = cols[1] || "";
-        const lat = parseFloat(cols[2]);
-        const lng = parseFloat(cols[3]);
-        if (Number.isNaN(lat) || Number.isNaN(lng)) return;
-        const voto = extractVoto(desc);
-        const tipo = getTipo(name, desc);
-        // Aggiungi ID univoco anche per gli spot CSV
-        points.push({ 
-          id: `csv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          name, 
-          desc, 
-          lat, 
-          lng, 
-          voto, 
-          tipo, 
-          source: "csv" 
-      try {
-        const res = await fetch("/spots.csv");
-        if (!res.ok) throw new Error("Impossibile caricare spots.csv");
-        const text = await res.text();
-        const rows = parseCSV(text);
-        const dataRows = rows.slice(1);
-        const points = [];
-        dataRows.forEach(cols => {
-          if (cols.length < 4) return;
-          const name = cols[0] || "";
-          const desc = cols[1] || "";
-          const lat = parseFloat(cols[2]);
-          const lng = parseFloat(cols[3]);
-          if (Number.isNaN(lat) || Number.isNaN(lng)) return;
-          const voto = extractVoto(desc);
-          const tipo = getTipo(name, desc);
-          points.push({ 
-            id: `csv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            name, 
-            desc, 
-            lat, 
-            lng, 
-            voto, 
-            tipo, 
-            source: "csv" 
-          });
+try {
+const res = await fetch("/spots.csv");
+if (!res.ok) throw new Error("Impossibile caricare spots.csv");
+const text = await res.text();
+const rows = parseCSV(text);
+const dataRows = rows.slice(1);
+const points = [];
+dataRows.forEach(cols => {
+if (cols.length < 4) return;
+const name = cols[0] || "";
+const desc = cols[1] || "";
+const lat = parseFloat(cols[2]);
+const lng = parseFloat(cols[3]);
+if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+const voto = extractVoto(desc);
+const tipo = getTipo(name, desc);
+points.push({ 
+id: `csv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+name, 
+desc, 
+lat, 
+lng, 
+voto, 
+tipo, 
+source: "csv" 
 });
-      });
-      return points;
-        return points;
-      } catch (error) {
-        console.error("Errore caricamento base spots:", error);
-        showToast("Errore caricamento spots base", "error");
-        return [];
-      }
+});
+return points;
+} catch (error) {
+console.error("Errore caricamento base spots:", error);
+showToast("Errore caricamento spots base", "error");
+return [];
+}
 }
 
 async function loadExtraSpots() {
 try {
-        const res = await fetch("/api/spots-extra");
-        if (!res.ok) return [];
-        const arr = await res.json();
-        if (!Array.isArray(arr)) return [];
-        return arr.map(raw => {
-        updateSyncStatus("Caricamento spot extra...", "syncing");
-        const result = await fetchWithRetry("/api/spots-extra");
-        const arr = result.data;
-        if (!Array.isArray(arr)) {
-          updateSyncStatus("Formato dati non valido", "error");
-          return [];
-        }
+updateSyncStatus("Caricamento spot extra...", "syncing");
+const result = await fetchWithRetry("/api/spots-extra");
+const arr = result.data;
+if (!Array.isArray(arr)) {
+updateSyncStatus("Formato dati non valido", "error");
+return [];
+}
         
-        const spots = arr.map(raw => {
+const spots = arr.map(raw => {
 const lat = parseFloat(raw.lat);
 const lng = parseFloat(raw.lng);
 if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
@@ -1827,45 +1867,42 @@ lng,
 voto: (voto >= 1 && voto <= 6) ? voto : null,
 tipo,
 source: "extra",
-            createdAt: raw.createdAt || null
-            createdAt: raw.createdAt || null,
-            updatedAt: raw.updatedAt || null
+createdAt: raw.createdAt || null,
+updatedAt: raw.updatedAt || null
 };
 }).filter(Boolean);
         
-        updateSyncStatus(`${spots.length} spot extra caricati`, "success");
-        return spots;
+updateSyncStatus(`${spots.length} spot extra caricati`, "success");
+return spots;
 } catch (e) {
 console.warn("Errore caricando spots-extra", e);
-        updateSyncStatus("Errore caricamento spot", "error");
-        showToast("Errore caricamento spot extra", "error");
+updateSyncStatus("Errore caricamento spot", "error");
+showToast("Errore caricamento spot extra", "error");
 return [];
 }
 }
 
 async function reloadAllSpots() {
 try {
-        const [base, extra] = await Promise.all([loadBaseSpots(), loadExtraSpots()]);
-        pendingOperations++;
-        updateSyncStatus("Aggiornamento spot...", "syncing");
+pendingOperations++;
+updateSyncStatus("Aggiornamento spot...", "syncing");
         
-        const [base, extra] = await Promise.all([
-          loadBaseSpots(),
-          loadExtraSpots()
-        ]);
+const [base, extra] = await Promise.all([
+loadBaseSpots(),
+loadExtraSpots()
+]);
         
 allSpots = base.concat(extra);
 renderMarkers();
 renderList();
         
-        updateSyncStatus(`${allSpots.length} spot caricati`, "success");
+updateSyncStatus(`${allSpots.length} spot caricati`, "success");
 } catch (e) {
 console.error(e);
-        showToast("Errore nel caricamento degli spot.");
-        updateSyncStatus("Errore caricamento spot", "error");
-        showToast("Errore nel caricamento degli spot.", "error");
-      } finally {
-        pendingOperations--;
+showToast("Errore nel caricamento degli spot.", "error");
+updateSyncStatus("Errore caricamento spot", "error");
+} finally {
+pendingOperations--;
 }
 }
 
@@ -1877,15 +1914,13 @@ function initMap() {
 const mapOptions = { 
 zoomControl: false,
 gestureHandling: true,
-        maxZoom: 22, // Aumentato il zoom massimo
-        maxZoom: 22,
+maxZoom: 22,
 minZoom: 1
 };
 
 map = L.map("map", mapOptions);
 
-      // Definisci tutti i layer di mappa FUNZIONANTI
-      // Definisci tutti i layer di mappa
+// Definisci tutti i layer di mappa
 const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 maxZoom: 22,
 attribution: "&copy; OpenStreetMap contributors"
@@ -1904,7 +1939,7 @@ attribution: "Tiles &copy; Esri"
 }
 );
 
-      // Satellite alternativo 1 (NASA GIBS)
+// Satellite alternativo 1 (NASA GIBS)
 const nasaGibs = L.tileLayer(
 "https://gibs-{s}.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{time}/{tileMatrixSet}/{z}/{y}/{x}.jpg",
 {
@@ -1917,7 +1952,7 @@ bounds: [[-85.0511, -180], [85.0511, 180]]
 }
 );
 
-      // Satellite alternativo 2 (Google Satellite style)
+// Satellite alternativo 2 (Google Satellite style)
 const googleSatellite = L.tileLayer(
 "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
 {
@@ -1926,34 +1961,34 @@ attribution: "Google Satellite"
 }
 );
 
-      // OpenTopoMap
+// OpenTopoMap
 const openTopoMap = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
 maxZoom: 17,
 attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
 });
 
-      // Carto Dark
+// Carto Dark
 const cartoDark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
 maxZoom: 22,
 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
 subdomains: 'abcd'
 });
 
-      // Carto Light
+// Carto Light
 const cartoLight = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
 maxZoom: 22,
 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
 subdomains: 'abcd'
 });
 
-      // Stamen Toner (funziona meglio di watercolor)
+// Stamen Toner (funziona meglio di watercolor)
 const stamenToner = L.tileLayer("https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png", {
 maxZoom: 20,
 attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 subdomains: 'abcd'
 });
 
-      // Esri WorldTopoMap
+// Esri WorldTopoMap
 const esriTopo = L.tileLayer(
 "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
 {
@@ -1962,7 +1997,7 @@ attribution: "Tiles &copy; Esri"
 }
 );
 
-      // Esri OceanBasemap
+// Esri OceanBasemap
 const esriOcean = L.tileLayer(
 "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}",
 {
@@ -1971,7 +2006,7 @@ attribution: "Tiles &copy; Esri"
 }
 );
 
-      // Esri Gray
+// Esri Gray
 const esriGray = L.tileLayer(
 "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
 {
@@ -1980,7 +2015,7 @@ attribution: "Tiles &copy; Esri"
 }
 );
 
-      // Mappe che funzionano (rimuoviamo quelle che non caricano)
+// Mappe che funzionano (rimuoviamo quelle che non caricano)
 baseLayers = {
 osm,
 osmHot,
@@ -1996,24 +2031,24 @@ esriOcean,
 esriGray
 };
 
-      // Ordine per navigazione
+// Ordine per navigazione
 mapLayersOrder = ["osm", "osmHot", "satellite", "satellite2", "satellite3", "topo", "dark", "cartoLight", "stamenToner", "esriTopo", "esriOcean", "esriGray"];
 
-      // Nomi delle mappe per display
-      const mapNames = {
-        osm: "OSM Standard",
-        osmHot: "OSM Humanitarian",
-        satellite: "Satellite Esri",
-        satellite2: "Satellite Google",
-        satellite3: "Satellite NASA",
-        topo: "OpenTopoMap",
-        dark: "Carto Dark",
-        cartoLight: "Carto Light",
-        stamenToner: "Stamen Toner",
-        esriTopo: "Esri Topo",
-        esriOcean: "Esri Ocean",
-        esriGray: "Esri Gray"
-      };
+// Nomi delle mappe per display
+const mapNames = {
+osm: "OSM Standard",
+osmHot: "OSM Humanitarian",
+satellite: "Satellite Esri",
+satellite2: "Satellite Google",
+satellite3: "Satellite NASA",
+topo: "OpenTopoMap",
+dark: "Carto Dark",
+cartoLight: "Carto Light",
+stamenToner: "Stamen Toner",
+esriTopo: "Esri Topo",
+esriOcean: "Esri Ocean",
+esriGray: "Esri Gray"
+};
       
 // Applica baseLayer da settings
 let chosen = baseLayers[appSettings.baseLayer] || osm;
@@ -2030,22 +2065,22 @@ map.setView([44.5, 8.9], 7);
 
 // Gestione click sulla mappa per PC e mobile
 map.on("click", function (e) {
-        // Se stiamo ruotando, non piazzare il pin
+// Se stiamo ruotando, non piazzare il pin
 if (isRotating) return;
 
 const lat = e.latlng.lat;
 const lng = e.latlng.lng;
 
-        // Salva coordinate per pin temporaneo
+// Salva coordinate per pin temporaneo
 temporaryPin.lat = lat;
 temporaryPin.lng = lng;
 
-        // Mostra pin temporaneo su PC
+// Mostra pin temporaneo su PC
 if (!isMobile) {
 showTemporaryPin(lat, lng);
 }
 
-        // Aggiorna i campi dei form se aperti
+// Aggiorna i campi dei form se aperti
 updateFormCoordinates(lat, lng);
 });
 
@@ -2071,7 +2106,7 @@ ctrlPressed = true;
 map.dragging.disable();
 document.getElementById('map').style.cursor = 'grab';
 }
-          // Navigazione mappe con A e D
+// Navigazione mappe con A e D
 if (mapNavigationActive && (e.key === 'a' || e.key === 'A')) {
 e.preventDefault();
 prevMap();
@@ -2091,7 +2126,7 @@ document.getElementById('map').style.cursor = 'crosshair';
 }
 });
 
-        // Gestione mouse per rotazione
+// Gestione mouse per rotazione
 let lastX = 0;
 
 mapContainer.addEventListener('mousedown', function(e) {
@@ -2106,7 +2141,7 @@ e.preventDefault();
 document.addEventListener('mousemove', function(e) {
 if (isRotating && ctrlPressed) {
 const deltaX = e.clientX - lastX;
-            // Ruota la mappa
+// Ruota la mappa
 if (map.setBearing) {
 const currentBearing = map.getBearing ? map.getBearing() : 0;
 map.setBearing(currentBearing + deltaX * 0.5);
@@ -2124,15 +2159,15 @@ document.getElementById('map').style.cursor = ctrlPressed ? 'grab' : 'crosshair'
 });
 }
 
-      // Aggiorna UI navigazione mappe
+// Aggiorna UI navigazione mappe
 updateMapNavigationUI();
       
-      // Inizializza crosshair in base alle impostazioni
+// Inizializza crosshair in base alle impostazioni
 updateCrosshairVisibility();
 }
 
 function showTemporaryPin(lat, lng) {
-      // Crea pin se non esiste
+// Crea pin se non esiste
 if (!temporaryPin.element) {
 temporaryPin.element = document.getElementById('temporaryPin');
 if (!temporaryPin.element) {
@@ -2146,17 +2181,17 @@ temporaryPin.element = pin;
 const pinEl = temporaryPin.element;
 if (!pinEl) return;
 
-      // Converti coordinate lat/lng a pixel nella mappa
+// Converti coordinate lat/lng a pixel nella mappa
 const point = map.latLngToContainerPoint([lat, lng]);
       
-      // Posiziona il pin assolutamente rispetto alla mappa
+// Posiziona il pin assolutamente rispetto alla mappa
 const mapRect = map.getContainer().getBoundingClientRect();
 pinEl.style.position = 'absolute';
 pinEl.style.left = (mapRect.left + point.x) + 'px';
 pinEl.style.top = (mapRect.top + point.y) + 'px';
 pinEl.style.display = 'block';
 
-      // Aggiorna posizione quando la mappa si muove
+// Aggiorna posizione quando la mappa si muove
 if (!temporaryPin.moveHandler) {
 temporaryPin.moveHandler = function() {
 if (temporaryPin.lat && temporaryPin.lng) {
@@ -2178,7 +2213,7 @@ temporaryPin.element.style.display = 'none';
 temporaryPin.lat = null;
 temporaryPin.lng = null;
 
-      // Rimuovi handler per evitare memory leak
+// Rimuovi handler per evitare memory leak
 if (temporaryPin.moveHandler) {
 map.off('move', temporaryPin.moveHandler);
 map.off('resize', temporaryPin.moveHandler);
@@ -2187,7 +2222,7 @@ temporaryPin.moveHandler = null;
 }
 
 function updateFormCoordinates(lat, lng) {
-      // Aggiorna i campi dei form se aperti
+// Aggiorna i campi dei form se aperti
 const latInput = document.getElementById("fieldLat");
 const lngInput = document.getElementById("fieldLng");
 const editLatInput = document.getElementById("editFieldLat");
@@ -2247,7 +2282,7 @@ esriGray: "Esri Gray"
 document.getElementById('currentMapName').textContent = mapNames[currentKey] || currentKey;
 document.getElementById('mapCounter').textContent = `${currentMapIndex + 1}/${mapLayersOrder.length}`;
 
-      // Aggiorna select nel settings panel
+// Aggiorna select nel settings panel
 const mapStyleSelect = document.getElementById('mapStyleSelect');
 if (mapStyleSelect) {
 mapStyleSelect.value = currentKey;
@@ -2262,13 +2297,11 @@ const toggleBtn = document.getElementById('mapNavToggle');
 if (mapNavigationActive) {
 navElement.classList.add('show');
 toggleBtn.classList.add('active');
-        showToast("Navigazione mappe attiva (A/D per scorrere)");
-        showToast("Navigazione mappe attiva (A/D per scorrere)", "info");
+showToast("Navigazione mappe attiva (A/D per scorrere)", "info");
 } else {
 navElement.classList.remove('show');
 toggleBtn.classList.remove('active');
-        showToast("Navigazione mappe disattivata");
-        showToast("Navigazione mappe disattivata", "info");
+showToast("Navigazione mappe disattivata", "info");
 }
 
 saveLocalSettings();
@@ -2278,16 +2311,14 @@ function nextMap() {
 currentMapIndex = (currentMapIndex + 1) % mapLayersOrder.length;
 const nextKey = mapLayersOrder[currentMapIndex];
 switchBaseLayer(nextKey);
-      showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`);
-      showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`, "info");
+showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`, "info");
 }
 
 function prevMap() {
 currentMapIndex = (currentMapIndex - 1 + mapLayersOrder.length) % mapLayersOrder.length;
 const prevKey = mapLayersOrder[currentMapIndex];
 switchBaseLayer(prevKey);
-      showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`);
-      showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`, "info");
+showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`, "info");
 }
 
 function buildPopupHtml(p) {
@@ -2298,40 +2329,39 @@ const votoText = p.voto ? `${p.voto}` : "n.d.";
 const color = getRatingColor(p.voto || 0);
 const emoji = getEmojiByTipo(p.tipo);
 const spotId = p.id || '';
-      const updatedInfo = p.updatedAt ? 
-        `<br><small>Aggiornato: ${new Date(p.updatedAt).toLocaleDateString('it-IT')}</small>` : '';
+const updatedInfo = p.updatedAt ? 
+`<br><small>Aggiornato: ${new Date(p.updatedAt).toLocaleDateString('it-IT')}</small>` : '';
       
 return `
-       <div class="ltu-popup">
-         <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
-           <div style="font-size:36px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${emoji}</div>
-           <div style="flex:1;">
-             <div class="popup-title" style="font-size:15px; font-weight:700; margin-bottom:4px; color:#ffffff !important;">${title}</div>
-             ${p.voto ? `<span style="background:${color}; color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">${votoText} ★</span>` : ''}
-           </div>
-         </div>
-         ${desc ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:12px; color:#e5e7eb;">${desc}</div>` : ''}
-         <div style="font-size:11px; color:var(--text-dim); margin-bottom:14px;">
-           ${coords}
-            ${p.source === "extra" ? " • LTU extra" : ""}
-            ${p.source === "extra" ? " • LTU extra" : " • Importato"}
-            ${updatedInfo}
-         </div>
-         <a href="https://www.google.com/maps?q=${p.lat},${p.lng}"
-            target="_blank"
-            rel="noopener"
-            style="background:#2563eb; color:white; padding:9px 16px; border-radius:999px; text-decoration:none; display:block; text-align:center; font-weight:600; font-size:13px;">
-           Apri in Google Maps ↗
-         </a>
-         <div style="margin-top: 8px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-           <button id="list-btn-${spotId}" data-spot-id="${spotId}" style="background: #16a34a; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📋 Lista</button>
-           ${spotId ? `
-             <button id="edit-btn-${spotId}" data-spot-id="${spotId}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
-             <button id="delete-btn-${spotId}" data-spot-id="${spotId}" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Elimina</button>
-           ` : ''}
-         </div>
-       </div>
-     `;
+<div class="ltu-popup">
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+<div style="font-size:36px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${emoji}</div>
+<div style="flex:1;">
+<div class="popup-title" style="font-size:15px; font-weight:700; margin-bottom:4px; color:#ffffff !important;">${title}</div>
+${p.voto ? `<span style="background:${color}; color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">${votoText} ★</span>` : ''}
+</div>
+</div>
+${desc ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:12px; color:#e5e7eb;">${desc}</div>` : ''}
+<div style="font-size:11px; color:var(--text-dim); margin-bottom:14px;">
+${coords}
+${p.source === "extra" ? " • LTU extra" : " • Importato"}
+${updatedInfo}
+</div>
+<a href="https://www.google.com/maps?q=${p.lat},${p.lng}"
+target="_blank"
+rel="noopener"
+style="background:#2563eb; color:white; padding:9px 16px; border-radius:999px; text-decoration:none; display:block; text-align:center; font-weight:600; font-size:13px;">
+Apri in Google Maps ↗
+</a>
+<div style="margin-top: 8px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+<button id="list-btn-${spotId}" data-spot-id="${spotId}" style="background: #16a34a; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📋 Lista</button>
+${spotId ? `
+<button id="edit-btn-${spotId}" data-spot-id="${spotId}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
+<button id="delete-btn-${spotId}" data-spot-id="${spotId}" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Elimina</button>
+` : ''}
+</div>
+</div>
+`;
 }
 
 function renderMarkers() {
@@ -2344,16 +2374,16 @@ const color = getRatingColor(p.voto || 0);
 const emoji = getEmojiByTipo(p.tipo);
 
 const iconHtml = `
-         <div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
-           <svg width="26" height="36" viewBox="0 0 26 36" xmlns="http://www.w3.org/2000/svg">
-             <path d="M13,0 C5.373,0 0,5.373 0,13 C0,21.938 13,36 13,36 C13,36 26,21.938 26,13 C26,5.373 20.627,0 13,0 Z"
-                   fill="${color}"
-                   stroke="none"/>
-             <circle cx="13" cy="12.5" r="8" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
-             <text x="13" y="16" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
-           </svg>
-         </div>
-       `;
+<div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
+<svg width="26" height="36" viewBox="0 0 26 36" xmlns="http://www.w3.org/2000/svg">
+<path d="M13,0 C5.373,0 0,5.373 0,13 C0,21.938 13,36 13,36 C13,36 26,21.938 26,13 C26,5.373 20.627,0 13,0 Z"
+fill="${color}"
+stroke="none"/>
+<circle cx="13" cy="12.5" r="8" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
+<text x="13" y="16" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
+</svg>
+</div>
+`;
 
 const icon = L.divIcon({
 html: iconHtml,
@@ -2373,7 +2403,7 @@ currentSpot = p;
 bounds.push([p.lat, p.lng]);
 });
 
-      // Se c'è uno spot appena aggiunto, centra su di esso
+// Se c'è uno spot appena aggiunto, centra su di esso
 if (lastAddedSpotId) {
 const newSpot = allSpots.find(s => s.id === lastAddedSpotId);
 if (newSpot && newSpot._marker) {
@@ -2411,9 +2441,9 @@ filtered.sort((a, b) => {
 const va = a.voto || 0;
 const vb = b.voto || 0;
 if (va !== vb) return vb - va;
-        if (a.updatedAt && b.updatedAt) {
-          return new Date(b.updatedAt) - new Date(a.updatedAt);
-        }
+if (a.updatedAt && b.updatedAt) {
+return new Date(b.updatedAt) - new Date(a.updatedAt);
+}
 return a.name.localeCompare(b.name);
 });
       
@@ -2454,15 +2484,14 @@ desc.textContent = p.desc || "";
 const meta = document.createElement("div");
 meta.className = "spot-meta";
         
-        const dateInfo = p.updatedAt ? 
-          new Date(p.updatedAt).toLocaleDateString('it-IT') : 
-          (p.createdAt ? new Date(p.createdAt).toLocaleDateString('it-IT') : '');
+const dateInfo = p.updatedAt ? 
+new Date(p.updatedAt).toLocaleDateString('it-IT') : 
+(p.createdAt ? new Date(p.createdAt).toLocaleDateString('it-IT') : '');
         
 meta.innerHTML = `
-         <span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>
-          <span>${p.source === "extra" ? "LTU extra" : "Importato"}</span>
-          <span>${p.source === "extra" ? "LTU" : "Importato"} ${dateInfo ? '• ' + dateInfo : ''}</span>
-       `;
+<span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>
+<span>${p.source === "extra" ? "LTU" : "Importato"} ${dateInfo ? '• ' + dateInfo : ''}</span>
+`;
         
 mainDiv.appendChild(titleRow);
 mainDiv.appendChild(desc);
@@ -2490,10 +2519,10 @@ listEl.appendChild(row);
 async function handleAddSubmit(evt) {
 evt.preventDefault();
       
-      if (pendingOperations > 0) {
-        showToast("Attendi il completamento delle operazioni in corso", "warning");
-        return;
-      }
+if (pendingOperations > 0) {
+showToast("Attendi il completamento delle operazioni in corso", "warning");
+return;
+}
       
 const name = document.getElementById("fieldName").value.trim();
 const desc = document.getElementById("fieldDesc").value.trim();
@@ -2505,8 +2534,7 @@ const tipoSelect = document.getElementById("fieldTipo");
 const tipo = tipoSelect.value || getTipo(name, desc);
 
 if (!name || !latStr || !lngStr) {
-        alert("Nome, latitudine e longitudine sono obbligatori.");
-        showToast("Nome, latitudine e longitudine sono obbligatori", "error");
+showToast("Nome, latitudine e longitudine sono obbligatori", "error");
 return;
 }
       
@@ -2514,8 +2542,7 @@ const lat = parseFloat(latStr.replace(",", "."));
 const lng = parseFloat(lngStr.replace(",", "."));
       
 if (Number.isNaN(lat) || Number.isNaN(lng)) {
-        alert("Coordinate non valide.");
-        showToast("Coordinate non valide", "error");
+showToast("Coordinate non valide", "error");
 return;
 }
       
@@ -2528,11 +2555,10 @@ if (v >= 1 && v <= 6) voto = v;
 const payload = { name, desc, lat, lng, voto, tipo };
       
 try {
-        const res = await fetch("/api/spots-extra", {
-        pendingOperations++;
-        updateSyncStatus("Salvataggio spot...", "syncing");
+pendingOperations++;
+updateSyncStatus("Salvataggio spot...", "syncing");
         
-        const result = await fetchWithRetry("/api/spots-extra", {
+const result = await fetchWithRetry("/api/spots-extra", {
 method: "POST",
 headers: { 
 "Content-Type": "application/json",
@@ -2540,29 +2566,19 @@ headers: {
 },
 body: JSON.stringify(payload)
 });
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`Errore HTTP ${res.status}: ${errorText}`);
-        }
-        const saved = await res.json();
-        const latSaved = parseFloat(saved.lat);
-        const lngSaved = parseFloat(saved.lng);
         
-        const saved = result.data;
+const saved = result.data;
 const spot = {
 id: saved.id,
 name: saved.name || name,
 desc: saved.desc || desc,
-          lat: Number.isNaN(latSaved) ? lat : latSaved,
-          lng: Number.isNaN(lngSaved) ? lng : lngSaved,
-          lat: saved.lat,
-          lng: saved.lng,
+lat: saved.lat,
+lng: saved.lng,
 voto: saved.voto != null ? saved.voto : voto,
 tipo: saved.tipo || tipo,
 source: "extra",
-          createdAt: saved.createdAt || null
-          createdAt: saved.createdAt || new Date().toISOString(),
-          updatedAt: saved.updatedAt || new Date().toISOString()
+createdAt: saved.createdAt || new Date().toISOString(),
+updatedAt: saved.updatedAt || new Date().toISOString()
 };
         
 allSpots.push(spot);
@@ -2574,24 +2590,21 @@ document.getElementById("addPanel").classList.add("hidden");
 document.getElementById("addForm").reset();
 document.getElementById("fieldTipo").value = "";
 document.getElementById("fieldVoto").value = "";
-        showToast("Spot aggiunto.");
         
-        updateSyncStatus("Spot aggiunto con successo", "success");
-        showToast("Spot aggiunto!", "success");
+updateSyncStatus("Spot aggiunto con successo", "success");
+showToast("Spot aggiunto!", "success");
         
 } catch (e) {
-        console.error(e);
-        alert("Errore nel salvataggio dello spot: " + e.message);
-        console.error("Errore salvataggio spot:", e);
-        updateSyncStatus("Errore salvataggio spot", "error");
+console.error("Errore salvataggio spot:", e);
+updateSyncStatus("Errore salvataggio spot", "error");
         
-        if (e.message.includes("Spot già esistente") || e.message.includes("DUPLICATE_SPOT")) {
-          showToast("Esiste già uno spot in questa posizione", "error");
-        } else {
-          showToast(`Errore nel salvataggio: ${e.message}`, "error");
-        }
-      } finally {
-        pendingOperations--;
+if (e.message.includes("Spot già esistente") || e.message.includes("DUPLICATE_SPOT")) {
+showToast("Esiste già uno spot in questa posizione", "error");
+} else {
+showToast(`Errore nel salvataggio: ${e.message}`, "error");
+}
+} finally {
+pendingOperations--;
 }
 }
 
@@ -2609,8 +2622,7 @@ updateFormCoordinates(center.lat, center.lng);
 // =========================
 function pickRandomSpot() {
 if (!allSpots.length) {
-        showToast("Nessuno spot disponibile.");
-        showToast("Nessuno spot disponibile", "warning");
+showToast("Nessuno spot disponibile", "warning");
 return;
 }
       
@@ -2629,8 +2641,7 @@ map.setView([chosen.lat, chosen.lng], 16);
 if (chosen._marker) {
 chosen._marker.openPopup();
 }
-      showToast("Random LTU: " + (chosen.name || "spot"));
-      showToast("Random LTU: " + (chosen.name || "spot"), "info");
+showToast("Random LTU: " + (chosen.name || "spot"), "info");
 }
 
 // =========================
@@ -2638,8 +2649,7 @@ chosen._marker.openPopup();
 // =========================
 function openMissionPanel() {
 if (!currentSpot) {
-        showToast("Seleziona prima uno spot dalla mappa.");
-        showToast("Seleziona prima uno spot dalla mappa", "warning");
+showToast("Seleziona prima uno spot dalla mappa", "warning");
 return;
 }
       
@@ -2662,19 +2672,17 @@ const key = spotKey(currentSpot);
 const text = document.getElementById("missionText").value;
 missions[key] = { text };
 saveMissions();
-      showToast("Missione salvata.");
-      showToast("Missione salvata", "success");
+showToast("Missione salvata", "success");
 document.getElementById("missionPanel").classList.add("hidden");
 }
 
 // =========================
-    // STREETVIEW (GOOGLE STREETVIEW FUNZIONANTE)
-    // STREETVIEW
+// STREETVIEW
 // =========================
 function openStreetView() {
 let lat, lng;
 
-      // Usa le coordinate del pin temporaneo se disponibili, altrimenti centro mappa
+// Usa le coordinate del pin temporaneo se disponibili, altrimenti centro mappa
 if (temporaryPin.lat && temporaryPin.lng) {
 lat = temporaryPin.lat;
 lng = temporaryPin.lng;
@@ -2684,14 +2692,13 @@ lat = center.lat;
 lng = center.lng;
 }
 
-      // URL Google StreetView funzionante (apre in nuova finestra)
+// URL Google StreetView funzionante (apre in nuova finestra)
 const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
       
-      // Apri in nuova finestra
+// Apri in nuova finestra
 window.open(url, '_blank', 'noopener,noreferrer');
       
-      showToast("Street View aperto in nuova finestra");
-      showToast("Street View aperto in nuova finestra", "info");
+showToast("Street View aperto in nuova finestra", "info");
 }
 
 // =========================
@@ -2704,43 +2711,33 @@ document.getElementById("importLinkPanel").classList.remove("hidden");
 async function decodeGoogleMapsLink() {
 const url = document.getElementById("linkInput").value.trim();
 if (!url) {
-        alert("Incolla un link di Google Maps.");
-        showToast("Incolla un link di Google Maps", "error");
+showToast("Incolla un link di Google Maps", "error");
 return;
 }
 
 try {
-        const response = await fetch("/api/decode-gmaps-url", {
-        updateSyncStatus("Decodifica link...", "syncing");
+updateSyncStatus("Decodifica link...", "syncing");
         
-        const result = await fetchWithRetry("/api/decode-gmaps-url", {
+const result = await fetchWithRetry("/api/decode-gmaps-url", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
 body: JSON.stringify({ url })
 });
-
-        if (!response.ok) {
-          const err = await response.text();
-          throw new Error(err);
-        }
         
-        const data = await response.json();
-        const data = result.data;
+const data = result.data;
 document.getElementById("coordsFound").textContent = `${data.lat}, ${data.lng}`;
 document.getElementById("linkResult").style.display = "block";
 
-        // Popola i campi lat/lng automaticamente
+// Popola i campi lat/lng automaticamente
 updateFormCoordinates(data.lat, data.lng);
 
-        showToast("Coordinate estratte con successo!");
-        updateSyncStatus("Coordinate estratte", "success");
-        showToast("Coordinate estratte con successo!", "success");
+updateSyncStatus("Coordinate estratte", "success");
+showToast("Coordinate estratte con successo!", "success");
         
 } catch (error) {
 console.error("Errore decodifica:", error);
-        alert("Impossibile decodificare il link. Assicurati che sia un link Google Maps valido.");
-        updateSyncStatus("Errore decodifica link", "error");
-        showToast("Impossibile decodificare il link. Assicurati che sia un link Google Maps valido.", "error");
+updateSyncStatus("Errore decodifica link", "error");
+showToast("Impossibile decodificare il link. Assicurati che sia un link Google Maps valido.", "error");
 }
 }
 
@@ -2751,8 +2748,7 @@ const lat = parseFloat(document.getElementById("fieldLat").value);
 const lng = parseFloat(document.getElementById("fieldLng").value);
 
 if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
-        alert("Nome e coordinate valide sono obbligatori.");
-        showToast("Nome e coordinate valide sono obbligatori", "error");
+showToast("Nome e coordinate valide sono obbligatori", "error");
 return;
 }
 
@@ -2761,11 +2757,10 @@ const tipo = getTipo(name, desc);
 const payload = { name, desc, lat, lng, voto, tipo };
 
 try {
-        const res = await fetch("/api/spots-extra", {
-        pendingOperations++;
-        updateSyncStatus("Aggiunta spot da link...", "syncing");
+pendingOperations++;
+updateSyncStatus("Aggiunta spot da link...", "syncing");
         
-        const result = await fetchWithRetry("/api/spots-extra", {
+const result = await fetchWithRetry("/api/spots-extra", {
 method: "POST",
 headers: { 
 "Content-Type": "application/json",
@@ -2773,14 +2768,8 @@ headers: {
 },
 body: JSON.stringify(payload)
 });
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`Errore HTTP ${res.status}: ${errorText}`);
-        }
         
-        const saved = await res.json();
-        const saved = result.data;
+const saved = result.data;
 const spot = {
 id: saved.id,
 name: saved.name || name,
@@ -2790,9 +2779,8 @@ lng: saved.lng,
 voto: saved.voto,
 tipo: saved.tipo || tipo,
 source: "extra",
-          createdAt: saved.createdAt || null
-          createdAt: saved.createdAt || new Date().toISOString(),
-          updatedAt: saved.updatedAt || new Date().toISOString()
+createdAt: saved.createdAt || new Date().toISOString(),
+updatedAt: saved.updatedAt || new Date().toISOString()
 };
 
 allSpots.push(spot);
@@ -2805,18 +2793,16 @@ document.getElementById("linkInput").value = "";
 document.getElementById("linkSpotName").value = "";
 document.getElementById("linkSpotDesc").value = "";
 document.getElementById("linkResult").style.display = "none";
-        showToast("Spot aggiunto dal link!");
         
-        updateSyncStatus("Spot aggiunto dal link", "success");
-        showToast("Spot aggiunto dal link!", "success");
+updateSyncStatus("Spot aggiunto dal link", "success");
+showToast("Spot aggiunto dal link!", "success");
         
 } catch (e) {
 console.error(e);
-        alert("Errore nel salvataggio dello spot: " + e.message);
-        updateSyncStatus("Errore aggiunta spot", "error");
-        showToast(`Errore nel salvataggio dello spot: ${e.message}`, "error");
-      } finally {
-        pendingOperations--;
+updateSyncStatus("Errore aggiunta spot", "error");
+showToast(`Errore nel salvataggio dello spot: ${e.message}`, "error");
+} finally {
+pendingOperations--;
 }
 }
 
@@ -2826,8 +2812,7 @@ console.error(e);
 async function handleImportJson() {
 const raw = document.getElementById("importTextarea").value.trim();
 if (!raw) {
-        alert("Incolla prima il JSON.");
-        showToast("Incolla prima il JSON", "error");
+showToast("Incolla prima il JSON", "error");
 return;
 }
       
@@ -2835,8 +2820,7 @@ let obj;
 try {
 obj = JSON.parse(raw);
 } catch (e) {
-        alert("JSON non valido.");
-        showToast("JSON non valido", "error");
+showToast("JSON non valido", "error");
 return;
 }
       
@@ -2846,165 +2830,335 @@ arr = obj;
 } else if (Array.isArray(obj.places)) {
 arr = obj.places;
 } else {
-        alert("Formato JSON non riconosciuto.");
-        showToast("Formato JSON non riconosciuto", "error");
+showToast("Formato JSON non riconosciuto", "error");
 return;
 }
       
-      const confirmed = await showConfirm(
-        "Importazione JSON",
-        `Sei sicuro di voler importare ${arr.length} spot?`
-      );
+const confirmed = await showConfirm(
+"Importazione JSON",
+`Sei sicuro di voler importare ${arr.length} spot?`
+);
       
-      if (!confirmed) return;
+if (!confirmed) return;
       
 let importedCount = 0;
-      for (const place of arr) {
-        const name = place.name || place.title || "";
-        const desc = place.desc || place.description || "";
-        const lat = parseFloat(place.lat ?? place.latitude);
-        const lng = parseFloat(place.lng ?? place.longitude);
-        if (!name || Number.isNaN(lat) || Number.isNaN(lng)) continue;
-        const voto = place.voto != null ? parseInt(place.voto, 10) : extractVoto(desc);
-        const tipo = place.tipo || getTipo(name, desc);
-        const payload = { name, desc, lat, lng, voto, tipo };
-        try {
-          const res = await fetch("/api/spots-extra", {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Authorization": "Basic " + btoa("unit:ltunit")
-            },
-            body: JSON.stringify(payload)
-          });
-          if (!res.ok) continue;
-          const saved = await res.json();
-          const latSaved = parseFloat(saved.lat);
-          const lngSaved = parseFloat(saved.lng);
-          const spot = {
-            id: saved.id,
-            name: saved.name || name,
-            desc: saved.desc || desc,
-            lat: Number.isNaN(latSaved) ? lat : latSaved,
-            lng: Number.isNaN(lngSaved) ? lng : lngSaved,
-            voto: saved.voto != null ? saved.voto : voto,
-            tipo: saved.tipo || tipo,
-            source: "extra",
-            createdAt: saved.createdAt || null
-          };
-          allSpots.push(spot);
-          importedCount++;
-        } catch (e) {
-          console.warn("Import fallito per uno spot", e);
-      let errors = [];
+let errors = [];
       
-      try {
-        pendingOperations++;
-        updateSyncStatus(`Importazione ${arr.length} spot...`, "syncing");
+try {
+pendingOperations++;
+updateSyncStatus(`Importazione ${arr.length} spot...`, "syncing");
         
-        for (let i = 0; i < arr.length; i++) {
-          const place = arr[i];
-          const name = place.name || place.title || "";
-          const desc = place.desc || place.description || "";
-          const lat = parseFloat(place.lat ?? place.latitude);
-          const lng = parseFloat(place.lng ?? place.longitude);
+for (let i = 0; i < arr.length; i++) {
+const place = arr[i];
+const name = place.name || place.title || "";
+const desc = place.desc || place.description || "";
+const lat = parseFloat(place.lat ?? place.latitude);
+const lng = parseFloat(place.lng ?? place.longitude);
           
-          if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
-            errors.push(`Spot ${i + 1}: Dati mancanti o invalidi`);
-            continue;
-          }
+if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
+errors.push(`Spot ${i + 1}: Dati mancanti o invalidi`);
+continue;
+}
           
-          const voto = place.voto != null ? parseInt(place.voto, 10) : extractVoto(desc);
-          const tipo = place.tipo || getTipo(name, desc);
-          const payload = { name, desc, lat, lng, voto, tipo };
+const voto = place.voto != null ? parseInt(place.voto, 10) : extractVoto(desc);
+const tipo = place.tipo || getTipo(name, desc);
+const payload = { name, desc, lat, lng, voto, tipo };
           
-          try {
-            const result = await fetchWithRetry("/api/spots-extra", {
-              method: "POST",
-              headers: { 
-                "Content-Type": "application/json",
-                "Authorization": "Basic " + btoa("unit:ltunit")
-              },
-              body: JSON.stringify(payload)
-            });
+try {
+const result = await fetchWithRetry("/api/spots-extra", {
+method: "POST",
+headers: { 
+"Content-Type": "application/json",
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
+body: JSON.stringify(payload)
+});
             
-            if (result.success) {
-              const saved = result.data;
-              const spot = {
-                id: saved.id,
-                name: saved.name || name,
-                desc: saved.desc || desc,
-                lat: saved.lat,
-                lng: saved.lng,
-                voto: saved.voto != null ? saved.voto : voto,
-                tipo: saved.tipo || tipo,
-                source: "extra",
-                createdAt: saved.createdAt || new Date().toISOString(),
-                updatedAt: saved.updatedAt || new Date().toISOString()
-              };
-              allSpots.push(spot);
-              importedCount++;
-            }
-          } catch (e) {
-            errors.push(`Spot ${i + 1}: ${e.message}`);
-          }
+if (result.success) {
+const saved = result.data;
+const spot = {
+id: saved.id,
+name: saved.name || name,
+desc: saved.desc || desc,
+lat: saved.lat,
+lng: saved.lng,
+voto: saved.voto != null ? saved.voto : voto,
+tipo: saved.tipo || tipo,
+source: "extra",
+createdAt: saved.createdAt || new Date().toISOString(),
+updatedAt: saved.updatedAt || new Date().toISOString()
+};
+allSpots.push(spot);
+importedCount++;
+}
+} catch (e) {
+errors.push(`Spot ${i + 1}: ${e.message}`);
+}
 }
         
-        if (importedCount > 0) {
-          renderMarkers();
-          renderList();
-        }
-        
-        updateSyncStatus(`Importati ${importedCount} spot`, "success");
-        
-        let message = `Importati ${importedCount} spot su ${arr.length}`;
-        if (errors.length > 0) {
-          message += `\nErrori: ${errors.length}`;
-          if (errors.length <= 5) {
-            message += `\n${errors.join('\n')}`;
-          }
-        }
-        
-        showToast(message, importedCount > 0 ? "success" : "warning");
-        
-      } catch (error) {
-        console.error("Errore importazione:", error);
-        updateSyncStatus("Errore importazione", "error");
-        showToast(`Errore durante l'importazione: ${error.message}`, "error");
-      } finally {
-        pendingOperations--;
+if (importedCount > 0) {
+renderMarkers();
+renderList();
 }
-      if (importedCount > 0) {
-        renderMarkers();
-        renderList();
-      }
-      showToast(`Importati ${importedCount} spot.`);
+        
+updateSyncStatus(`Importati ${importedCount} spot`, "success");
+        
+let message = `Importati ${importedCount} spot su ${arr.length}`;
+if (errors.length > 0) {
+message += `\nErrori: ${errors.length}`;
+if (errors.length <= 5) {
+message += `\n${errors.join('\n')}`;
+}
+}
+        
+showToast(message, importedCount > 0 ? "success" : "warning");
+        
+} catch (error) {
+console.error("Errore importazione:", error);
+updateSyncStatus("Errore importazione", "error");
+showToast(`Errore durante l'importazione: ${error.message}`, "error");
+} finally {
+pendingOperations--;
+}
 }
 
 function handleExportCsv() {
 if (!allSpots.length) {
-        alert("Nessuno spot da esportare.");
-        showToast("Nessuno spot da esportare", "warning");
+showToast("Nessuno spot da esportare", "warning");
 return;
 }
-      let csv = "Name,Description,Latitude,Longitude,Voto,Tipo\n";
-      
-      let csv = "Name,Description,Latitude,Longitude,Voto,Tipo,CreatedAt,UpdatedAt,Source\n";
+let csv = "Name,Description,Latitude,Longitude,Voto,Tipo,CreatedAt,UpdatedAt,Source\n";
 allSpots.forEach(p => {
 const name = (p.name || "").replace(/"/g, '""');
 const desc = (p.desc || "").replace(/"/g, '""');
 const voto = p.voto || "";
 const tipo = p.tipo || "";
-        csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo}\n`;
-        const createdAt = p.createdAt || "";
-        const updatedAt = p.updatedAt || "";
-        const source = p.source || "";
-        csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo},${createdAt},${updatedAt},${source}\n`;
+const createdAt = p.createdAt || "";
+const updatedAt = p.updatedAt || "";
+const source = p.source || "";
+csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo},${createdAt},${updatedAt},${source}\n`;
 });
       
 document.getElementById("exportTextarea").value = csv;
-      showToast("CSV generato.");
-      showToast(`CSV generato: ${allSpots.length} spot`, "success");
+showToast(`CSV generato: ${allSpots.length} spot`, "success");
+}
+
+// =========================
+// FORCE SAVE FUNCTIONALITY
+// =========================
+async function forceSaveSpots() {
+// Controlla se ci sono operazioni pendenti
+if (pendingOperations > 0) {
+showToast("Attendi il completamento delle operazioni in corso", "warning");
+return;
+}
+  
+const spotsToSave = allSpots.filter(s => s.source === 'extra');
+  
+if (spotsToSave.length === 0) {
+showToast("Nessuno spot extra da salvare", "info");
+return;
+}
+  
+const forceSaveBtn = document.getElementById('forceSaveBtn');
+forceSaveBtn.classList.add('saving');
+forceSaveBtn.disabled = true;
+  
+pendingOperations++;
+updateSyncStatus(`Forzatura salvataggio di ${spotsToSave.length} spot...`, "syncing");
+  
+const results = {
+total: spotsToSave.length,
+success: 0,
+errors: [],
+errorSpots: []
+};
+  
+try {
+// Usa il nuovo endpoint batch del server
+const payload = {
+spots: spotsToSave.map(spot => ({
+id: spot.id,
+name: spot.name,
+desc: spot.desc,
+lat: spot.lat,
+lng: spot.lng,
+voto: spot.voto,
+tipo: spot.tipo,
+createdAt: spot.createdAt,
+updatedAt: spot.updatedAt
+}))
+};
+
+const result = await fetchWithRetry("/api/spots-extra/force-save", {
+method: "POST",
+headers: { 
+"Content-Type": "application/json",
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
+body: JSON.stringify(payload)
+});
+    
+// Processa risultati
+const data = result.data;
+results.success = data.results.success ? data.results.success.length : 0;
+results.errors = data.results.errors || [];
+results.duplicates = data.results.duplicates || [];
+    
+// Aggiorna la mappa e la lista solo se ci sono successi
+if (results.success > 0) {
+// Ricarica tutti gli spot per avere i dati aggiornati dal server
+await reloadAllSpots();
+}
+    
+// Mostra risultati
+showForceSaveResults(results);
+    
+if (results.errors.length === 0 && results.duplicates.length === 0) {
+updateSyncStatus(`Tutti gli spot (${results.success}) salvati con successo`, "success");
+showToast(`✅ ${results.success} spot salvati con successo`, "success");
+} else {
+const totalErrors = results.errors.length + results.duplicates.length;
+updateSyncStatus(
+`Salvati ${results.success}/${results.total} spot, ${totalErrors} problemi`, 
+results.success > 0 ? "warning" : "error"
+);
+}
+    
+} catch (error) {
+console.error("Errore durante il salvataggio forzato:", error);
+updateSyncStatus("Errore durante il salvataggio forzato", "error");
+showToast(`Errore salvataggio: ${error.message}`, "error");
+} finally {
+forceSaveBtn.classList.remove('saving');
+forceSaveBtn.disabled = false;
+pendingOperations--;
+}
+}
+
+function showForceSaveResults(results) {
+const panel = document.getElementById('forceSaveResultPanel');
+const content = document.getElementById('forceSaveResultContent');
+  
+let html = '';
+  
+const totalProblems = results.errors.length + (results.duplicates ? results.duplicates.length : 0);
+  
+if (totalProblems === 0) {
+html += `
+<div class="result-summary success">
+<strong>✅ Successo completo!</strong><br>
+Tutti i ${results.total} spot sono stati salvati con successo.
+</div>
+`;
+} else if (results.success === 0) {
+html += `
+<div class="result-summary error">
+<strong>❌ Errore totale!</strong><br>
+Nessuno spot è stato salvato. ${totalProblems} problemi.
+</div>
+`;
+} else {
+html += `
+<div class="result-summary warning">
+<strong>⚠️ Salvataggio parziale</strong><br>
+${results.success} spot salvati su ${results.total}<br>
+${totalProblems} problemi
+</div>
+`;
+}
+  
+if (results.errors.length > 0) {
+html += `
+<div class="error-list">
+<h4 style="margin: 15px 0 10px 0; font-size: 13px;">Spot con errori:</h4>
+`;
+    
+results.errors.forEach((err, index) => {
+const spotData = err.spot || err;
+const coords = err.coordinates || `${spotData.lat}, ${spotData.lng}`;
+html += `
+<div class="error-item">
+<strong>${spotData.name || "Spot senza nome"}</strong><br>
+<div class="error-coords">${coords}</div>
+<div class="error-message">${err.error || err.message || "Errore sconosciuto"}</div>
+</div>
+`;
+});
+    
+html += `</div>`;
+}
+  
+if (results.duplicates && results.duplicates.length > 0) {
+html += `
+<div class="error-list">
+<h4 style="margin: 15px 0 10px 0; font-size: 13px;">Spot duplicati (già esistenti):</h4>
+`;
+    
+results.duplicates.forEach((dup, index) => {
+const spotData = dup.spot || dup;
+const coords = dup.coordinates || `${spotData.lat}, ${spotData.lng}`;
+html += `
+<div class="error-item">
+<strong>${spotData.name || "Spot senza nome"}</strong><br>
+<div class="error-coords">${coords}</div>
+<div class="error-message">Duplicato: già esiste uno spot in questa posizione</div>
+</div>
+`;
+});
+    
+html += `</div>`;
+}
+  
+// Aggiungi pulsante per copiare le coordinate degli errori
+if (totalProblems > 0) {
+html += `
+<div style="margin-top: 15px;">
+<button id="copyErrorCoords" class="btn btn-secondary" style="width: 100%;">
+📋 Copia coordinate dei problemi
+</button>
+</div>
+`;
+}
+  
+content.innerHTML = html;
+panel.classList.remove('hidden');
+  
+// Aggiungi event listener per il pulsante di copia
+if (totalProblems > 0) {
+setTimeout(() => {
+const copyBtn = document.getElementById('copyErrorCoords');
+if (copyBtn) {
+copyBtn.addEventListener('click', () => {
+let coordsText = '';
+      
+// Aggiungi coordinate degli errori
+results.errors.forEach(err => {
+const spotData = err.spot || err;
+const coords = err.coordinates || `${spotData.lat}, ${spotData.lng}`;
+coordsText += `${coords} - ${spotData.name || "Senza nome"}\n`;
+});
+      
+// Aggiungi coordinate dei duplicati
+if (results.duplicates) {
+results.duplicates.forEach(dup => {
+const spotData = dup.spot || dup;
+const coords = dup.coordinates || `${spotData.lat}, ${spotData.lng}`;
+coordsText += `${coords} - ${spotData.name || "Senza nome"} (duplicato)\n`;
+});
+}
+      
+navigator.clipboard.writeText(coordsText.trim()).then(() => {
+showToast("Coordinate copiate negli appunti", "success");
+});
+});
+}
+}, 100);
+}
+}
+
+function closeForceSaveResults() {
+document.getElementById('forceSaveResultPanel').classList.add('hidden');
 }
 
 // =========================
@@ -3071,7 +3225,7 @@ const btnExportCsv = document.getElementById("btnExportCsv");
 const btnSaveAllSettings = document.getElementById("btnSaveAllSettings");
 
 settingsBtn.addEventListener("click", () => {
-        // sync UI con settings correnti
+// sync UI con settings correnti
 mapStyleSelect.value = appSettings.baseLayer || "osm";
 randomLowRatedCheckbox.checked = !!appSettings.randomIncludeLowRated;
 crosshairEnabledCheckbox.checked = !!appSettings.crosshairEnabled;
@@ -3087,23 +3241,20 @@ settingsBtn.classList.remove("active");
 mapStyleSelect.addEventListener("change", (e) => {
 const val = e.target.value;
 switchBaseLayer(val);
-        showToast("Stile mappa aggiornato.");
-        showToast("Stile mappa aggiornato", "success");
+showToast("Stile mappa aggiornato", "success");
 });
 
 randomLowRatedCheckbox.addEventListener("change", (e) => {
 const checked = e.target.checked;
 appSettings.randomIncludeLowRated = checked;
-        showToast("Impostazione random aggiornata.");
-        showToast("Impostazione random aggiornata", "success");
+showToast("Impostazione random aggiornata", "success");
 });
 
 crosshairEnabledCheckbox.addEventListener("change", (e) => {
 const checked = e.target.checked;
 appSettings.crosshairEnabled = checked;
 updateCrosshairVisibility();
-        showToast("Impostazione mirino aggiornata.");
-        showToast("Impostazione mirino aggiornata", "success");
+showToast("Impostazione mirino aggiornata", "success");
 });
 
 btnImportJson.addEventListener("click", handleImportJson);
@@ -3115,8 +3266,7 @@ baseLayer: mapStyleSelect.value,
 randomIncludeLowRated: randomLowRatedCheckbox.checked
 });
 saveLocalSettings();
-        showToast("Tutte le impostazioni salvate!");
-        showToast("Tutte le impostazioni salvate!", "success");
+showToast("Tutte le impostazioni salvate!", "success");
 });
 
 // RANDOM
@@ -3129,8 +3279,7 @@ crosshairToggleBtn.addEventListener("click", () => {
 appSettings.crosshairEnabled = !appSettings.crosshairEnabled;
 updateCrosshairVisibility();
 crosshairEnabledCheckbox.checked = appSettings.crosshairEnabled;
-        showToast(appSettings.crosshairEnabled ? "Mirino attivo." : "Mirino disattivato.");
-        showToast(appSettings.crosshairEnabled ? "Mirino attivo" : "Mirino disattivato", "info");
+showToast(appSettings.crosshairEnabled ? "Mirino attivo" : "Mirino disattivato", "info");
 });
 
 // MISSIONI
@@ -3165,6 +3314,27 @@ document.getElementById("linkResult").style.display = "none";
 btnDecodeLink.addEventListener("click", decodeGoogleMapsLink);
 btnAddFromLink.addEventListener("click", addSpotFromLink);
 
+// FORCE SAVE
+const forceSaveBtn = document.getElementById('forceSaveBtn');
+const forceSaveResultPanel = document.getElementById('forceSaveResultPanel');
+const btnCloseForceSaveResult = document.getElementById('btnCloseForceSaveResult');
+
+if (forceSaveBtn) {
+forceSaveBtn.addEventListener('click', forceSaveSpots);
+}
+
+if (btnCloseForceSaveResult) {
+btnCloseForceSaveResult.addEventListener('click', closeForceSaveResults);
+}
+
+if (forceSaveResultPanel) {
+forceSaveResultPanel.addEventListener('click', (e) => {
+if (e.target.classList.contains('overlay-backdrop')) {
+closeForceSaveResults();
+}
+});
+}
+
 // DOCK TOGGLE
 const dockToggleBtn = document.getElementById("dockToggleBtn");
 const rightDock = document.getElementById("rightDock");
@@ -3185,20 +3355,18 @@ mapNavToggle.addEventListener("click", toggleMapNavigation);
 prevMapBtn.addEventListener("click", prevMap);
 nextMapBtn.addEventListener("click", nextMap);
 
-      // EVENTI PER POPUP DINAMICI (LISTA, MODIFICA, ELIMINA)
-      // EVENTI PER POPUP DINAMICI
+// EVENTI PER POPUP DINAMICI
 document.addEventListener('click', async (e) => {
 if (e.target.id && e.target.id.startsWith('list-btn-')) {
 e.preventDefault();
 const spotId = e.target.dataset.spotId;
 const spot = allSpots.find(s => s.id === spotId);
-          if (!spot) return showToast('Spot non trovato.');
-          if (!spot) {
-            showToast('Spot non trovato', 'error');
-            return;
-          }
+if (!spot) {
+showToast('Spot non trovato', 'error');
+return;
+}
 
-          // Apri il pannello lista evidenziando lo spot
+// Apri il pannello lista evidenziando lo spot
 spotToHighlight = spotId;
 renderList();
 document.getElementById("listPanel").classList.remove("hidden");
@@ -3208,60 +3376,50 @@ map.closePopup();
 if (e.target.id && e.target.id.startsWith('delete-btn-')) {
 e.preventDefault();
 const spotId = e.target.dataset.spotId;
-          if (!spotId) return showToast('Spot non modificabile.');
-          if (!confirm('Sicuro di eliminare questo spot? Non si può annullare.')) return;
-          if (!spotId) {
-            showToast('Spot non modificabile', 'error');
-            return;
-          }
+if (!spotId) {
+showToast('Spot non modificabile', 'error');
+return;
+}
           
-          const spot = allSpots.find(s => s.id === spotId);
-          if (!spot) {
-            showToast('Spot non trovato', 'error');
-            return;
-          }
+const spot = allSpots.find(s => s.id === spotId);
+if (!spot) {
+showToast('Spot non trovato', 'error');
+return;
+}
           
-          const confirmed = await showConfirm(
-            'Eliminazione spot',
-            `Sei sicuro di eliminare "${spot.name}"?\nQuesta azione non può essere annullata.`
-          );
+const confirmed = await showConfirm(
+'Eliminazione spot',
+`Sei sicuro di eliminare "${spot.name}"?\nQuesta azione non può essere annullata.`
+);
           
-          if (!confirmed) return;
+if (!confirmed) return;
           
 try {
-            const res = await fetch(`/api/spots-extra/${spotId}`, { 
-            pendingOperations++;
-            updateSyncStatus("Eliminazione spot...", "syncing");
+pendingOperations++;
+updateSyncStatus("Eliminazione spot...", "syncing");
             
-            const result = await fetchWithRetry(`/api/spots-extra/${spotId}`, { 
+const result = await fetchWithRetry(`/api/spots-extra/${spotId}`, { 
 method: 'DELETE',
 headers: {
 "Authorization": "Basic " + btoa("unit:ltunit")
 }
 });
-            if (!res.ok) {
-              const errorText = await res.text();
-              throw new Error(`Errore HTTP ${res.status}: ${errorText}`);
-            }
            
-            // Rimuovi dall'array e aggiorna
-            
+// Rimuovi dall'array e aggiorna
 allSpots = allSpots.filter(s => s.id !== spotId);
 renderMarkers();
 renderList();
 map.closePopup();
-            showToast('Spot eliminato.');
             
-            updateSyncStatus("Spot eliminato", "success");
-            showToast('Spot eliminato', 'success');
+updateSyncStatus("Spot eliminato", "success");
+showToast('Spot eliminato', 'success');
             
 } catch (err) {
 console.error(err);
-            alert('Errore eliminazione: ' + err.message);
-            updateSyncStatus("Errore eliminazione", "error");
-            showToast(`Errore eliminazione: ${err.message}`, 'error');
-          } finally {
-            pendingOperations--;
+updateSyncStatus("Errore eliminazione", "error");
+showToast(`Errore eliminazione: ${err.message}`, 'error');
+} finally {
+pendingOperations--;
 }
 }
 
@@ -3269,13 +3427,12 @@ if (e.target.id && e.target.id.startsWith('edit-btn-')) {
 e.preventDefault();
 const spotId = e.target.dataset.spotId;
 const spot = allSpots.find(s => s.id === spotId);
-          if (!spot) return showToast('Spot non trovato.');
-          // Apri pannello edit con dati precompilati
-          if (!spot) {
-            showToast('Spot non trovato', 'error');
-            return;
-          }
+if (!spot) {
+showToast('Spot non trovato', 'error');
+return;
+}
           
+// Apri pannello edit con dati precompilati
 document.getElementById('editSpotId').value = spotId;
 document.getElementById('editFieldName').value = spot.name || '';
 document.getElementById('editFieldDesc').value = spot.desc || '';
@@ -3299,10 +3456,10 @@ const btnUseCurrentPinEdit = document.getElementById('btnUseCurrentPinEdit');
 editForm.addEventListener('submit', async (evt) => {
 evt.preventDefault();
         
-        if (pendingOperations > 0) {
-          showToast("Attendi il completamento delle operazioni in corso", "warning");
-          return;
-        }
+if (pendingOperations > 0) {
+showToast("Attendi il completamento delle operazioni in corso", "warning");
+return;
+}
         
 const spotId = document.getElementById('editSpotId').value;
 const name = document.getElementById('editFieldName').value.trim();
@@ -3315,8 +3472,7 @@ const tipoSelect = document.getElementById('editFieldTipo');
 const tipo = tipoSelect.value || getTipo(name, desc);
 
 if (!name || !latStr || !lngStr) {
-          alert('Nome, latitudine e longitudine sono obbligatori.');
-          showToast('Nome, latitudine e longitudine sono obbligatori', 'error');
+showToast('Nome, latitudine e longitudine sono obbligatori', 'error');
 return;
 }
         
@@ -3324,8 +3480,7 @@ const lat = parseFloat(latStr.replace(',', '.'));
 const lng = parseFloat(lngStr.replace(',', '.'));
         
 if (Number.isNaN(lat) || Number.isNaN(lng)) {
-          alert('Coordinate non valide.');
-          showToast('Coordinate non valide', 'error');
+showToast('Coordinate non valide', 'error');
 return;
 }
         
@@ -3338,11 +3493,10 @@ if (v >= 1 && v <= 6) voto = v;
 const payload = { name, desc, lat, lng, voto, tipo };
         
 try {
-          const res = await fetch(`/api/spots-extra/${spotId}`, {
-          pendingOperations++;
-          updateSyncStatus("Aggiornamento spot...", "syncing");
+pendingOperations++;
+updateSyncStatus("Aggiornamento spot...", "syncing");
           
-          const result = await fetchWithRetry(`/api/spots-extra/${spotId}`, {
+const result = await fetchWithRetry(`/api/spots-extra/${spotId}`, {
 method: 'PUT',
 headers: { 
 'Content-Type': 'application/json',
@@ -3350,47 +3504,38 @@ headers: {
 },
 body: JSON.stringify(payload)
 });
-          if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(`Errore HTTP ${res.status}: ${errorText}`);
-          }
-          const updatedSpot = await res.json();
-          // Aggiorna nell'array
           
-          const updatedSpot = result.data;
+const updatedSpot = result.data;
 const index = allSpots.findIndex(s => s.id === spotId);
           
 if (index !== -1) {
-            allSpots[index] = { ...updatedSpot, source: 'extra' };
-            allSpots[index] = { 
-              ...allSpots[index],
-              ...updatedSpot,
-              source: 'extra',
-              updatedAt: updatedSpot.updatedAt || new Date().toISOString()
-            };
+allSpots[index] = { 
+...allSpots[index],
+...updatedSpot,
+source: 'extra',
+updatedAt: updatedSpot.updatedAt || new Date().toISOString()
+};
 }
           
 renderMarkers();
 renderList();
 editPanel.classList.add('hidden');
 editForm.reset();
-          showToast('Spot modificato.');
           
-          updateSyncStatus("Spot aggiornato", "success");
-          showToast('Spot modificato', 'success');
+updateSyncStatus("Spot aggiornato", "success");
+showToast('Spot modificato', 'success');
           
 } catch (err) {
 console.error(err);
-          alert('Errore nel salvataggio delle modifiche: ' + err.message);
-          updateSyncStatus("Errore aggiornamento", "error");
+updateSyncStatus("Errore aggiornamento", "error");
           
-          if (err.message.includes("Esiste già un altro spot")) {
-            showToast("Esiste già un altro spot in questa posizione", "error");
-          } else {
-            showToast(`Errore nel salvataggio delle modifiche: ${err.message}`, 'error');
-          }
-        } finally {
-          pendingOperations--;
+if (err.message.includes("Esiste già un altro spot")) {
+showToast("Esiste già un altro spot in questa posizione", "error");
+} else {
+showToast(`Errore nel salvataggio delle modifiche: ${err.message}`, 'error');
+}
+} finally {
+pendingOperations--;
 }
 });
       
@@ -3424,62 +3569,51 @@ nextMap();
 }
 });
       
-      // Auto-refresh ogni 30 secondi se ci sono operazioni pendenti
-      setInterval(() => {
-        if (pendingOperations > 0) {
-          console.log("Auto-refresh per operazioni pendenti");
-          reloadAllSpots();
-        }
-      }, 30000);
+// Auto-refresh ogni 30 secondi se ci sono operazioni pendenti
+setInterval(() => {
+if (pendingOperations > 0) {
+console.log("Auto-refresh per operazioni pendenti");
+reloadAllSpots();
+}
+}, 30000);
 }
 
 // =========================
 // BOOT
 // =========================
 document.addEventListener("DOMContentLoaded", async () => {
-      loadMissions();
-      await loadSettings();
-      initMap();
-      initUI();
-      reloadAllSpots();
-      
-      // Aggiorna navigazione mappe all'avvio
-      if (mapNavigationActive) {
-        document.getElementById('mapNavigation').classList.add('show');
-        document.getElementById('mapNavToggle').classList.add('active');
-      try {
-        loadMissions();
-        await loadSettings();
-        initMap();
-        initUI();
-        await reloadAllSpots();
+try {
+loadMissions();
+await loadSettings();
+initMap();
+initUI();
+await reloadAllSpots();
         
-        if (mapNavigationActive) {
-          document.getElementById('mapNavigation').classList.add('show');
-          document.getElementById('mapNavToggle').classList.add('active');
-        }
+if (mapNavigationActive) {
+document.getElementById('mapNavigation').classList.add('show');
+document.getElementById('mapNavToggle').classList.add('active');
+}
         
-        // Mostra notifica di caricamento completato
-        setTimeout(() => {
-          showToast("LTU Mappa caricata ✓", "success");
-        }, 1000);
+// Mostra notifica di caricamento completato
+setTimeout(() => {
+showToast("LTU Mappa caricata ✓", "success");
+}, 1000);
         
-      } catch (error) {
-        console.error("Errore inizializzazione:", error);
-        showToast("Errore inizializzazione applicazione", "error");
+} catch (error) {
+console.error("Errore inizializzazione:", error);
+showToast("Errore inizializzazione applicazione", "error");
 }
 });
     
-    // Gestione offline/online
-    window.addEventListener('online', () => {
-      showToast("Connessione ripristinata", "success");
-      reloadAllSpots();
-    });
+// Gestione offline/online
+window.addEventListener('online', () => {
+showToast("Connessione ripristinata", "success");
+reloadAllSpots();
+});
     
-    window.addEventListener('offline', () => {
-      showToast("Connessione persa - modalità offline", "warning");
-    });
+window.addEventListener('offline', () => {
+showToast("Connessione persa - modalità offline", "warning");
+});
 </script>
 </body>
-</html>
 </html>
