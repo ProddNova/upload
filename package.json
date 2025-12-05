@@ -1,18 +1,24 @@
 {
-  "name": "lost-trace-unit",
+  "name": "mappa-abbandonati",
   "version": "1.0.0",
-  "description": "Mappa spot abbandonati",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "backup": "node -e \"require('./server.js');\""
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
+{
+  "name": "lost-trace-unit",
+  "version": "1.0.0",
+  "description": "LTU Mappa Spot Abbandonati",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "uuid": "^9.0.0"
-  },
-  "engines": {
-    "node": ">=14.0.0"
+    "basic-auth": "^2.0.1"
   }
 }
