@@ -1,6 +1,5 @@
 const express = require("express");
 const path = require("path");
-const fs = require("fs");
 const fs = require("fs").promises;
 const https = require("https");
 const { v4: uuidv4 } = require("uuid");
@@ -8,24 +7,27 @@ const { v4: uuidv4 } = require("uuid");
 const app = express();
 
 // ===============================
-@@ -12,170 +14,696 @@ const PASSWORD = process.env.APP_PASSWORD || "ltunit";
+// CONFIGURAZIONE
+// ===============================
+const USERNAME = process.env.APP_USERNAME || "unit";
+const PASSWORD = process.env.APP_PASSWORD || "ltunit";
 const EXTRA_FILE = path.join(__dirname, "spots-extra.json");
 const SETTINGS_FILE = path.join(__dirname, "settings.json");
+const UNSAVED_SPOTS_FILE = path.join(__dirname, "unsaved-spots.json"); // Nuovo file per spot non salvati
+
+const DEFAULT_SETTINGS = {
+  version: 2,
+  baseLayer: "osm",
+  mapStyle: "default",
+  randomIncludeLowRated: false,
+  lastUpdated: null
+};
 
 // Locks per prevenire race conditions
 const locks = {
   spots: { locked: false, queue: [] },
-  settings: { locked: false, queue: [] }
-};
-
-const DEFAULT_SETTINGS = {
-  version: 1,
-  version: 2,
-baseLayer: "osm",
-mapStyle: "default",
-  randomIncludeLowRated: false
-  randomIncludeLowRated: false,
-  lastUpdated: null
+  settings: { locked: false, queue: [] },
+  unsaved: { locked: false, queue: [] }
 };
 
 // ===============================
@@ -153,12 +155,10 @@ async function safeWriteJson(filePath, data) {
 // ===============================
 // MIDDLEWARE
 // ===============================
-app.use(express.json());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// Middleware di autenticazione senza dipendenze esterne
 // CORS middleware completo
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -202,23 +202,16 @@ const authMiddleware = (req, res, next) => {
     return next();
   }
   
-const authHeader = req.headers.authorization;
-if (!authHeader || !authHeader.startsWith('Basic ')) {
-res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
-    return res.status(401).json({ error: "Accesso non autorizzato" });
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
+    res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
     return res.status(401).json({ 
+      success: false,
       error: "Accesso non autorizzato",
       code: "AUTH_REQUIRED"
     });
-}
-
-  const base64Credentials = authHeader.split(' ')[1];
-  const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
-  const [username, password] = credentials.split(':');
+  }
   
-  if (username !== USERNAME || password !== PASSWORD) {
-    res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
-    return res.status(401).json({ error: "Accesso non autorizzato" });
   try {
     const base64Credentials = authHeader.split(' ')[1];
     const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
@@ -227,6 +220,7 @@ res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
     if (username !== USERNAME || password !== PASSWORD) {
       res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
       return res.status(401).json({ 
+        success: false,
         error: "Credenziali non valide",
         code: "INVALID_CREDENTIALS"
       });
@@ -241,31 +235,17 @@ res.set("WWW-Authenticate", 'Basic realm="LTU Admin"');
   } catch (error) {
     console.error('Auth error:', error);
     res.status(400).json({ 
+      success: false,
       error: "Formato autorizzazione non valido",
       code: "INVALID_AUTH_FORMAT"
     });
-}
-  
-  req.user = { name: username };
-  next();
+  }
 };
 
-// Funzione getTipo
+// ===============================
+// FUNZIONI HELPER
+// ===============================
 function getTipo(name, desc) {
-  const text = (name + " " + (desc || "")).toLowerCase();
-  if (text.includes("hotel") || text.includes("ostello") || text.includes("residence")) return "hotel";
-  if (text.includes("villa") || text.includes("villone") || text.includes("villino") || text.includes("villetta") || text.includes("ville")) return "villa";
-  if (text.includes("casa") || text.includes("casetta") || text.includes("casone") || text.includes("case") || text.includes("cascina") || text.includes("casolare")) return "casa";
-  if (text.includes("fabbrica") || text.includes("capannone") || text.includes("magazzino") || text.includes("distilleria") || text.includes("cantiere") || text.includes("impresa edile") || text.includes("stazione") || text.includes("centro commerciale")) return "industria";
-  if (text.includes("scuola") || text.includes("itis")) return "scuola";
-  if (text.includes("chiesa")) return "chiesa";
-  if (text.includes("colonia")) return "colonia";
-  if (text.includes("prigione") || text.includes("manicomio") || text.includes("ospedale") || text.includes("clinica") || text.includes("convento")) return "istituzione";
-  if (text.includes("discoteca") || text.includes("bar") || text.includes("ristorante") || text.includes("pizzeria")) return "svago";
-  if (text.includes("castello")) return "castello";
-  if (text.includes("nave")) return "nave";
-  if (text.includes("diga")) return "diga";
-  if (text.includes("base nato")) return "militare";
   const text = ((name || '') + ' ' + (desc || '')).toLowerCase();
   
   const patterns = {
@@ -290,20 +270,60 @@ function getTipo(name, desc) {
     }
   }
   
-return "altro";
+  return "altro";
+}
+
+// Funzione per salvare spot non salvati
+async function saveUnsavedSpot(spotData, error) {
+  return await withLock('unsaved', async () => {
+    try {
+      let unsavedSpots = await safeReadJson(UNSAVED_SPOTS_FILE, []);
+      
+      // Aggiungi timestamp e error message
+      const unsavedSpot = {
+        ...spotData,
+        error: error.message || error.toString(),
+        timestamp: new Date().toISOString(),
+        saved: false,
+        attempts: 1
+      };
+      
+      // Controlla se esiste già (per coordinate)
+      const existingIndex = unsavedSpots.findIndex(s => 
+        Math.abs(s.lat - spotData.lat) < 0.0001 && 
+        Math.abs(s.lng - spotData.lng) < 0.0001
+      );
+      
+      if (existingIndex !== -1) {
+        // Incrementa il contatore dei tentativi
+        unsavedSpots[existingIndex].attempts++;
+        unsavedSpots[existingIndex].lastError = error.message || error.toString();
+        unsavedSpots[existingIndex].timestamp = new Date().toISOString();
+      } else {
+        unsavedSpots.push(unsavedSpot);
+      }
+      
+      // Mantieni solo gli ultimi 50 spot non salvati
+      if (unsavedSpots.length > 50) {
+        unsavedSpots = unsavedSpots.slice(-50);
+      }
+      
+      await safeWriteJson(UNSAVED_SPOTS_FILE, unsavedSpots);
+      console.log(`Spot non salvato archiviato: ${spotData.name} (${spotData.lat}, ${spotData.lng}) - ${error.message}`);
+      
+      return unsavedSpot;
+    } catch (e) {
+      console.error('Errore nel salvataggio dello spot non salvato:', e);
+      return null;
+    }
+  });
 }
 
 // ===============================
-// API: SPOT EXTRA
 // API: SPOT EXTRA CON LOCKING
 // ===============================
-app.get("/api/spots-extra", (req, res) => {
 app.get("/api/spots-extra", async (req, res) => {
-try {
-    if (!fs.existsSync(EXTRA_FILE)) return res.json([]);
-    const raw = fs.readFileSync(EXTRA_FILE, "utf8");
-    const data = JSON.parse(raw);
-    res.json(Array.isArray(data) ? data : []);
+  try {
     const data = await withLock('spots', async () => {
       return await safeReadJson(EXTRA_FILE, []);
     });
@@ -314,24 +334,70 @@ try {
       count: Array.isArray(data) ? data.length : 0,
       timestamp: new Date().toISOString()
     });
-} catch (err) {
-console.error("Errore lettura spots-extra:", err);
-    res.status(500).json({ error: "Errore lettura spots-extra" });
+  } catch (err) {
+    console.error("Errore lettura spots-extra:", err);
     res.status(500).json({ 
       success: false,
       error: "Errore lettura spots-extra",
       message: err.message,
       code: "READ_ERROR"
     });
-}
+  }
 });
 
-app.post("/api/spots-extra", authMiddleware, (req, res) => {
+// Endpoint per ottenere gli spot non salvati
+app.get("/api/unsaved-spots", authMiddleware, async (req, res) => {
+  try {
+    const data = await withLock('unsaved', async () => {
+      return await safeReadJson(UNSAVED_SPOTS_FILE, []);
+    });
+    
+    res.json({
+      success: true,
+      data: Array.isArray(data) ? data : [],
+      count: Array.isArray(data) ? data.length : 0,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("Errore lettura unsaved-spots:", err);
+    res.status(500).json({ 
+      success: false,
+      error: "Errore lettura spot non salvati",
+      message: err.message,
+      code: "READ_ERROR"
+    });
+  }
+});
+
+// Endpoint per ripulire gli spot non salvati
+app.delete("/api/unsaved-spots", authMiddleware, async (req, res) => {
+  try {
+    await withLock('unsaved', async () => {
+      await safeWriteJson(UNSAVED_SPOTS_FILE, []);
+    });
+    
+    res.json({
+      success: true,
+      message: "Spot non salvati eliminati",
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("Errore eliminazione unsaved-spots:", err);
+    res.status(500).json({ 
+      success: false,
+      error: "Errore eliminazione spot non salvati",
+      message: err.message,
+      code: "DELETE_ERROR"
+    });
+  }
+});
+
 app.post("/api/spots-extra", authMiddleware, async (req, res) => {
-try {
-const { name, desc, lat, lng, voto, tipo } = req.body || {};
-    if (!name || lat == null || lng == null) {
-      return res.status(400).json({ error: "name, lat, lng sono obbligatori" });
+  try {
+    const { name, desc, lat, lng, voto, tipo } = req.body || {};
+    
+    // Log dettagliato
+    console.log(`[POST] Salvataggio spot: ${name} (${lat}, ${lng}) - IP: ${req.ip} - User: ${req.user?.name || 'anonymous'}`);
     
     // Validazione input
     if (!name || name.trim().length === 0) {
@@ -340,8 +406,7 @@ const { name, desc, lat, lng, voto, tipo } = req.body || {};
         error: "Il nome è obbligatorio",
         code: "MISSING_NAME"
       });
-}
-
+    }
     
     if (lat == null || lng == null) {
       return res.status(400).json({ 
@@ -351,18 +416,16 @@ const { name, desc, lat, lng, voto, tipo } = req.body || {};
       });
     }
     
-const latNum = parseFloat(lat);
-const lngNum = parseFloat(lng);
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
     
-if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
-      return res.status(400).json({ error: "Coordinate non valide" });
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
       return res.status(400).json({ 
         success: false,
         error: "Coordinate non valide",
         code: "INVALID_COORDINATES"
       });
-}
-
+    }
     
     // Validazione range coordinate
     if (latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
@@ -373,49 +436,27 @@ if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
       });
     }
     
-let votoNum = null;
-    if (voto != null) {
+    let votoNum = null;
     if (voto != null && voto !== "" && !isNaN(voto)) {
-const v = parseInt(voto, 10);
-if (v >= 1 && v <= 6) votoNum = v;
-}
-
-    let current = [];
-    if (fs.existsSync(EXTRA_FILE)) {
-      try {
-        const raw = fs.readFileSync(EXTRA_FILE, "utf8");
-        const data = JSON.parse(raw);
-        if (Array.isArray(data)) current = data;
-      } catch (e) {
-        console.error("Errore parse spots-extra, resetto array:", e);
-      }
+      const v = parseInt(voto, 10);
+      if (v >= 1 && v <= 6) votoNum = v;
     }
-
-    const spot = {
-      id: Date.now().toString(),
-      name: String(name),
-      desc: desc != null ? String(desc) : "",
     
     const newSpot = {
       id: uuidv4(),
       name: String(name).trim(),
       desc: desc != null ? String(desc).trim() : "",
-lat: latNum,
-lng: lngNum,
-voto: votoNum,
-tipo: tipo ? String(tipo) : getTipo(name, desc),
-createdAt: new Date().toISOString(),
-      createdBy: req.user ? req.user.name : "unit"
+      lat: latNum,
+      lng: lngNum,
+      voto: votoNum,
+      tipo: tipo ? String(tipo) : getTipo(name, desc),
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: req.user ? req.user.name : "anonymous",
       version: 1,
       status: "active"
-};
+    };
 
-    current.push(spot);
-    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2), "utf8");
-    res.status(201).json(spot);
-    
     const result = await withLock('spots', async () => {
       let current = await safeReadJson(EXTRA_FILE, []);
       
@@ -456,9 +497,13 @@ createdAt: new Date().toISOString(),
       timestamp: newSpot.createdAt
     });
     
-} catch (err) {
-console.error("Errore salvataggio spot:", err);
-    res.status(500).json({ error: "Errore salvataggio spot" });
+  } catch (err) {
+    console.error("Errore salvataggio spot:", err);
+    
+    // Salva lo spot non salvato per recupero successivo
+    if (req.body) {
+      await saveUnsavedSpot(req.body, err);
+    }
     
     if (err.status === 409) {
       return res.status(409).json({
@@ -475,15 +520,11 @@ console.error("Errore salvataggio spot:", err);
       message: err.message,
       code: "SAVE_ERROR"
     });
-}
+  }
 });
 
-app.delete("/api/spots-extra/:id", authMiddleware, (req, res) => {
 app.delete("/api/spots-extra/:id", authMiddleware, async (req, res) => {
-try {
-    let current = [];
-    if (fs.existsSync(EXTRA_FILE)) {
-      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
+  try {
     const spotId = req.params.id;
     
     if (!spotId || spotId.length < 10) {
@@ -492,12 +533,7 @@ try {
         error: "ID spot non valido",
         code: "INVALID_ID"
       });
-}
-    current = current.filter(s => s.id !== req.params.id);
-    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: "errore" });
+    }
     
     const result = await withLock('spots', async () => {
       let current = await safeReadJson(EXTRA_FILE, []);
@@ -526,6 +562,8 @@ try {
       };
     });
     
+    console.log(`[DELETE] Spot eliminato: ${spotId} - User: ${req.user?.name || 'anonymous'}`);
+    
     res.json({
       success: true,
       message: "Spot eliminato con successo",
@@ -552,17 +590,16 @@ try {
       message: err.message,
       code: "DELETE_ERROR"
     });
-}
+  }
 });
 
-app.put("/api/spots-extra/:id", authMiddleware, (req, res) => {
 app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
-try {
-    let current = [];
-    if (fs.existsSync(EXTRA_FILE)) {
-      current = JSON.parse(fs.readFileSync(EXTRA_FILE, "utf8") || "[]");
+  try {
     const spotId = req.params.id;
     const { name, desc, lat, lng, voto, tipo } = req.body || {};
+    
+    // Log dettagliato
+    console.log(`[PUT] Aggiornamento spot ${spotId}: ${name} - User: ${req.user?.name || 'anonymous'}`);
     
     if (!spotId || spotId.length < 10) {
       return res.status(400).json({
@@ -570,11 +607,7 @@ try {
         error: "ID spot non valido",
         code: "INVALID_ID"
       });
-}
-    const index = current.findIndex(s => s.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: "non trovato" });
-
-    // Correzione: Gestisci voto correttamente (potrebbe essere stringa vuota)
+    }
     
     if (!name || name.trim().length === 0) {
       return res.status(400).json({
@@ -603,13 +636,11 @@ try {
       });
     }
     
-let votoNum = null;
-    if (req.body.voto !== undefined && req.body.voto !== "") {
-      const v = parseInt(req.body.voto, 10);
+    let votoNum = null;
     if (voto !== undefined && voto !== "" && !isNaN(voto)) {
       const v = parseInt(voto, 10);
-if (v >= 1 && v <= 6) votoNum = v;
-}
+      if (v >= 1 && v <= 6) votoNum = v;
+    }
     
     const result = await withLock('spots', async () => {
       let current = await safeReadJson(EXTRA_FILE, []);
@@ -677,6 +708,11 @@ if (v >= 1 && v <= 6) votoNum = v;
   } catch (err) {
     console.error("Errore aggiornamento spot:", err);
     
+    // Salva lo spot non salvato per recupero successivo
+    if (req.body) {
+      await saveUnsavedSpot(req.body, err);
+    }
+    
     if (err.status === 404) {
       return res.status(404).json({
         success: false,
@@ -703,21 +739,213 @@ if (v >= 1 && v <= 6) votoNum = v;
   }
 });
 
-    current[index] = { 
-      ...current[index], 
-      name: req.body.name || current[index].name,
-      desc: req.body.desc !== undefined ? req.body.desc : current[index].desc,
-      lat: parseFloat(req.body.lat) || current[index].lat,
-      lng: parseFloat(req.body.lng) || current[index].lng,
-      voto: votoNum,
-      tipo: req.body.tipo ? String(req.body.tipo) : getTipo(req.body.name || current[index].name, req.body.desc || current[index].desc),
-      updatedAt: new Date().toISOString()
+// Nuovo endpoint per salvataggio forzato in batch
+app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
+  try {
+    const { spots } = req.body || {};
+    
+    if (!Array.isArray(spots) || spots.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Array di spots richiesto",
+        code: "INVALID_SPOTS_ARRAY"
+      });
+    }
+    
+    console.log(`[FORCE-SAVE] Richiesta per ${spots.length} spot - User: ${req.user?.name || 'anonymous'}`);
+    
+    const results = {
+      total: spots.length,
+      success: [],
+      errors: [],
+      duplicates: []
     };
-    fs.writeFileSync(EXTRA_FILE, JSON.stringify(current, null, 2));
-    res.json(current[index]);
-  } catch (e) {
-    console.error("Errore aggiornamento spot:", e);
-    res.status(500).json({ error: "errore" });
+    
+    for (const spotData of spots) {
+      try {
+        const { name, desc, lat, lng, voto, tipo, id } = spotData || {};
+        
+        if (!name || lat == null || lng == null) {
+          results.errors.push({
+            spot: spotData,
+            error: "Dati mancanti",
+            coordinates: `${lat}, ${lng}`
+          });
+          continue;
+        }
+        
+        const latNum = parseFloat(lat);
+        const lngNum = parseFloat(lng);
+        
+        if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+          results.errors.push({
+            spot: spotData,
+            error: "Coordinate non valide",
+            coordinates: `${lat}, ${lng}`
+          });
+          continue;
+        }
+        
+        let votoNum = null;
+        if (voto !== undefined && voto !== "" && !isNaN(voto)) {
+          const v = parseInt(voto, 10);
+          if (v >= 1 && v <= 6) votoNum = v;
+        }
+        
+        const spot = {
+          name: String(name).trim(),
+          desc: desc != null ? String(desc).trim() : "",
+          lat: latNum,
+          lng: lngNum,
+          voto: votoNum,
+          tipo: tipo ? String(tipo) : getTipo(name, desc),
+          createdAt: spotData.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          createdBy: req.user ? req.user.name : "force_save"
+        };
+        
+        // Se ha un ID, prova ad aggiornare, altrimenti crea nuovo
+        if (id && id.length >= 10) {
+          try {
+            await withLock('spots', async () => {
+              let current = await safeReadJson(EXTRA_FILE, []);
+              
+              if (!Array.isArray(current)) {
+                current = [];
+              }
+              
+              const index = current.findIndex(s => s.id === id);
+              
+              if (index !== -1) {
+                current[index] = {
+                  ...current[index],
+                  ...spot,
+                  id: id,
+                  updatedBy: req.user ? req.user.name : "force_save"
+                };
+                await safeWriteJson(EXTRA_FILE, current);
+                results.success.push({ id, name: spot.name, action: 'updated' });
+              } else {
+                throw new Error("Spot non trovato per aggiornamento");
+              }
+            });
+          } catch (error) {
+            // Se non trova lo spot per aggiornamento, prova a crearlo come nuovo
+            try {
+              await withLock('spots', async () => {
+                let current = await safeReadJson(EXTRA_FILE, []);
+                
+                if (!Array.isArray(current)) {
+                  current = [];
+                }
+                
+                // Verifica duplicati
+                const duplicate = current.find(s => {
+                  const latDiff = Math.abs(s.lat - latNum);
+                  const lngDiff = Math.abs(s.lng - lngNum);
+                  return latDiff < 0.0001 && lngDiff < 0.0001;
+                });
+                
+                if (duplicate) {
+                  results.duplicates.push({
+                    spot: spotData,
+                    existingSpot: duplicate,
+                    coordinates: `${lat}, ${lng}`
+                  });
+                } else {
+                  const newSpot = {
+                    ...spot,
+                    id: uuidv4(),
+                    version: 1,
+                    status: "active"
+                  };
+                  
+                  current.push(newSpot);
+                  await safeWriteJson(EXTRA_FILE, current);
+                  results.success.push({ id: newSpot.id, name: spot.name, action: 'created' });
+                }
+              });
+            } catch (createError) {
+              results.errors.push({
+                spot: spotData,
+                error: createError.message,
+                coordinates: `${lat}, ${lng}`
+              });
+            }
+          }
+        } else {
+          // Nuovo spot
+          try {
+            await withLock('spots', async () => {
+              let current = await safeReadJson(EXTRA_FILE, []);
+              
+              if (!Array.isArray(current)) {
+                current = [];
+              }
+              
+              // Verifica duplicati
+              const duplicate = current.find(s => {
+                const latDiff = Math.abs(s.lat - latNum);
+                const lngDiff = Math.abs(s.lng - lngNum);
+                return latDiff < 0.0001 && lngDiff < 0.0001;
+              });
+              
+              if (duplicate) {
+                results.duplicates.push({
+                  spot: spotData,
+                  existingSpot: duplicate,
+                  coordinates: `${lat}, ${lng}`
+                });
+              } else {
+                const newSpot = {
+                  ...spot,
+                  id: uuidv4(),
+                  version: 1,
+                  status: "active"
+                };
+                
+                current.push(newSpot);
+                await safeWriteJson(EXTRA_FILE, current);
+                results.success.push({ id: newSpot.id, name: spot.name, action: 'created' });
+              }
+            });
+          } catch (error) {
+            results.errors.push({
+              spot: spotData,
+              error: error.message,
+              coordinates: `${lat}, ${lng}`
+            });
+          }
+        }
+      } catch (error) {
+        results.errors.push({
+          spot: spotData,
+          error: error.message || "Errore sconosciuto",
+          coordinates: `${spotData.lat}, ${spotData.lng}`
+        });
+      }
+    }
+    
+    console.log(`[FORCE-SAVE] Completato: ${results.success.length} successi, ${results.errors.length} errori, ${results.duplicates.length} duplicati`);
+    
+    res.json({
+      success: true,
+      message: `Salvataggio forzato completato: ${results.success.length} successi, ${results.errors.length} errori`,
+      results: results,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (err) {
+    console.error("Errore salvataggio forzato:", err);
+    res.status(500).json({
+      success: false,
+      error: "Errore salvataggio forzato",
+      message: err.message,
+      code: "FORCE_SAVE_ERROR"
+    });
+  }
+});
+
 // Endpoint per bulk operations (utile per recovery)
 app.post("/api/spots-extra/bulk", authMiddleware, async (req, res) => {
   try {
@@ -801,16 +1029,15 @@ app.post("/api/spots-extra/bulk", authMiddleware, async (req, res) => {
       message: err.message,
       code: "BULK_ERROR"
     });
-}
+  }
 });
 
-@@ -185,9 +713,16 @@ app.put("/api/spots-extra/:id", authMiddleware, (req, res) => {
+// ===============================
+// API: DECODE GMAPS URL
+// ===============================
 app.post("/api/decode-gmaps-url", async (req, res) => {
-try {
-const { url } = req.body;
-    if (!url) return res.status(400).json({ error: "URL richiesto" });
-
-    let finalUrl = url;
+  try {
+    const { url } = req.body;
     
     if (!url || typeof url !== 'string') {
       return res.status(400).json({
@@ -822,18 +1049,17 @@ const { url } = req.body;
     
     let finalUrl = url.trim();
 
-// Risolvi short URL
-if (url.includes("goo.gl") || url.includes("maps.app.goo.gl")) {
-@@ -198,68 +733,386 @@ app.post("/api/decode-gmaps-url", async (req, res) => {
-console.warn("Impossibile risolvere short URL:", e);
-}
-}
-
+    // Risolvi short URL
+    if (url.includes("goo.gl") || url.includes("maps.app.goo.gl")) {
+      try {
+        finalUrl = await resolveShortUrl(url);
+      } catch (e) {
+        console.warn("Impossibile risolvere short URL:", e);
+      }
+    }
     
-// Estrai coordinate
-const coords = extractCoordsFromUrl(finalUrl);
-    if (!coords) return res.status(400).json({ error: "Coordinate non trovate nell'URL" });
-
+    // Estrai coordinate
+    const coords = extractCoordsFromUrl(finalUrl);
     
     if (!coords) {
       return res.status(400).json({
@@ -844,10 +1070,7 @@ const coords = extractCoordsFromUrl(finalUrl);
       });
     }
     
-res.json({
-      lat: coords.lat,
-      lng: coords.lng,
-      sourceUrl: finalUrl
+    res.json({
       success: true,
       data: {
         lat: coords.lat,
@@ -855,24 +1078,22 @@ res.json({
         sourceUrl: finalUrl
       },
       timestamp: new Date().toISOString()
-});
+    });
     
-} catch (err) {
-console.error("Errore decodifica URL:", err);
-    res.status(500).json({ error: "Errore decodifica URL" });
+  } catch (err) {
+    console.error("Errore decodifica URL:", err);
     res.status(500).json({
       success: false,
       error: "Errore decodifica URL",
       message: err.message,
       code: "DECODE_ERROR"
     });
-}
+  }
 });
 
 // ===============================
 // API: SETTINGS CONDIVISE
 // ===============================
-function readSettings() {
 async function readSettings() {
   return await withLock('settings', async () => {
     const settings = await safeReadJson(SETTINGS_FILE, DEFAULT_SETTINGS);
@@ -881,11 +1102,7 @@ async function readSettings() {
 }
 
 app.get("/api/settings", async (req, res) => {
-try {
-    if (!fs.existsSync(SETTINGS_FILE)) return { ...DEFAULT_SETTINGS };
-    const raw = fs.readFileSync(SETTINGS_FILE, "utf8");
-    const data = JSON.parse(raw);
-    return { ...DEFAULT_SETTINGS, ...data };
+  try {
     const settings = await readSettings();
     
     res.json({
@@ -894,29 +1111,20 @@ try {
       timestamp: new Date().toISOString()
     });
     
-} catch (err) {
-console.error("Errore lettura settings:", err);
-    return { ...DEFAULT_SETTINGS };
+  } catch (err) {
+    console.error("Errore lettura settings:", err);
     res.status(500).json({
       success: false,
       error: "Errore lettura settings",
       message: err.message,
       code: "SETTINGS_READ_ERROR"
     });
-}
-}
-
-app.get("/api/settings", (req, res) => {
-  const settings = readSettings();
-  res.json(settings);
+  }
 });
 
-app.post("/api/settings", authMiddleware, (req, res) => {
 app.post("/api/settings", authMiddleware, async (req, res) => {
-try {
-const incoming = req.body || {};
-    const current = readSettings();
-    const updated = { ...current };
+  try {
+    const incoming = req.body || {};
     
     const result = await withLock('settings', async () => {
       const current = await safeReadJson(SETTINGS_FILE, DEFAULT_SETTINGS);
@@ -967,16 +1175,6 @@ const incoming = req.body || {};
   }
 });
 
-    if (incoming.baseLayer && [
-      "osm", "osmHot", "satellite", "topo", "dark", 
-      "cycle", "transport", "watercolor", "terrain", "satelliteHybrid",
-      "cartoLight", "stamenToner", "esriTopo", "esriOcean", "esriGray",
-      "satellite2", "satellite3"
-    ].includes(incoming.baseLayer)) {
-      updated.baseLayer = incoming.baseLayer;
-    }
-    if (incoming.mapStyle && typeof incoming.mapStyle === "string") {
-      updated.mapStyle = incoming.mapStyle;
 // ===============================
 // HEALTH CHECK, STATS E BACKUP
 // ===============================
@@ -999,6 +1197,18 @@ app.get("/api/health", async (req, res) => {
       };
     });
     
+    const unsavedData = await withLock('unsaved', async () => {
+      try {
+        const unsaved = await safeReadJson(UNSAVED_SPOTS_FILE, []);
+        return {
+          count: Array.isArray(unsaved) ? unsaved.length : 0,
+          exists: true
+        };
+      } catch {
+        return { count: 0, exists: false };
+      }
+    });
+    
     const memoryUsage = process.memoryUsage();
     
     res.json({
@@ -1013,12 +1223,15 @@ app.get("/api/health", async (req, res) => {
       },
       spots: spotsData,
       settings: settingsData,
+      unsaved: unsavedData,
       locks: {
         spots: locks.spots.locked,
         settings: locks.settings.locked,
+        unsaved: locks.unsaved.locked,
         queueLengths: {
           spots: locks.spots.queue.length,
-          settings: locks.settings.queue.length
+          settings: locks.settings.queue.length,
+          unsaved: locks.unsaved.queue.length
         }
       }
     });
@@ -1042,9 +1255,7 @@ app.get("/api/stats", async (req, res) => {
     
     if (!Array.isArray(spots)) {
       throw new Error("Invalid spots data");
-}
-    if (typeof incoming.randomIncludeLowRated === "boolean") {
-      updated.randomIncludeLowRated = incoming.randomIncludeLowRated;
+    }
     
     const stats = {
       total: spots.length,
@@ -1107,10 +1318,11 @@ app.get("/api/backup", authMiddleware, async (req, res) => {
     const backup = {
       timestamp,
       metadata: {
-        backupVersion: 2,
+        backupVersion: 3,
         generatedBy: req.user ? req.user.name : "system",
         totalSpots: 0,
-        totalSettings: 0
+        totalSettings: 0,
+        totalUnsaved: 0
       }
     };
     
@@ -1129,6 +1341,18 @@ app.get("/api/backup", authMiddleware, async (req, res) => {
     
     backup.settings = settings || DEFAULT_SETTINGS;
     backup.metadata.totalSettings = Object.keys(backup.settings).length;
+    
+    // Backup unsaved spots
+    try {
+      const unsaved = await withLock('unsaved', async () => {
+        return await safeReadJson(UNSAVED_SPOTS_FILE, []);
+      });
+      backup.unsavedSpots = Array.isArray(unsaved) ? unsaved : [];
+      backup.metadata.totalUnsaved = backup.unsavedSpots.length;
+    } catch {
+      backup.unsavedSpots = [];
+      backup.metadata.totalUnsaved = 0;
+    }
     
     // Scrive backup file
     const backupFile = path.join(backupDir, `backup-${timestamp}.json`);
@@ -1149,7 +1373,7 @@ app.get("/api/backup", authMiddleware, async (req, res) => {
       }
     } catch (e) {
       // Ignora errori di pulizia
-}
+    }
     
     res.json({
       success: true,
@@ -1169,8 +1393,6 @@ app.get("/api/backup", authMiddleware, async (req, res) => {
   }
 });
 
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2), "utf8");
-    res.json(updated);
 // Endpoint per restore da backup
 app.post("/api/restore", authMiddleware, async (req, res) => {
   try {
@@ -1229,6 +1451,16 @@ app.post("/api/restore", authMiddleware, async (req, res) => {
       }
     }
     
+    // Restore unsaved spots
+    if (restoreType === 'all' || restoreType === 'unsaved') {
+      if (Array.isArray(backupData.unsavedSpots)) {
+        await withLock('unsaved', async () => {
+          await safeWriteJson(UNSAVED_SPOTS_FILE, backupData.unsavedSpots);
+        });
+        results.unsaved = { restored: backupData.unsavedSpots.length, success: true };
+      }
+    }
+    
     res.json({
       success: true,
       message: "Restore completato",
@@ -1236,55 +1468,46 @@ app.post("/api/restore", authMiddleware, async (req, res) => {
       timestamp: new Date().toISOString()
     });
     
-} catch (err) {
-    console.error("Errore salvataggio settings:", err);
-    res.status(500).json({ error: "Errore salvataggio settings" });
+  } catch (err) {
     console.error("Errore restore:", err);
     res.status(500).json({
       success: false,
       error: "Errore durante il restore",
       message: err.message
     });
-}
+  }
 });
 
-@@ -268,45 +1121,62 @@ app.post("/api/settings", authMiddleware, (req, res) => {
+// ===============================
+// FUNZIONI PER DECODIFICA URL
 // ===============================
 function extractCoordsFromUrl(url) {
-try {
-    // Cerca pattern @lat,lng
+  try {
     if (!url || typeof url !== 'string') return null;
     
     // Pattern 1: @lat,lng
-const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-if (atMatch) {
-return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
-}
-
-    // Cerca pattern /place/lat,lng
+    const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (atMatch) {
+      return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+    }
     
     // Pattern 2: /place/lat,lng
-const placeMatch = url.match(/place\/(-?\d+\.\d+),(-?\d+\.\d+)/);
-if (placeMatch) {
-return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
-}
-
-    // Cerca pattern ?q=lat,lng
+    const placeMatch = url.match(/place\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (placeMatch) {
+      return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
+    }
     
     // Pattern 3: ?q=lat,lng
-const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-if (qMatch) {
-return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
-}
-
-    // Cerca pattern data=!4d...!3d...
+    const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (qMatch) {
+      return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+    }
     
     // Pattern 4: data=!4d...!3d...
-const dataMatch = url.match(/data=!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-if (dataMatch) {
-return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) };
-}
-
+    const dataMatch = url.match(/data=!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    if (dataMatch) {
+      return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) };
+    }
     
     // Pattern 5: /@lat,lng,zoom
     const detailedMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+),(\d+z)/);
@@ -1292,24 +1515,21 @@ return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) };
       return { lat: parseFloat(detailedMatch[1]), lng: parseFloat(detailedMatch[2]) };
     }
     
-return null;
-} catch (e) {
+    return null;
+  } catch (e) {
     console.error("Error extracting coords from URL:", e);
-return null;
-}
+    return null;
+  }
 }
 
 function resolveShortUrl(shortUrl) {
-return new Promise((resolve, reject) => {
-    https.get(shortUrl, (response) => {
+  return new Promise((resolve, reject) => {
     const req = https.get(shortUrl, (response) => {
-if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-resolve(response.headers.location);
-} else {
-        reject(new Error("Impossibile risolvere short URL"));
+      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+        resolve(response.headers.location);
+      } else {
         reject(new Error("Impossibile risolvere short URL, nessun redirect"));
-}
-    }).on("error", reject);
+      }
     });
     
     req.on('error', reject);
@@ -1319,184 +1539,14 @@ resolve(response.headers.location);
     });
     
     req.end();
-});
+  });
 }
 
-@@ -317,11 +1187,289 @@ app.get("/", (req, res) => {
-res.sendFile(path.join(__dirname, "index.html"));
-});
-
-app.get("/admin", (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>LTU Admin</title>
-      <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .section { background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
-        .healthy { background: #d4edda; color: #155724; }
-        .degraded { background: #fff3cd; color: #856404; }
-        .error { background: #f8d7da; color: #721c24; }
-      </style>
-    </head>
-    <body>
-      <h1>Lost Trace Unit - Admin</h1>
-      
-      <div class="section">
-        <h2>System Status</h2>
-        <div id="status">Loading...</div>
-        <button onclick="loadStatus()">Refresh Status</button>
-      </div>
-      
-      <div class="section">
-        <h2>Backup</h2>
-        <p>Current spots: <span id="spotCount">-</span></p>
-        <button onclick="createBackup()">Create Backup</button>
-        <button onclick="loadStats()">View Statistics</button>
-      </div>
-      
-      <div class="section">
-        <h2>Recovery</h2>
-        <div id="recoveryStatus"></div>
-        <button onclick="checkDataIntegrity()">Check Data Integrity</button>
-      </div>
-      
-      <script>
-        async function loadStatus() {
-          try {
-            const response = await fetch('/api/health');
-            const data = await response.json();
-            
-            let statusClass = 'degraded';
-            if (data.status === 'healthy') statusClass = 'healthy';
-            if (data.status === 'degraded') statusClass = 'degraded';
-            
-            document.getElementById('status').innerHTML = \`
-              <div class="status \${statusClass}">
-                <strong>Status:</strong> \${data.status}<br>
-                <strong>Uptime:</strong> \${Math.round(data.uptime)} seconds<br>
-                <strong>Memory:</strong> \${data.memory.heapUsed}<br>
-                <strong>Spots:</strong> \${data.spots.count}<br>
-                <strong>Timestamp:</strong> \${new Date(data.timestamp).toLocaleString()}
-              </div>
-            \`;
-          } catch (error) {
-            document.getElementById('status').innerHTML = \`
-              <div class="status error">
-                Error loading status: \${error.message}
-              </div>
-            \`;
-          }
-        }
-        
-        async function createBackup() {
-          const username = prompt('Username:');
-          const password = prompt('Password:');
-          
-          if (!username || !password) return;
-          
-          try {
-            const response = await fetch('/api/backup', {
-              headers: {
-                'Authorization': 'Basic ' + btoa(username + ':' + password)
-              }
-            });
-            
-            const data = await response.json();
-            alert(data.message + '\\nFile: ' + data.backupFile);
-          } catch (error) {
-            alert('Error: ' + error.message);
-          }
-        }
-        
-        async function loadStats() {
-          try {
-            const response = await fetch('/api/stats');
-            const data = await response.json();
-            
-            let statsHtml = '<h3>Statistics</h3><ul>';
-            statsHtml += \`<li>Total spots: \${data.data.total}</li>\`;
-            statsHtml += \`<li>Average voto: \${data.data.averageVoto || 'N/A'}</li>\`;
-            
-            statsHtml += '<li>By type:</li><ul>';
-            for (const [tipo, count] of Object.entries(data.data.byTipo)) {
-              statsHtml += \`<li>\${tipo}: \${count}</li>\`;
-            }
-            statsHtml += '</ul></ul>';
-            
-            alert(statsHtml.replace(/<[^>]*>/g, ''));
-          } catch (error) {
-            alert('Error loading stats: ' + error.message);
-          }
-        }
-        
-        async function checkDataIntegrity() {
-          try {
-            const response = await fetch('/api/spots-extra');
-            const data = await response.json();
-            
-            let issues = [];
-            
-            if (!data.success) {
-              issues.push('API returned error: ' + data.error);
-            }
-            
-            if (!Array.isArray(data.data)) {
-              issues.push('Data is not an array');
-            } else {
-              const invalidSpots = data.data.filter(spot => 
-                !spot.id || !spot.name || !spot.lat || !spot.lng
-              );
-              
-              if (invalidSpots.length > 0) {
-                issues.push(\`Found \${invalidSpots.length} invalid spots\`);
-              }
-              
-              const duplicateIds = {};
-              data.data.forEach(spot => {
-                duplicateIds[spot.id] = (duplicateIds[spot.id] || 0) + 1;
-              });
-              
-              const duplicates = Object.entries(duplicateIds).filter(([id, count]) => count > 1);
-              if (duplicates.length > 0) {
-                issues.push(\`Found \${duplicates.length} duplicate IDs\`);
-              }
-            }
-            
-            if (issues.length === 0) {
-              document.getElementById('recoveryStatus').innerHTML = \`
-                <div class="status healthy">
-                  Data integrity check passed!<br>
-                  Total spots: \${data.data.length}
-                </div>
-              \`;
-            } else {
-              document.getElementById('recoveryStatus').innerHTML = \`
-                <div class="status error">
-                  Issues found:<br>
-                  \${issues.join('<br>')}
-                </div>
-              \`;
-            }
-          } catch (error) {
-            document.getElementById('recoveryStatus').innerHTML = \`
-              <div class="status error">
-                Error checking integrity: \${error.message}
-              </div>
-            \`;
-          }
-        }
-        
-        // Load initial status
-        loadStatus();
-      </script>
-    </body>
-    </html>
-  `);
+// ===============================
+// ROUTE STATICHE
+// ===============================
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // ===============================
@@ -1534,10 +1584,6 @@ app.use((err, req, res, next) => {
 // AVVIO SERVER
 // ===============================
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server attivo su http://localhost:${port}`);
-  console.log(`Login: user="${USERNAME}" password="${PASSWORD}"`);
-});
 
 // Inizializzazione file e directory
 async function initializeServer() {
@@ -1574,10 +1620,28 @@ async function initializeServer() {
       await safeWriteJson(SETTINGS_FILE, DEFAULT_SETTINGS);
     }
     
+    // Verifica o crea file unsaved-spots.json
+    try {
+      await fs.access(UNSAVED_SPOTS_FILE);
+      console.log('✅ unsaved-spots.json exists');
+      
+      // Verifica validità del file
+      const unsavedData = await safeReadJson(UNSAVED_SPOTS_FILE, []);
+      if (!Array.isArray(unsavedData)) {
+        console.warn('⚠️  unsaved-spots.json contains invalid data, resetting...');
+        await safeWriteJson(UNSAVED_SPOTS_FILE, []);
+      } else {
+        console.log(`📊 Loaded ${unsavedData.length} unsaved spots`);
+      }
+    } catch {
+      console.log('📝 Creating unsaved-spots.json...');
+      await safeWriteJson(UNSAVED_SPOTS_FILE, []);
+    }
+    
     console.log('✅ Server initialization complete');
     console.log(`🔐 Admin login: user="${USERNAME}" password="${PASSWORD}"`);
     console.log(`🌐 Health check: http://localhost:${port}/api/health`);
-    console.log(`📊 Admin panel: http://localhost:${port}/admin`);
+    console.log(`📊 Stats: http://localhost:${port}/api/stats`);
     
   } catch (error) {
     console.error('❌ Server initialization failed:', error);
