@@ -13,6 +13,7 @@ const app = express();
 const USERNAME = process.env.APP_USERNAME || "unit";
 const PASSWORD = process.env.APP_PASSWORD || "ltunit";
 const EXTRA_FILE = path.join(__dirname, "spots-extra.json");
+const CSV_FILE = path.join(__dirname, "spots.csv");
 const SETTINGS_FILE = path.join(__dirname, "settings.json");
 const UNSAVED_SPOTS_FILE = path.join(__dirname, "unsaved-spots.json");
 const BACKUP_DIR = path.join(__dirname, "backups");
@@ -164,6 +165,188 @@ async function saveSpotWithBackup(spot) {
     console.log(`Backup spot creato: ${backupFile}`);
   } catch (error) {
     console.warn(`Impossibile creare backup per spot ${spot.id}:`, error.message);
+  }
+}
+
+// ===============================
+// FUNZIONI CSV
+// ===============================
+async function syncSpotsToCSV() {
+  try {
+    console.log(`[CSV SYNC] Sincronizzazione CSV in corso...`);
+    
+    // Leggi tutti gli spot da JSON
+    const jsonSpots = await safeReadJson(EXTRA_FILE, []);
+    
+    if (!Array.isArray(jsonSpots) || jsonSpots.length === 0) {
+      console.log(`[CSV SYNC] Nessuno spot da sincronizzare`);
+      return;
+    }
+    
+    // Leggi gli spot esistenti dal CSV per non sovrascrivere quelli importati manualmente
+    let existingCSVSpots = [];
+    try {
+      if (fsSync.existsSync(CSV_FILE)) {
+        const csvContent = await fs.readFile(CSV_FILE, 'utf8');
+        const lines = csvContent.trim().split('\n');
+        
+        // Salva l'intestazione
+        const header = lines[0];
+        
+        // Processa le righe esistenti
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          
+          // Parsing semplice CSV (supporta virgolette)
+          const parts = [];
+          let currentPart = '';
+          let inQuotes = false;
+          
+          for (let char of line) {
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              parts.push(currentPart);
+              currentPart = '';
+            } else {
+              currentPart += char;
+            }
+          }
+          parts.push(currentPart);
+          
+          if (parts.length >= 4) {
+            existingCSVSpots.push({
+              name: parts[0].replace(/"/g, ''),
+              desc: parts[1].replace(/"/g, ''),
+              lat: parseFloat(parts[2]),
+              lng: parseFloat(parts[3])
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`[CSV SYNC] Errore lettura CSV esistente:`, error.message);
+    }
+    
+    // Filtra gli spot JSON che non sono già nel CSV
+    const newSpots = jsonSpots.filter(jsonSpot => {
+      return !existingCSVSpots.some(csvSpot => 
+        Math.abs(csvSpot.lat - jsonSpot.lat) < 0.00001 && 
+        Math.abs(csvSpot.lng - jsonSpot.lng) < 0.00001
+      );
+    });
+    
+    if (newSpots.length === 0) {
+      console.log(`[CSV SYNC] Nessuno nuovo spot da aggiungere al CSV`);
+      return;
+    }
+    
+    // Formatta i nuovi spot per CSV
+    const csvLines = [];
+    newSpots.forEach(spot => {
+      const name = spot.name || "Spot senza nome";
+      let desc = spot.desc || "";
+      
+      // Aggiungi metadati alla descrizione
+      if (spot.voto) {
+        desc += (desc ? " | " : "") + `Voto: ${spot.voto}/6`;
+      }
+      if (spot.tipo) {
+        desc += (desc ? " | " : "") + `Tipo: ${spot.tipo}`;
+      }
+      if (spot.createdAt) {
+        const date = new Date(spot.createdAt).toLocaleDateString('it-IT');
+        desc += (desc ? " | " : "") + `Aggiunto: ${date}`;
+      }
+      
+      // Aggiungi prefisso per identificare gli spot LTU
+      desc = `Importato LTU | ${desc}`;
+      
+      // Escape delle virgolette
+      const escapedName = `"${name.replace(/"/g, '""')}"`;
+      const escapedDesc = `"${desc.replace(/"/g, '""')}"`;
+      
+      csvLines.push(`${escapedName},${escapedDesc},${spot.lat},${spot.lng}`);
+    });
+    
+    // Prepara il contenuto CSV completo
+    let csvContent = "Name,Description,Latitude,Longitude\n";
+    
+    // Aggiungi prima gli spot esistenti
+    existingCSVSpots.forEach(spot => {
+      const escapedName = `"${spot.name.replace(/"/g, '""')}"`;
+      const escapedDesc = `"${spot.desc.replace(/"/g, '""')}"`;
+      csvContent += `${escapedName},${escapedDesc},${spot.lat},${spot.lng}\n`;
+    });
+    
+    // Aggiungi i nuovi spot
+    csvContent += csvLines.join('\n');
+    
+    // Salva il file CSV
+    await fs.writeFile(CSV_FILE, csvContent, 'utf8');
+    
+    console.log(`[CSV SYNC] CSV aggiornato: aggiunti ${newSpots.length} spot`);
+    console.log(`[CSV SYNC] Totale spot nel CSV: ${existingCSVSpots.length + newSpots.length}`);
+    
+  } catch (error) {
+    console.error(`[CSV SYNC] Errore sincronizzazione CSV:`, error);
+    throw error;
+  }
+}
+
+// Funzione per leggere CSV esistente
+async function readCSV() {
+  try {
+    if (!fsSync.existsSync(CSV_FILE)) {
+      return { header: "Name,Description,Latitude,Longitude", spots: [] };
+    }
+    
+    const content = await fs.readFile(CSV_FILE, 'utf8');
+    const lines = content.trim().split('\n');
+    
+    if (lines.length === 0) {
+      return { header: "Name,Description,Latitude,Longitude", spots: [] };
+    }
+    
+    const header = lines[0];
+    const spots = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      // Parsing CSV con virgolette
+      const parts = [];
+      let currentPart = '';
+      let inQuotes = false;
+      
+      for (let char of line) {
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          parts.push(currentPart);
+          currentPart = '';
+        } else {
+          currentPart += char;
+        }
+      }
+      parts.push(currentPart);
+      
+      if (parts.length >= 4) {
+        spots.push({
+          name: parts[0].replace(/"/g, ''),
+          desc: parts[1].replace(/"/g, ''),
+          lat: parseFloat(parts[2]),
+          lng: parseFloat(parts[3])
+        });
+      }
+    }
+    
+    return { header, spots };
+  } catch (error) {
+    console.error(`Errore lettura CSV:`, error);
+    return { header: "Name,Description,Latitude,Longitude", spots: [] };
   }
 }
 
@@ -331,7 +514,7 @@ async function saveUnsavedSpot(spotData, error) {
 }
 
 // ===============================
-// API: SPOT EXTRA CON SALVATAGGIO PERMANENTE
+// API: SPOT EXTRA CON SALVATAGGIO PERMANENTE E CSV
 // ===============================
 app.get("/api/spots-extra", async (req, res) => {
   try {
@@ -444,8 +627,17 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
       
       current.push(newSpot);
       
-      // SALVATAGGIO PERMANENTE SUL FILE
+      // SALVATAGGIO PERMANENTE SUL FILE JSON
       await safeWriteJson(EXTRA_FILE, current);
+      
+      // SINCRONIZZAZIONE CON CSV
+      try {
+        await syncSpotsToCSV();
+        console.log(`[CSV SYNC] Spot sincronizzato con CSV: ${newSpot.name}`);
+      } catch (csvError) {
+        console.warn(`[CSV WARN] Errore sincronizzazione CSV: ${csvError.message}`);
+        // Non blocchiamo l'operazione se il CSV fallisce
+      }
       
       // Backup individuale dello spot
       await saveSpotWithBackup(newSpot);
@@ -522,8 +714,16 @@ app.delete("/api/spots-extra/:id", authMiddleware, async (req, res) => {
         };
       }
       
-      // SALVATAGGIO PERMANENTE DEL FILE AGGIORNATO
+      // SALVATAGGIO PERMANENTE DEL FILE JSON AGGIORNATO
       await safeWriteJson(EXTRA_FILE, filtered);
+      
+      // SINCRONIZZAZIONE CON CSV
+      try {
+        await syncSpotsToCSV();
+        console.log(`[CSV SYNC] CSV aggiornato dopo eliminazione`);
+      } catch (csvError) {
+        console.warn(`[CSV WARN] Errore sincronizzazione CSV: ${csvError.message}`);
+      }
       
       console.log(`Spot eliminato permanentemente: ${spotId}`);
       
@@ -538,7 +738,7 @@ app.delete("/api/spots-extra/:id", authMiddleware, async (req, res) => {
     
     res.json({
       success: true,
-      message: "Spot eliminato con successo e file aggiornato",
+      message: "Spot eliminato con successo e file aggiornati",
       deletedId: result.deletedId,
       previousCount: result.previousCount,
       remainingCount: result.newCount,
@@ -660,8 +860,16 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
       
       current[index] = updatedSpot;
       
-      // SALVATAGGIO PERMANENTE DEL FILE AGGIORNATO
+      // SALVATAGGIO PERMANENTE DEL FILE JSON AGGIORNATO
       await safeWriteJson(EXTRA_FILE, current);
+      
+      // SINCRONIZZAZIONE CON CSV
+      try {
+        await syncSpotsToCSV();
+        console.log(`[CSV SYNC] CSV aggiornato dopo modifica`);
+      } catch (csvError) {
+        console.warn(`[CSV WARN] Errore sincronizzazione CSV: ${csvError.message}`);
+      }
       
       // Backup individuale dello spot aggiornato
       await saveSpotWithBackup(updatedSpot);
@@ -718,7 +926,7 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
 });
 
 // ===============================
-// ENDPOINT FORCE-SAVE MIGLIORATO
+// ENDPOINT FORCE-SAVE MIGLIORATO CON CSV
 // ===============================
 app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
   try {
@@ -886,6 +1094,15 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
       
       // SALVATAGGIO PERMANENTE DI TUTTI GLI SPOT
       await safeWriteJson(EXTRA_FILE, currentSpots);
+      
+      // SINCRONIZZAZIONE CON CSV
+      try {
+        await syncSpotsToCSV();
+        console.log(`[CSV SYNC] CSV aggiornato dopo force-save`);
+      } catch (csvError) {
+        console.warn(`[CSV WARN] Errore sincronizzazione CSV: ${csvError.message}`);
+      }
+      
       console.log(`File spots-extra.json aggiornato con ${currentSpots.length} spot totali`);
       
       return currentSpots;
@@ -919,32 +1136,43 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
 // ===============================
 app.get("/api/debug/file-info", async (req, res) => {
   try {
-    const filePath = EXTRA_FILE;
-    let fileExists = false;
-    let fileSize = 0;
-    let fileContent = null;
+    const jsonPath = EXTRA_FILE;
+    const csvPath = CSV_FILE;
     
-    try {
-      const stats = await fs.stat(filePath);
-      fileExists = true;
-      fileSize = stats.size;
-      
-      const content = await fs.readFile(filePath, 'utf8');
-      fileContent = JSON.parse(content);
-    } catch (error) {
-      if (error.code !== 'ENOENT') {
-        throw error;
-      }
+    const jsonExists = fsSync.existsSync(jsonPath);
+    const csvExists = fsSync.existsSync(csvPath);
+    
+    let jsonStats = null, csvStats = null;
+    let jsonContent = null, csvContent = null;
+    
+    if (jsonExists) {
+      jsonStats = await fs.stat(jsonPath);
+      const content = await fs.readFile(jsonPath, 'utf8');
+      jsonContent = JSON.parse(content);
+    }
+    
+    if (csvExists) {
+      csvStats = await fs.stat(csvPath);
+      csvContent = await fs.readFile(csvPath, 'utf8');
     }
     
     res.json({
       success: true,
       data: {
-        filePath,
-        fileExists,
-        fileSize,
-        spotCount: Array.isArray(fileContent) ? fileContent.length : 0,
-        lastModified: fileExists ? (await fs.stat(filePath)).mtime : null
+        jsonFile: {
+          path: jsonPath,
+          exists: jsonExists,
+          size: jsonStats ? jsonStats.size : 0,
+          spotCount: Array.isArray(jsonContent) ? jsonContent.length : 0,
+          lastModified: jsonStats ? jsonStats.mtime : null
+        },
+        csvFile: {
+          path: csvPath,
+          exists: csvExists,
+          size: csvStats ? csvStats.size : 0,
+          lines: csvContent ? csvContent.split('\n').length : 0,
+          lastModified: csvStats ? csvStats.mtime : null
+        }
       },
       timestamp: new Date().toISOString()
     });
@@ -959,12 +1187,206 @@ app.get("/api/debug/file-info", async (req, res) => {
 });
 
 // ===============================
-// ALTRI ENDPOINT (mantenuti invariati)
+// ENDPOINT SINCRONIZZAZIONE CSV
 // ===============================
-// ... [Mantieni tutti gli altri endpoint come decode-gmaps-url, settings, health, stats, backup, restore] ...
+app.post("/api/sync-csv", authMiddleware, async (req, res) => {
+  try {
+    console.log(`[CSV SYNC] Richiesta sincronizzazione manuale`);
+    
+    await syncSpotsToCSV();
+    
+    res.json({
+      success: true,
+      message: "CSV sincronizzato con successo",
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error("Errore sincronizzazione CSV:", error);
+    res.status(500).json({
+      success: false,
+      error: "Errore sincronizzazione CSV",
+      message: error.message
+    });
+  }
+});
 
 // ===============================
-// FUNZIONI PER DECODIFICA URL (mantenute invariate)
+// ENDPOINT PER LEGGERE CSV
+// ===============================
+app.get("/api/csv-content", async (req, res) => {
+  try {
+    const csvData = await readCSV();
+    
+    res.json({
+      success: true,
+      data: csvData,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error("Errore lettura CSV:", error);
+    res.status(500).json({
+      success: false,
+      error: "Errore lettura CSV",
+      message: error.message
+    });
+  }
+});
+
+// ===============================
+// ALTRI ENDPOINT
+// ===============================
+app.post("/api/decode-gmaps-url", async (req, res) => {
+  try {
+    const { url } = req.body || {};
+    
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: "URL richiesto",
+        code: "MISSING_URL"
+      });
+    }
+    
+    console.log(`Decodifica URL: ${url.substring(0, 100)}...`);
+    
+    let finalUrl = url;
+    
+    // Risolvi short URL se necessario
+    if (url.includes("goo.gl") || url.includes("maps.app.goo.gl")) {
+      try {
+        finalUrl = await resolveShortUrl(url);
+        console.log(`URL risolto: ${finalUrl.substring(0, 100)}...`);
+      } catch (e) {
+        console.warn("Impossibile risolvere short URL, uso originale:", e.message);
+      }
+    }
+    
+    const coords = extractCoordsFromUrl(finalUrl);
+    
+    if (!coords) {
+      return res.status(400).json({
+        success: false,
+        error: "Impossibile estrarre coordinate dall'URL",
+        code: "NO_COORDINATES_FOUND"
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: coords,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (err) {
+    console.error("Errore decodifica URL:", err);
+    res.status(500).json({
+      success: false,
+      error: "Errore decodifica URL",
+      message: err.message,
+      code: "DECODE_ERROR"
+    });
+  }
+});
+
+app.get("/api/settings", async (req, res) => {
+  try {
+    const data = await withLock('settings', async () => {
+      return await safeReadJson(SETTINGS_FILE, DEFAULT_SETTINGS);
+    });
+    
+    res.json({
+      success: true,
+      data: data,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("Errore lettura settings:", err);
+    res.status(500).json({
+      success: false,
+      error: "Errore lettura settings",
+      message: err.message,
+      code: "SETTINGS_READ_ERROR"
+    });
+  }
+});
+
+app.post("/api/settings", authMiddleware, async (req, res) => {
+  try {
+    const { baseLayer, mapStyle, randomIncludeLowRated } = req.body || {};
+    
+    const settings = await withLock('settings', async () => {
+      let current = await safeReadJson(SETTINGS_FILE, DEFAULT_SETTINGS);
+      
+      const updated = {
+        ...current,
+        baseLayer: baseLayer || current.baseLayer,
+        mapStyle: mapStyle || current.mapStyle,
+        randomIncludeLowRated: randomIncludeLowRated !== undefined ? randomIncludeLowRated : current.randomIncludeLowRated,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      await safeWriteJson(SETTINGS_FILE, updated);
+      return updated;
+    });
+    
+    res.json({
+      success: true,
+      message: "Impostazioni salvate",
+      data: settings,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (err) {
+    console.error("Errore salvataggio settings:", err);
+    res.status(500).json({
+      success: false,
+      error: "Errore salvataggio settings",
+      message: err.message,
+      code: "SETTINGS_SAVE_ERROR"
+    });
+  }
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    env: process.env.NODE_ENV || "development"
+  });
+});
+
+app.get("/api/stats", async (req, res) => {
+  try {
+    const spots = await safeReadJson(EXTRA_FILE, []);
+    const csvData = await readCSV();
+    
+    res.json({
+      success: true,
+      data: {
+        jsonSpots: Array.isArray(spots) ? spots.length : 0,
+        csvSpots: csvData.spots.length,
+        totalUniqueSpots: Array.isArray(spots) ? spots.length + csvData.spots.length : csvData.spots.length,
+        serverUptime: process.uptime(),
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    console.error("Errore stats:", err);
+    res.status(500).json({
+      success: false,
+      error: "Errore recupero statistiche",
+      message: err.message
+    });
+  }
+});
+
+// ===============================
+// FUNZIONI PER DECODIFICA URL
 // ===============================
 function extractCoordsFromUrl(url) {
   try {
@@ -1083,7 +1505,7 @@ async function initializeServer() {
         console.warn('⚠️  spots-extra.json contains invalid data, resetting...');
         await safeWriteJson(EXTRA_FILE, []);
       } else {
-        console.log(`📊 Loaded ${spotsData.length} spots from file`);
+        console.log(`📊 Loaded ${spotsData.length} spots from JSON file`);
         
         // Verifica che ogni spot abbia un ID
         const spotsWithoutId = spotsData.filter(spot => !spot.id);
@@ -1101,6 +1523,21 @@ async function initializeServer() {
     } catch {
       console.log('📝 Creating spots-extra.json...');
       await safeWriteJson(EXTRA_FILE, []);
+    }
+    
+    // Verifica o crea file CSV
+    try {
+      await fs.access(CSV_FILE);
+      console.log('✅ spots.csv exists');
+      
+      // Sincronizza JSON con CSV all'avvio
+      console.log('🔄 Sincronizzazione iniziale JSON -> CSV...');
+      await syncSpotsToCSV();
+      
+    } catch {
+      console.log('📝 Creating spots.csv...');
+      await fs.writeFile(CSV_FILE, "Name,Description,Latitude,Longitude\n", 'utf8');
+      console.log('✅ spots.csv created with header');
     }
     
     // Verifica o crea file settings.json
@@ -1131,7 +1568,8 @@ async function initializeServer() {
     
     console.log('✅ Server initialization complete');
     console.log(`🔐 Admin login: user="${USERNAME}" password="${PASSWORD}"`);
-    console.log(`📁 Data file: ${EXTRA_FILE}`);
+    console.log(`📁 JSON file: ${EXTRA_FILE}`);
+    console.log(`📁 CSV file: ${CSV_FILE}`);
     console.log(`📁 Backup directory: ${BACKUP_DIR}`);
     
   } catch (error) {
@@ -1145,7 +1583,8 @@ initializeServer().then(() => {
   const server = app.listen(port, () => {
     console.log(`🚀 Server attivo su http://localhost:${port}`);
     console.log(`⏰ Server started at: ${new Date().toISOString()}`);
-    console.log(`💾 Tutti i salvataggi verranno scritti permanentemente su file`);
+    console.log(`💾 Tutti i salvataggi verranno sincronizzati con JSON e CSV`);
+    console.log(`📊 Usa /api/debug/file-info per verificare lo stato dei file`);
   });
   
   // Graceful shutdown
