@@ -1,183 +1,154 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <title>Lost Trace Unit – Mappa spot abbandonati</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="description" content="Mappa interattiva per esploratori urbani - Gestione spot abbandonati LTU">
-  <meta name="theme-color" content="#020617">
-  
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
-  
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<meta charset="UTF-8" />
+<title>Lost Trace Unit – Mappa spot abbandonati</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<!-- Leaflet CSS -->
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+crossorigin="anonymous"
+/>
+  <!-- Leaflet Rotate CSS (hosted locally to avoid CORS) -->
   <!-- Leaflet Rotate CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.touchrotateloading/leaflet.touchrotateloading.css" />
-  
-  <!-- App Styles -->
-  <style>
-    /* ==================== VARIABLES & RESET ==================== */
-    :root {
-      --bg-main: #020617;
-      --bg-elevated: #020617;
-      --bg-panel: rgba(15, 23, 42, 0.98);
-      --bg-soft: #0b1120;
-      --accent-main: #2563eb;
-      --accent-soft: rgba(37, 99, 235, 0.15);
-      --text-main: #e5e7eb;
-      --text-dim: #9ca3af;
-      --border-soft: rgba(148, 163, 184, 0.4);
-      --shadow-strong: 0 20px 50px rgba(15, 23, 42, 0.95);
-      --radius-card: 16px;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --error: #ef4444;
-      --info: #3b82f6;
+<style>
+/* Leaflet Rotate CSS embedded locally */
+.leaflet-control-rotate {
+position: relative;
+background: white;
+border-radius: 4px;
+box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+}
+.leaflet-control-rotate a {
+display: block;
+text-align: center;
+text-decoration: none;
+color: black;
+width: 26px;
+height: 26px;
+line-height: 26px;
+font-size: 18px;
+}
+.leaflet-control-rotate a:hover {
+background-color: #f4f4f4;
+}
+.leaflet-touch .leaflet-control-rotate a {
+width: 30px;
+height: 30px;
+line-height: 30px;
+}
+.leaflet-control-rotate .leaflet-control-rotate-reset {
+font-size: 16px;
+}
+    .leaflet-control-rotate .leaflet-control-rotate-compass {
+      font-size: 20px;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html, body {
-      height: 100%;
-      width: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: radial-gradient(circle at top, #02081a 0, #020617 45%, #000 100%);
-      color: var(--text-main);
-      overflow: hidden;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /* ==================== LOADING SCREEN ==================== */
-    #loadingScreen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--bg-main);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      transition: opacity 0.5s ease;
-    }
-
-    .loading-logo {
-      width: 80px;
-      height: 80px;
-      margin-bottom: 20px;
-      position: relative;
-    }
-
-    .loading-logo::before {
-      content: '🗺️';
-      font-size: 60px;
-      filter: drop-shadow(0 0 10px rgba(37, 99, 235, 0.5));
-    }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(37, 99, 235, 0.3);
-      border-top-color: #2563eb;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .loading-text {
-      font-size: 14px;
-      color: var(--text-dim);
-      text-align: center;
-      max-width: 300px;
-      line-height: 1.5;
-    }
-
-    /* ==================== MAP CONTAINER ==================== */
-    #map {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 1;
-      cursor: crosshair;
-    }
-
-    /* ==================== CROSSHAIR & PINS ==================== */
-    #crosshair {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 24px;
-      height: 24px;
-      pointer-events: none;
-      z-index: 8;
-      display: none;
-    }
-
-    #crosshair::before,
-    #crosshair::after {
-      content: '';
-      position: absolute;
-      background: var(--error);
-      border: 1px solid #000;
-    }
-
-    #crosshair::before {
-      width: 16px;
-      height: 2px;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    #crosshair::after {
-      width: 2px;
-      height: 16px;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    #temporaryPin {
-      position: absolute;
-      width: 32px;
-      height: 32px;
-      background: var(--error);
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
-      z-index: 10;
-      pointer-events: none;
-      display: none;
-      transform: translate(-50%, -50%);
-    }
-
-    #temporaryPin::after {
-      content: '';
-      position: absolute;
-      width: 8px;
-      height: 8px;
-      background: white;
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    /* ==================== DOCK CONTAINERS ==================== */
+</style>
+<style>
+:root {
+--bg-main: #020617;
+--bg-elevated: #020617;
+--bg-panel: rgba(15, 23, 42, 0.98);
+--bg-soft: #0b1120;
+--accent-main: #2563eb;
+--accent-soft: rgba(37, 99, 235, 0.15);
+--text-main: #e5e7eb;
+--text-dim: #9ca3af;
+--border-soft: rgba(148, 163, 184, 0.4);
+--shadow-strong: 0 20px 50px rgba(15, 23, 42, 0.95);
+--radius-card: 16px;
+}
+* {
+box-sizing: border-box;
+}
+html, body {
+margin: 0;
+padding: 0;
+height: 100%;
+width: 100%;
+font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+background: radial-gradient(circle at top, #02081a 0, #020617 45%, #000 100%);
+color: var(--text-main);
+overflow: hidden;
+}
+body {
+position: relative;
+}
+.hidden {
+display: none !important;
+}
+/* MAPPA */
+#map {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+z-index: 1;
+cursor: crosshair;
+}
+/* CROSSHAIR - VISIBILE SOLO SU MOBILE */
+#crosshair {
+position: fixed;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 24px;
+height: 24px;
+pointer-events: none;
+z-index: 8;
+display: none;
+}
+#crosshair::before,
+#crosshair::after {
+content: '';
+position: absolute;
+background: #ff0000;
+border: 1px solid #000;
+}
+#crosshair::before {
+width: 16px;
+height: 2px;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+}
+#crosshair::after {
+width: 2px;
+height: 16px;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+}
+/* TEMPORARY PIN - FIXED POSITION IN MAP COORDINATES */
+#temporaryPin {
+position: absolute;
+width: 32px;
+height: 32px;
+background: #ff0000;
+border-radius: 50%;
+border: 3px solid white;
+box-shadow: 0 0 10px rgba(0,0,0,0.5);
+z-index: 10;
+pointer-events: none;
+display: none;
+transform: translate(-50%, -50%);
+}
+#temporaryPin::after {
+content: '';
+position: absolute;
+width: 8px;
+height: 8px;
+background: white;
+border-radius: 50%;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+}
+    /* DOCK LATERALE SINISTRO */
     #leftDock {
       position: fixed;
       left: 10px;
@@ -187,2929 +158,3228 @@
       flex-direction: column;
       gap: 8px;
     }
-
-    #rightDock {
-      position: fixed;
-      right: 10px;
-      top: 10px;
-      z-index: 30;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      transition: transform 0.3s ease;
-    }
-
-    #rightDock.collapsed .dock-btn:not(#dockToggleBtn) {
-      display: none;
-    }
-
-    #rightDock.collapsed #legendContainer {
-      display: none;
-    }
-
-    .dock-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: 1px solid var(--border-soft);
-      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 1));
-      color: var(--text-main);
-      box-shadow: 0 12px 25px rgba(15, 23, 42, 0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .dock-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.95);
-    }
-
-    .dock-btn:active {
-      transform: translateY(0) scale(0.95);
-    }
-
-    .dock-btn.active {
-      border-color: var(--accent-main);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5);
-    }
-
-    .dock-btn .badge {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background: var(--error);
-      color: white;
-      font-size: 10px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid var(--bg-panel);
-    }
-
-    /* ==================== MAP NAVIGATION ==================== */
-    #mapNavToggle {
-      position: fixed;
-      bottom: 70px;
-      right: 10px;
-      z-index: 30;
-    }
-
-    #mapNavigation {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 30;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #mapNavigation.show {
-      display: flex;
-    }
-
-    #mapNavInfo {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid var(--border-soft);
-      border-radius: 999px;
-      padding: 8px 16px;
-      font-size: 13px;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      backdrop-filter: blur(10px);
-    }
-
-    #mapNavControls {
-      display: flex;
-      gap: 12px;
-    }
-
-    .nav-btn {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid var(--border-soft);
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      cursor: pointer;
-      backdrop-filter: blur(10px);
-      transition: all 0.2s ease;
-    }
-
-    .nav-btn:hover {
-      background: rgba(37, 99, 235, 0.8);
-      transform: scale(1.1);
-    }
-
-    /* ==================== LEGEND ==================== */
-    #legendContainer {
-      width: 44px;
-      height: auto;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      background: rgba(15, 23, 42, 0.95);
-      box-shadow: 0 12px 25px rgba(15, 23, 42, 0.9);
-      padding: 12px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      backdrop-filter: blur(10px);
-    }
-
-    .legend-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      padding: 0 10px;
-    }
-
-    .legend-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      display: inline-block;
-      border: 2px solid var(--bg-main);
-      margin: 0;
-    }
-
-    .legend-number {
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-left: 6px;
-      min-width: 10px;
-      font-weight: 600;
-    }
-
-    /* ==================== OVERLAY PANELS ==================== */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 80;
-      padding: 20px;
-    }
-
-    .overlay-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .overlay-card {
-      position: relative;
-      z-index: 81;
-      background: var(--bg-panel);
-      border-radius: var(--radius-card);
-      border: 1px solid var(--border-soft);
-      box-shadow: var(--shadow-strong);
-      max-width: 500px;
-      width: 100%;
-      max-height: 90vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: slideUp 0.3s ease;
-    }
-
-    @keyframes slideUp {
-      from { 
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to { 
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .overlay-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid rgba(31, 41, 55, 1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      background: rgba(15, 23, 42, 0.8);
-    }
-
-    .overlay-header-title {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-    }
-
-    .overlay-header-title strong {
-      font-size: 16px;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--text-main);
-    }
-
-    .overlay-header-title small {
-      font-size: 12px;
-      color: var(--text-dim);
-      line-height: 1.4;
-    }
-
-    .overlay-body {
-      padding: 20px;
-      overflow-y: auto;
-      flex: 1;
-    }
-
-    /* ==================== FORM ELEMENTS ==================== */
-    .form-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 16px;
-    }
-
-    .form-row label {
-      font-size: 13px;
-      color: var(--text-dim);
-      font-weight: 500;
-    }
-
-    .input, .textarea, .select {
-      width: 100%;
-      border-radius: 12px;
-      border: 1px solid rgba(55, 65, 81, 1);
-      background: rgba(15, 23, 42, 0.95);
-      padding: 12px 16px;
-      color: var(--text-main);
-      font-size: 14px;
-      outline: none;
-      transition: all 0.2s ease;
-    }
-
-    .input:focus, .textarea:focus, .select:focus {
-      border-color: var(--accent-main);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-    }
-
-    .textarea {
-      min-height: 100px;
-      resize: vertical;
-      line-height: 1.5;
-    }
-
-    .cols {
-      display: flex;
-      gap: 12px;
-    }
-
-    .cols .form-row {
-      flex: 1;
-    }
-
-    /* ==================== BUTTONS ==================== */
-    .btn {
-      border-radius: 999px;
-      border: none;
-      padding: 12px 24px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-      text-decoration: none;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent-main), #3b82f6);
-      color: white;
-      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.9);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 32px rgba(37, 99, 235, 0.95);
-    }
-
-    .btn-secondary {
-      background: rgba(15, 23, 42, 0.95);
-      color: var(--text-dim);
-      border: 1px solid rgba(55, 65, 81, 1);
-    }
-
-    .btn-secondary:hover {
-      border-color: var(--accent-main);
-      color: var(--text-main);
-    }
-
-    .btn-danger {
-      background: linear-gradient(135deg, var(--error), #f87171);
-      color: white;
-      box-shadow: 0 10px 24px rgba(239, 68, 68, 0.9);
-    }
-
-    .btn-success {
-      background: linear-gradient(135deg, var(--success), #34d399);
-      color: white;
-      box-shadow: 0 10px 24px rgba(16, 185, 129, 0.9);
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none !important;
-    }
-
-    .actions-row {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 24px;
-      flex-wrap: wrap;
-    }
-
-    /* ==================== LIST PANEL ==================== */
-    .spot-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 16px;
-      border-radius: 16px;
-      background: radial-gradient(circle at top left, rgba(15, 23, 42, 1), rgba(15, 23, 42, 0.96));
-      border: 1px solid rgba(31, 41, 55, 1);
-      margin-bottom: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-    }
-
-    .spot-row:hover {
-      border-color: rgba(59, 130, 246, 0.8);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    }
-
-    .spot-row.highlighted {
-      border-color: #fbbf24;
-      box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.8), 0 8px 24px rgba(251, 191, 36, 0.3);
-      background: radial-gradient(circle at top left, rgba(30, 41, 59, 1), rgba(15, 23, 42, 0.96));
-    }
-
-    .spot-emoji {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 2px solid rgba(15, 23, 42, 1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at top, rgba(17, 24, 39, 1), rgba(15, 23, 42, 1));
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-
-    .spot-main {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .spot-main-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .spot-main-title strong {
-      font-size: 15px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--text-main);
-    }
-
-    .spot-vote-pill {
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 12px;
-      font-weight: 600;
-      border: 1px solid rgba(55, 65, 81, 1);
-      background: rgba(15, 23, 42, 1);
-      color: var(--text-dim);
-      flex-shrink: 0;
-      min-width: 32px;
-      text-align: center;
-    }
-
-    .spot-desc {
-      font-size: 13px;
-      color: var(--text-dim);
-      line-height: 1.5;
-      max-height: 3em;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 8px;
-    }
-
-    .spot-meta {
-      font-size: 11px;
-      color: rgba(148, 163, 184, 0.95);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .spot-actions {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      display: flex;
-      gap: 4px;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    .spot-row:hover .spot-actions {
-      opacity: 1;
-    }
-
-    .spot-action-btn {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(55, 65, 81, 1);
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .spot-action-btn:hover {
-      background: var(--accent-main);
-      color: white;
-      border-color: var(--accent-main);
-    }
-
-    /* ==================== TOAST NOTIFICATION ==================== */
-    #toastContainer {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-width: 400px;
-    }
-
-    .toast {
-      background: var(--bg-panel);
-      border: 1px solid var(--border-soft);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: var(--shadow-strong);
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      animation: slideInRight 0.3s ease;
-      max-width: 400px;
-    }
-
-    @keyframes slideInRight {
-      from {
-        opacity: 0;
-        transform: translateX(100%);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .toast-icon {
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-
-    .toast-content {
-      flex: 1;
-    }
-
-    .toast-title {
-      font-weight: 600;
-      margin-bottom: 4px;
-      color: var(--text-main);
-    }
-
-    .toast-message {
-      font-size: 13px;
-      color: var(--text-dim);
-      line-height: 1.5;
-    }
-
-    .toast-close {
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      font-size: 18px;
-      cursor: pointer;
-      padding: 0;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .toast-close:hover {
-      background: rgba(239, 68, 68, 0.1);
-      color: var(--error);
-    }
-
-    .toast-success {
-      border-left: 4px solid var(--success);
-    }
-
-    .toast-error {
-      border-left: 4px solid var(--error);
-    }
-
-    .toast-warning {
-      border-left: 4px solid var(--warning);
-    }
-
-    .toast-info {
-      border-left: 4px solid var(--info);
-    }
-
-    /* ==================== FILTERS PANEL ==================== */
-    .filters-panel {
-      background: var(--bg-panel);
-      border-radius: 16px;
-      border: 1px solid var(--border-soft);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    .filter-group {
-      margin-bottom: 16px;
-    }
-
-    .filter-group-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-main);
-      margin-bottom: 8px;
-    }
-
-    .filter-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .filter-chip {
-      padding: 8px 16px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(55, 65, 81, 1);
-      border-radius: 999px;
-      font-size: 13px;
-      color: var(--text-dim);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .filter-chip:hover {
-      border-color: var(--accent-main);
-      color: var(--text-main);
-    }
-
-    .filter-chip.active {
-      background: var(--accent-main);
-      color: white;
-      border-color: var(--accent-main);
-    }
-
-    /* ==================== LEAFLET CUSTOM STYLES ==================== */
-    .leaflet-popup-content-wrapper {
-      background: var(--bg-panel) !important;
-      border-radius: 16px !important;
-      box-shadow: var(--shadow-strong) !important;
-      border: 1px solid var(--border-soft) !important;
-      padding: 0 !important;
-    }
-
-    .leaflet-popup-content {
-      margin: 0 !important;
-      padding: 24px !important;
-      min-width: 320px !important;
-      font-family: inherit !important;
-    }
-
-    .leaflet-popup-tip {
-      background: var(--bg-panel) !important;
-      border: 1px solid var(--border-soft) !important;
-      box-shadow: var(--shadow-strong) !important;
-    }
-
-    .leaflet-popup-close-button {
-      color: var(--text-dim) !important;
-      font-size: 20px !important;
-      top: 12px !important;
-      right: 12px !important;
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .leaflet-popup-close-button:hover {
-      background: rgba(239, 68, 68, 0.1);
-      color: var(--error) !important;
-    }
-
-    .ltu-custom-pin {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      width: 32px !important;
-      height: 44px !important;
-    }
-
-    /* ==================== SYNC STATUS ==================== */
-    #syncStatus {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 35;
-      padding: 8px 16px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 500;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid var(--border-soft);
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-      opacity: 0;
-      transition: all 0.3s ease;
-    }
-
-    #syncStatus.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(-5px);
-    }
-
-    #syncStatus.syncing {
-      color: var(--info);
-    }
-
-    #syncStatus.success {
-      color: var(--success);
-    }
-
-    #syncStatus.error {
-      color: var(--error);
-    }
-
-    /* ==================== CONFIRM MODAL ==================== */
-    .confirm-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .confirm-modal-content {
-      background: var(--bg-panel);
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 400px;
-      width: 100%;
-      border: 1px solid var(--border-soft);
-      box-shadow: var(--shadow-strong);
-      animation: slideUp 0.3s ease;
-    }
-
-    .confirm-modal-title {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      color: var(--text-main);
-    }
-
-    .confirm-modal-message {
-      font-size: 14px;
-      color: var(--text-dim);
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-
-    .confirm-modal-buttons {
-      display: flex;
-      gap: 12px;
-      justify-content: flex-end;
-    }
-
-    /* ==================== SEARCH BAR ==================== */
-    .search-container {
-      position: relative;
-      margin-bottom: 20px;
-    }
-
-    #listSearch {
-      width: 100%;
-      border-radius: 999px;
-      border: 1px solid rgba(55, 65, 81, 1);
-      background: rgba(15, 23, 42, 0.95);
-      padding: 14px 20px;
-      color: var(--text-main);
-      font-size: 14px;
-      outline: none;
-      transition: all 0.2s ease;
-    }
-
-    #listSearch:focus {
-      border-color: var(--accent-main);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-    }
-
-    #listSearch::placeholder {
-      color: rgba(107, 114, 128, 0.9);
-    }
-
-    .search-icon {
-      position: absolute;
-      right: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-dim);
-      pointer-events: none;
-    }
-
-    /* ==================== STATS BADGE ==================== */
-    .stats-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(55, 65, 81, 1);
-      border-radius: 999px;
-      font-size: 12px;
-      color: var(--text-dim);
-      margin-bottom: 16px;
-    }
-
-    .stats-badge strong {
-      color: var(--text-main);
-    }
-
-    /* ==================== RESPONSIVE DESIGN ==================== */
+/* DOCK LATERALE DESTRO */
+#rightDock {
+position: fixed;
+right: 10px;
+top: 10px;
+z-index: 30;
+display: flex;
+flex-direction: column;
+gap: 8px;
+transition: transform 0.3s ease;
+}
+#rightDock.collapsed .dock-btn:not(#dockToggleBtn) {
+display: none;
+}
+#rightDock.collapsed #legendContainer {
+display: none;
+}
+.dock-btn {
+width: 34px;
+height: 34px;
+border-radius: 999px;
+border: 1px solid var(--border-soft);
+background: radial-gradient(circle at top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 1));
+color: var(--text-main);
+box-shadow: 0 12px 25px rgba(15, 23, 42, 0.9);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 16px;
+cursor: pointer;
+transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.dock-btn:active {
+transform: translateY(1px) scale(0.98);
+box-shadow: none;
+}
+.dock-btn.active {
+border-color: rgba(59, 130, 246, 0.9);
+box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 0 0 2px rgba(37, 99, 235, 0.7);
+}
+/* MAP NAVIGATION TOGGLE AND CONTROLS */
+#mapNavToggle {
+position: fixed;
+bottom: 70px;
+right: 10px;
+z-index: 30;
+}
+#mapNavigation {
+position: fixed;
+bottom: 20px;
+left: 50%;
+transform: translateX(-50%);
+z-index: 30;
+display: none;
+flex-direction: column;
+align-items: center;
+gap: 8px;
+}
+#mapNavigation.show {
+display: flex;
+}
+#mapNavInfo {
+background: rgba(15, 23, 42, 0.9);
+border: 1px solid var(--border-soft);
+border-radius: 999px;
+padding: 6px 12px;
+font-size: 12px;
+color: var(--text-main);
+display: flex;
+align-items: center;
+gap: 8px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+#mapNavControls {
+display: flex;
+gap: 10px;
+}
+.nav-btn {
+width: 40px;
+height: 40px;
+border-radius: 50%;
+background: rgba(15, 23, 42, 0.9);
+border: 1px solid var(--border-soft);
+color: var(--text-main);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 20px;
+cursor: pointer;
+box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+transition: all 0.2s ease;
+}
+.nav-btn:hover {
+background: rgba(37, 99, 235, 0.8);
+transform: scale(1.1);
+}
+/* LEGENDA STILE BOTTONE */
+#legendContainer {
+width: 34px;
+height: auto;
+border-radius: 999px;
+border: 1px solid rgba(148, 163, 184, 0.7);
+background: rgba(15, 23, 42, 0.9);
+box-shadow: 0 12px 25px rgba(15, 23, 42, 0.9);
+padding: 8px 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 4px;
+}
+.legend-row {
+display: flex;
+align-items: center;
+justify-content: center;
+width: 100%;
+}
+.legend-dot {
+width: 12px;
+height: 12px;
+border-radius: 999px;
+display: inline-block;
+border: 1px solid #020617;
+margin: 0;
+}
+.legend-number {
+font-size: 9px;
+color: var(--text-dim);
+margin-left: 4px;
+min-width: 8px;
+}
+/* OVERLAY PANELS */
+.overlay {
+position: fixed;
+inset: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 80;
+}
+.overlay-backdrop {
+position: absolute;
+inset: 0;
+background: rgba(15, 23, 42, 0.8);
+backdrop-filter: blur(18px);
+-webkit-backdrop-filter: blur(18px);
+}
+.overlay-card {
+position: relative;
+z-index: 81;
+background: var(--bg-panel);
+border-radius: var(--radius-card);
+border: 1px solid var(--border-soft);
+box-shadow: var(--shadow-strong);
+max-width: 480px;
+width: calc(100% - 24px);
+max-height: calc(100% - 40px);
+display: flex;
+flex-direction: column;
+overflow: hidden;
+}
+.overlay-header {
+padding: 10px 12px;
+border-bottom: 1px solid rgba(31, 41, 55, 1);
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 8px;
+}
+.overlay-header-title {
+display: flex;
+flex-direction: column;
+gap: 2px;
+}
+.overlay-header-title strong {
+font-size: 13px;
+letter-spacing: 0.06em;
+text-transform: uppercase;
+}
+.overlay-header-title small {
+font-size: 11px;
+color: var(--text-dim);
+}
+.icon-btn {
+width: 26px;
+height: 26px;
+border-radius: 999px;
+border: 1px solid var(--border-soft);
+background: radial-gradient(circle at top, rgba(31, 41, 55, 1), rgba(15, 23, 42, 1));
+color: var(--text-main);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 13px;
+cursor: pointer;
+}
+.overlay-body {
+padding: 8px 10px 10px;
+overflow-y: auto;
+flex: 1;
+}
+/* LISTA SPOT */
+#listHeaderActions {
+display: flex;
+align-items: center;
+gap: 6px;
+}
+#listSearch {
+width: 100%;
+border-radius: 999px;
+border: 1px solid rgba(55, 65, 81, 1);
+background: rgba(15, 23, 42, 0.95);
+padding: 7px 9px;
+color: var(--text-main);
+font-size: 12px;
+outline: none;
+margin-bottom: 8px;
+}
+#listSearch::placeholder {
+color: rgba(107, 114, 128, 0.9);
+}
+#listSummary {
+font-size: 11px;
+color: var(--text-dim);
+margin-bottom: 6px;
+}
+#listContent {
+list-style: none;
+padding: 0;
+margin: 0;
+}
+.spot-row {
+display: flex;
+align-items: flex-start;
+gap: 8px;
+padding: 7px 8px;
+border-radius: 14px;
+background: radial-gradient(circle at top left, rgba(15, 23, 42, 1), rgba(15, 23, 42, 0.96));
+border: 1px solid rgba(31, 41, 55, 1);
+margin-bottom: 4px;
+cursor: pointer;
+transition: all 0.2s ease;
+}
+.spot-row:hover {
+border-color: rgba(59, 130, 246, 0.8);
+box-shadow: 0 0 0 1px rgba(15, 23, 42, 1);
+}
+.spot-row.highlighted {
+border-color: #fbbf24;
+box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.8), 0 0 10px rgba(251, 191, 36, 0.3);
+background: radial-gradient(circle at top left, rgba(30, 41, 59, 1), rgba(15, 23, 42, 0.96));
+}
+.spot-emoji {
+width: 26px;
+height: 26px;
+border-radius: 999px;
+border: 1px solid rgba(15, 23, 42, 1);
+display: flex;
+align-items: center;
+justify-content: center;
+background: radial-gradient(circle at top, rgba(17, 24, 39, 1), rgba(15, 23, 42, 1));
+font-size: 16px;
+flex-shrink: 0;
+}
+.spot-main {
+flex: 1;
+min-width: 0;
+}
+.spot-main-title {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 6px;
+margin-bottom: 2px;
+}
+.spot-main-title strong {
+font-size: 12px;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.spot-vote-pill {
+border-radius: 999px;
+padding: 2px 6px;
+font-size: 10px;
+border: 1px solid rgba(55, 65, 81, 1);
+background: rgba(15, 23, 42, 1);
+color: var(--text-dim);
+flex-shrink: 0;
+}
+.spot-desc {
+font-size: 11px;
+color: var(--text-dim);
+max-height: 2.5em;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.spot-meta {
+margin-top: 2px;
+font-size: 10px;
+color: rgba(148, 163, 184, 0.95);
+display: flex;
+justify-content: space-between;
+gap: 6px;
+}
+/* FORM STYLES */
+.form-row {
+display: flex;
+flex-direction: column;
+gap: 3px;
+margin-bottom: 6px;
+}
+.form-row label {
+font-size: 11px;
+color: var(--text-dim);
+}
+.input, .textarea, .select {
+width: 100%;
+border-radius: 12px;
+border: 1px solid rgba(55, 65, 81, 1);
+background: rgba(15, 23, 42, 0.95);
+padding: 6px 8px;
+color: var(--text-main);
+font-size: 12px;
+outline: none;
+}
+.textarea {
+min-height: 54px;
+resize: vertical;
+}
+.input::placeholder,
+.textarea::placeholder {
+color: rgba(107, 114, 128, 0.95);
+}
+.cols {
+display: flex;
+gap: 6px;
+}
+.cols .form-row {
+flex: 1;
+}
+.actions-row {
+display: flex;
+justify-content: flex-end;
+gap: 8px;
+margin-top: 8px;
+}
+.btn {
+border-radius: 999px;
+border: none;
+padding: 7px 13px;
+font-size: 12px;
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+gap: 6px;
+font-weight: 500;
+transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-primary {
+background: linear-gradient(to right, #2563eb, #3b82f6);
+color: #f9fafb;
+box-shadow: 0 10px 24px rgba(37, 99, 235, 0.9);
+}
+.btn-secondary {
+background: rgba(15, 23, 42, 0.95);
+color: var(--text-dim);
+border: 1px solid rgba(55, 65, 81, 1);
+}
+.btn:active {
+transform: translateY(1px) scale(0.99);
+box-shadow: none;
+}
+/* VOTO SELECT STYLING - MODIFICATO: PALLINI COLORATI */
+.voto-option {
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 4px 8px;
+}
+.voto-dot {
+width: 10px;
+height: 10px;
+border-radius: 50%;
+display: inline-block;
+margin-right: 6px;
+border: 1px solid rgba(0,0,0,0.2);
+}
+.voto-select {
+padding: 6px 8px;
+-webkit-appearance: none;
+-moz-appearance: none;
+appearance: none;
+background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+background-repeat: no-repeat;
+background-position: right 8px center;
+background-size: 16px;
+padding-right: 32px;
+}
+/* PALLINI COLORATI PER LE OPZIONI DEL SELECT */
+option[value="1"] {
+color: #b91c1c;
+font-weight: bold;
+background-color: rgba(185, 28, 28, 0.1);
+}
+option[value="2"] {
+color: #f97316;
+font-weight: bold;
+background-color: rgba(249, 115, 22, 0.1);
+}
+option[value="3"] {
+color: #eab308;
+font-weight: bold;
+background-color: rgba(234, 179, 8, 0.1);
+}
+option[value="4"] {
+color: #2563eb;
+font-weight: bold;
+background-color: rgba(37, 99, 235, 0.1);
+}
+option[value="5"] {
+color: #16a34a;
+font-weight: bold;
+background-color: rgba(22, 163, 74, 0.1);
+}
+option[value="6"] {
+color: #a855f7;
+font-weight: bold;
+background-color: rgba(168, 85, 247, 0.1);
+}
+/* SETTINGS */
+.settings-section {
+margin-bottom: 10px;
+border-radius: 12px;
+border: 1px solid rgba(31, 41, 55, 1);
+padding: 8px 9px;
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 1), rgba(15, 23, 42, 0.96));
+      background: radial-gradient(circle at top, rgba(15, 23,42, 1), rgba(15, 23, 42, 0.96));
+}
+.settings-section-title {
+font-size: 12px;
+font-weight: 600;
+margin-bottom: 2px;
+}
+.settings-section-desc {
+font-size: 11px;
+color: var(--text-dim);
+margin-bottom: 6px;
+}
+.settings-row {
+display: flex;
+align-items: center;
+gap: 6px;
+margin-bottom: 6px;
+font-size: 12px;
+}
+.settings-row label {
+flex: 1;
+}
+.settings-row .input,
+.settings-row .select {
+flex: 1;
+}
+#importTextarea,
+#exportTextarea {
+width: 100%;
+border-radius: 10px;
+border: 1px solid rgba(55, 65, 81, 1);
+background: rgba(15, 23, 42, 0.95);
+color: var(--text-main);
+font-size: 11px;
+padding: 6px 8px;
+min-height: 70px;
+resize: vertical;
+}
+.settings-buttons-row {
+display: flex;
+gap: 6px;
+flex-wrap: wrap;
+margin-top: 4px;
+}
+/* MISSION PANEL */
+#missionBodyTitle {
+font-size: 12px;
+margin-bottom: 4px;
+}
+#missionBodyCoords {
+font-size: 11px;
+color: var(--text-dim);
+margin-bottom: 8px;
+}
+#missionText {
+width: 100%;
+border-radius: 10px;
+border: 1px solid rgba(55, 65, 81, 1);
+background: rgba(15, 23, 42, 0.95);
+padding: 6px 8px;
+color: var(--text-main);
+font-size: 11px;
+min-height: 90px;
+resize: vertical;
+}
+/* TOAST */
+#toast {
+position: fixed;
+bottom: 14px;
+left: 50%;
+transform: translateX(-50%);
+padding: 7px 12px;
+border-radius: 999px;
+background: rgba(15, 23, 42, 0.96);
+border: 1px solid rgba(148, 163, 184, 0.6);
+font-size: 11px;
+color: var(--text-main);
+opacity: 0;
+pointer-events: none;
+transition: opacity 0.3s ease, transform 0.3s ease;
+z-index: 90;
+}
+#toast.show {
+opacity: 1;
+transform: translateX(-50%) translateY(-4px);
+}
+/* POPUP LEAFLET CUSTOM */
+.ltu-popup .popup-title {
+font-weight: 600;
+margin-bottom: 4px;
+font-size: 13px;
+color: #ffffff !important;
+}
+.ltu-popup .popup-desc {
+font-size: 11px;
+margin-bottom: 4px;
+color: var(--text-dim);
+max-width: 220px;
+white-space: normal;
+}
+.ltu-popup .popup-meta {
+font-size: 10px;
+color: rgba(148, 163, 184, 0.95);
+margin-bottom: 4px;
+}
+.ltu-popup a {
+font-size: 11px;
+color: #93c5fd;
+text-decoration: none;
+}
+.ltu-popup a:hover {
+text-decoration: underline;
+}
+.ltu-custom-pin {
+background: transparent !important;
+border: none !important;
+box-shadow: none !important;
+width: 26px !important;
+height: 36px !important;
+}
+
+/* Popup Leaflet in stile LTU dark premium */
+.leaflet-popup-content-wrapper {
+background: var(--bg-panel) !important;
+border-radius: 16px !important;
+box-shadow: var(--shadow-strong) !important;
+border: 1px solid var(--border-soft) !important;
+padding: 0 !important;
+}
+
+.leaflet-popup-content {
+margin: 0 !important;
+padding: 14px 16px !important;
+min-width: 260px !important;
+}
+
+.leaflet-popup-tip {
+background: var(--bg-panel) !important;
+border: 1px solid var(--border-soft) !important;
+box-shadow: var(--shadow-strong) !important;
+}
+
+.leaflet-popup-close-button {
+color: var(--text-dim) !important;
+font-size: 18px !important;
+top: 8px !important;
+right: 10px !important;
+}
+/* IMPORT LINK OVERLAY */
+#importLinkPanel .overlay-body {
+padding: 15px;
+}
+#importLinkPanel .instructions {
+font-size: 12px;
+color: var(--text-dim);
+margin-bottom: 10px;
+}
+#importLinkPanel .link-input {
+width: 100%;
+padding: 10px;
+border-radius: 8px;
+border: 1px solid var(--border-soft);
+background: rgba(15, 23, 42, 0.95);
+color: var(--text-main);
+margin-bottom: 10px;
+font-size: 14px;
+}
+/* TIPO SELECT STYLING */
+.tipo-option {
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 4px 0;
+}
+.tipo-option-emoji {
+font-size: 16px;
+width: 24px;
+text-align: center;
+}
+.tipo-option-name {
+font-size: 12px;
+}
+/* STREETVIEW OVERLAY */
+#streetviewOverlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0,0,0,0.95);
+z-index: 1000;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+}
+#streetviewIframe {
+width: 95%;
+height: 85%;
+border: none;
+border-radius: 12px;
+box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+}
+/* ROTATE COMPASS STYLE */
+.leaflet-control-container .leaflet-control-rotate {
+background: rgba(15, 23, 42, 0.9);
+border-radius: 50%;
+border: 1px solid rgba(148, 163, 184, 0.5);
+box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.leaflet-control-container .leaflet-control-rotate a {
+color: var(--text-main);
+background: transparent;
+font-size: 18px;
+width: 34px;
+height: 34px;
+line-height: 34px;
+text-align: center;
+display: block;
+text-decoration: none;
+}
+    /* MOBILE ADJUSTMENTS */
     @media (max-width: 768px) {
-      .overlay {
-        padding: 0;
-        align-items: flex-end;
-      }
-
-      .overlay-card {
-        max-width: 100%;
-        max-height: 90vh;
-        border-radius: 24px 24px 0 0;
-        margin-bottom: env(safe-area-inset-bottom, 0);
-      }
-
-      #leftDock, #rightDock {
-        left: 8px;
-        right: 8px;
-        top: 8px;
-      }
-
-      #rightDock {
-        align-items: flex-end;
-      }
-
-      #mapNavToggle {
-        bottom: 80px;
-        right: 8px;
-      }
-
-      #mapNavigation {
-        bottom: 100px;
-      }
-
-      .nav-btn {
-        width: 56px;
-        height: 56px;
-        font-size: 24px;
-      }
-
-      .dock-btn {
-        width: 48px;
-        height: 48px;
-        font-size: 20px;
-      }
-
-      .legend-dot {
-        width: 12px;
-        height: 12px;
-      }
-
-      .legend-number {
-        font-size: 10px;
-      }
-
-      .cols {
-        flex-direction: column;
-        gap: 0;
-      }
-
-      #toastContainer {
-        top: 10px;
-        right: 10px;
-        left: 10px;
-        max-width: none;
-      }
-
-      .toast {
-        max-width: none;
-      }
-
-      .confirm-modal-content {
-        padding: 24px;
-        margin: 20px;
-      }
-
+      /* Mostra crosshair solo su mobile */
       #crosshair {
         display: block !important;
       }
-
+      #map {
+        cursor: default;
+      }
       #temporaryPin {
         display: none !important;
       }
-
-      /* Safe area for iPhone X+ */
-      @supports (padding: max(0px)) {
-        #leftDock, #rightDock {
-          top: max(8px, env(safe-area-inset-top));
-        }
-        
-        #mapNavToggle {
-          bottom: max(80px, env(safe-area-inset-bottom, 20px) + 60px);
-        }
+      .overlay-card {
+        max-width: 100%;
+        width: calc(100% - 16px);
+        max-height: calc(100% - 24px);
       }
-    }
-
-    @media (max-width: 480px) {
-      .overlay-body {
-        padding: 16px;
+      #rightDock {
+        right: 6px;
       }
-
-      .overlay-header {
-        padding: 12px 16px;
+      #mapNavToggle {
+        bottom: 60px;
+        right: 6px;
       }
-
-      .btn {
-        padding: 10px 16px;
-        font-size: 13px;
+      #mapNavigation {
+        bottom: 15px;
       }
-
-      .actions-row {
-        flex-direction: column;
+      .legend-number {
+        font-size: 8px;
       }
-
-      .actions-row .btn {
+      #streetviewIframe {
         width: 100%;
+        height: 80%;
+        border-radius: 0;
       }
     }
-
-    /* ==================== DARK MODE SUPPORT ==================== */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg-main: #0a0a0a;
-        --bg-panel: rgba(20, 20, 20, 0.98);
+/* SYNC STATUS INDICATOR */
+#syncStatus {
+position: fixed;
+bottom: 50px;
+left: 50%;
+transform: translateX(-50%);
+z-index: 35;
+padding: 4px 10px;
+border-radius: 999px;
+font-size: 10px;
+background: rgba(15, 23, 42, 0.9);
+border: 1px solid rgba(148, 163, 184, 0.4);
+color: var(--text-dim);
+display: flex;
+align-items: center;
+gap: 5px;
+opacity: 0;
+transition: opacity 0.3s;
+}
+#syncStatus.show {
+opacity: 1;
+}
+#syncStatus.syncing {
+color: #3b82f6;
+}
+#syncStatus.success {
+color: #10b981;
+}
+#syncStatus.error {
+color: #ef4444;
+}
+/* CONFIRM MODAL */
+.confirm-modal {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.7);
+z-index: 10000;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.confirm-modal-content {
+background: var(--bg-panel);
+border-radius: 16px;
+padding: 20px;
+max-width: 400px;
+width: 90%;
+border: 1px solid var(--border-soft);
+box-shadow: var(--shadow-strong);
+}
+.confirm-modal-title {
+font-size: 16px;
+margin-bottom: 10px;
+color: var(--text-main);
+}
+.confirm-modal-message {
+font-size: 14px;
+color: var(--text-dim);
+margin-bottom: 20px;
+}
+.confirm-modal-buttons {
+display: flex;
+gap: 10px;
+justify-content: flex-end;
+}
+.confirm-btn {
+padding: 8px 16px;
+border-radius: 999px;
+border: none;
+font-size: 14px;
+cursor: pointer;
+min-width: 80px;
+}
+.confirm-btn-cancel {
+background: rgba(55, 65, 81, 1);
+color: var(--text-main);
+}
+.confirm-btn-confirm {
+background: #ef4444;
+color: white;
+}
+    /* MOBILE ADJUSTMENTS */
+    @media (max-width: 768px) {
+      /* Mostra crosshair solo su mobile */
+      #crosshair {
+        display: block !important;
       }
-    }
-
-    /* ==================== PRINT STYLES ==================== */
-    @media print {
-      #map, .dock-btn, #syncStatus, #toastContainer {
+      #map {
+        cursor: default;
+      }
+      #temporaryPin {
         display: none !important;
       }
-      
       .overlay-card {
-        box-shadow: none;
-        border: 1px solid #ccc;
-        max-width: none;
-        max-height: none;
+        max-width: 100%;
+        width: calc(100% - 16px);
+        max-height: calc(100% - 24px);
+      }
+      #leftDock {
+        left: 6px;
+        top: 6px;
+      }
+      #rightDock {
+        right: 6px;
+        top: 6px;
+      }
+      #mapNavToggle {
+        bottom: 60px;
+        right: 6px;
+      }
+      #mapNavigation {
+        bottom: 15px;
+      }
+      .legend-number {
+        font-size: 8px;
+      }
+      #streetviewIframe {
+        width: 100%;
+        height: 80%;
+        border-radius: 0;
+      }
+      #syncStatus {
+        bottom: 40px;
+        font-size: 9px;
+        padding: 3px 8px;
       }
     }
-
-    /* ==================== UTILITY CLASSES ==================== */
-    .hidden {
-      display: none !important;
-    }
-
-    .fade-in {
-      animation: fadeIn 0.3s ease;
-    }
-
-    .slide-up {
-      animation: slideUp 0.3s ease;
-    }
-
-    .text-success {
-      color: var(--success);
-    }
-
-    .text-error {
-      color: var(--error);
-    }
-
-    .text-warning {
-      color: var(--warning);
-    }
-
-    .text-info {
-      color: var(--info);
-    }
-
-    .text-dim {
-      color: var(--text-dim);
-    }
-
-    .text-center {
-      text-align: center;
-    }
-
-    .mb-4 {
-      margin-bottom: 16px;
-    }
-
-    .mt-4 {
-      margin-top: 16px;
-    }
-
-    .w-full {
-      width: 100%;
-    }
-
-    .flex {
-      display: flex;
-    }
-
-    .flex-col {
-      flex-direction: column;
-    }
-
-    .items-center {
-      align-items: center;
-    }
-
-    .justify-between {
-      justify-content: space-between;
-    }
-
-    .gap-4 {
-      gap: 16px;
-    }
-
-    /* ==================== CUSTOM SCROLLBAR ==================== */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.5);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: rgba(148, 163, 184, 0.5);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(148, 163, 184, 0.8);
-    }
-
-    /* Firefox */
-    * {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(148, 163, 184, 0.5) rgba(15, 23, 42, 0.5);
-    }
-
-    /* ==================== ANIMATIONS ==================== */
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .pulse {
-      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-2px); }
-      75% { transform: translateX(2px); }
-    }
-
-    .shake {
-      animation: shake 0.5s ease;
-    }
-
-    /* ==================== ACCESSIBILITY ==================== */
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    /* Focus styles for keyboard navigation */
-    :focus-visible {
-      outline: 2px solid var(--accent-main);
-      outline-offset: 2px;
-    }
-
-    /* High contrast mode */
-    @media (prefers-contrast: high) {
-      :root {
-        --text-main: #ffffff;
-        --text-dim: #cccccc;
-        --border-soft: #666666;
-      }
-      
-      .btn-primary {
-        background: #0056cc;
-      }
-    }
-
-    /* Reduced motion */
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-  </style>
+</style>
 </head>
 <body>
-  <!-- Loading Screen -->
-  <div id="loadingScreen">
-    <div class="loading-logo"></div>
-    <div class="loading-spinner"></div>
-    <div class="loading-text">
-      <strong>Lost Trace Unit</strong><br>
-      Caricamento mappa...
-    </div>
-  </div>
+<!-- MAPPA -->
+<div id="map"></div>
+<div id="crosshair"></div>
+<div id="temporaryPin"></div>
 
-  <!-- MAPPA -->
-  <div id="map"></div>
-  <div id="crosshair"></div>
-  <div id="temporaryPin"></div>
-  
-  <!-- Toast Container -->
-  <div id="toastContainer"></div>
-  
-  <!-- SYNC STATUS -->
-  <div id="syncStatus"></div>
-  
-  <!-- DOCK SINISTRO -->
+<!-- SYNC STATUS -->
+<div id="syncStatus"></div>
+
+  <!-- DOCK SINISTRO CON SALVA TUTTO E STREETVIEW -->
   <div id="leftDock">
-    <button id="saveAllBtn" class="dock-btn" title="Salva tutti i dati" aria-label="Salva tutti i dati">
-      <span>💾</span>
-      <span class="badge" id="saveBadge" style="display: none;">!</span>
-    </button>
-    <button id="streetviewBtn" class="dock-btn" title="StreetView" aria-label="Apri StreetView">
-      🌍
-    </button>
-    <button id="filtersBtn" class="dock-btn" title="Filtri" aria-label="Apri filtri">
-      🔍
-    </button>
+    <button id="saveAllBtn" class="dock-btn" title="Salva tutti i dati">💾</button>
+    <button id="streetviewBtn" class="dock-btn" title="StreetView">🌍</button>
   </div>
   
-  <!-- DOCK DESTRO -->
-  <div id="rightDock">
-    <button id="importLinkBtn" class="dock-btn" title="Importa link" aria-label="Importa da link">
-      📎
-    </button>
-    <button id="settingsBtn" class="dock-btn" title="Impostazioni" aria-label="Apri impostazioni">
-      ⚙️
-    </button>
-    <button id="crosshairToggleBtn" class="dock-btn" title="Mostra/Nascondi mirino" aria-label="Attiva/disattiva mirino">
-      🎯
-    </button>
-    <button id="btnList" class="dock-btn" title="Lista spot" aria-label="Apri lista spot">
-      📋
-      <span class="badge" id="spotsBadge" style="display: none;">0</span>
-    </button>
-    <button id="btnAdd" class="dock-btn" title="Aggiungi spot" aria-label="Aggiungi nuovo spot">
-      ➕
-    </button>
-    <button id="btnRandom" class="dock-btn" title="Random spot" aria-label="Spot casuale">
-      🎲
-    </button>
-    <button id="missionBtn" class="dock-btn" title="Missione spot selezionato" aria-label="Apri missione">
-      📜
-    </button>
+<!-- DOCK DESTRO CON TOGGLE E LEGENDA -->
+<div id="rightDock">
+    <button id="streetviewBtn" class="dock-btn" title="StreetView">🌍</button>
+<button id="importLinkBtn" class="dock-btn" title="Importa link">📎</button>
+<button id="settingsBtn" class="dock-btn" title="Impostazioni">⚙️</button>
+<button id="crosshairToggleBtn" class="dock-btn" title="Mostra/Nascondi mirino">🎯</button>
+<button id="btnList" class="dock-btn" title="Lista spot">📋</button>
+<button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
+<button id="btnRandom" class="dock-btn" title="Random spot">🎲</button>
+<button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
+<div id="legendContainer">
+<div class="legend-row"><div class="legend-dot" style="background:#b91c1c"></div><span class="legend-number">1</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span class="legend-number">2</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#eab308"></div><span class="legend-number">3</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><span class="legend-number">4</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-number">5</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span class="legend-number">6</span></div>
+</div>
+<button id="dockToggleBtn" class="dock-btn" title="Mostra/Nascondi pulsanti">⬆️</button>
+</div>
+
+<!-- MAP NAVIGATION CONTROLS -->
+<button id="mapNavToggle" class="dock-btn" title="Navigazione rapida mappe">🗺️</button>
+<div id="mapNavigation">
+<div id="mapNavInfo">
+<span id="currentMapName">OSM Standard</span>
+<span id="mapCounter">1/12</span>
+</div>
+<div id="mapNavControls">
+<button id="prevMapBtn" class="nav-btn">◀</button>
+<button id="nextMapBtn" class="nav-btn">▶</button>
+</div>
+</div>
+
+<!-- LIST PANEL -->
+<div id="listPanel" class="overlay hidden">
+<div class="overlay-backdrop"></div>
+<div class="overlay-card">
+<div class="overlay-header">
+<div class="overlay-header-title">
+<strong>Lista spot</strong>
+<small>Tocca uno spot per centrare la mappa</small>
+</div>
+<div id="listHeaderActions">
+<button id="btnCloseList" class="icon-btn">✕</button>
+</div>
+</div>
+<div class="overlay-body">
+<input id="listSearch" type="text" placeholder="Filtra per nome o descrizione..." />
+<div id="listSummary"></div>
+<ul id="listContent"></ul>
+</div>
+</div>
+</div>
+
+<!-- ADD PANEL -->
+<div id="addPanel" class="overlay hidden">
+<div class="overlay-backdrop"></div>
+<div class="overlay-card">
+<div class="overlay-header">
+<div class="overlay-header-title">
+<strong>Nuovo spot</strong>
+<small>Lost Trace Unit – aggiungi un punto condiviso</small>
+</div>
+<button id="btnCloseAdd" class="icon-btn">✕</button>
+</div>
+<div class="overlay-body">
+<form id="addForm">
+<div class="form-row">
+<label for="fieldName">Nome</label>
+<input id="fieldName" class="input" type="text" placeholder="Es. Villa, Casetta, Hotel..." required />
+</div>
+<div class="form-row">
+<label for="fieldDesc">Descrizione</label>
+<textarea id="fieldDesc" class="textarea" placeholder="Note, accesso, storia, warning..."></textarea>
+</div>
+<div class="cols">
+<div class="form-row">
+<label for="fieldVoto">Voto (1–6)</label>
+<select id="fieldVoto" class="select voto-select">
+<option value="">Nessun voto</option>
+<option value="1" style="color:#b91c1c">● 1</option>
+<option value="2" style="color:#f97316">● 2</option>
+<option value="3" style="color:#eab308">● 3</option>
+<option value="4" style="color:#2563eb">● 4</option>
+<option value="5" style="color:#16a34a">● 5</option>
+<option value="6" style="color:#a855f7">● 6</option>
+</select>
+</div>
+<div class="form-row">
+<label for="fieldTipo">Tipologia</label>
+<select id="fieldTipo" class="select">
+<option value="">Auto-rileva</option>
+<option value="hotel">🏨 Hotel</option>
+<option value="villa">🏡 Villa</option>
+<option value="casa">🏠 Casa</option>
+<option value="industria">🏭 Industria</option>
+<option value="scuola">🏫 Scuola</option>
+<option value="chiesa">⛪ Chiesa</option>
+<option value="colonia">🏚️ Colonia</option>
+<option value="istituzione">🏥 Istituzione</option>
+<option value="svago">🎭 Svago</option>
+<option value="castello">🏰 Castello</option>
+<option value="nave">🚢 Nave</option>
+<option value="diga">💧 Diga</option>
+<option value="militare">🪖 Militare</option>
+<option value="altro">📍 Altro</option>
+</select>
+</div>
+</div>
+<div class="cols">
+<div class="form-row">
+<label for="fieldLat">Latitudine</label>
+<input id="fieldLat" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
+</div>
+<div class="form-row">
+<label for="fieldLng">Longitudine</label>
+<input id="fieldLng" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
+</div>
+</div>
+<div class="actions-row">
+<button type="button" id="btnUseCurrentPin" class="btn btn-secondary">Usa pin corrente</button>
+<button type="submit" class="btn btn-primary">Salva spot</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+
+<!-- EDIT PANEL -->
+<div id="editPanel" class="overlay hidden">
+<div class="overlay-backdrop"></div>
+<div class="overlay-card">
+<div class="overlay-header">
+<div class="overlay-header-title">
+<strong>Modifica spot</strong>
+<small>Lost Trace Unit – aggiorna i dettagli</small>
+</div>
+<button id="btnCloseEdit" class="icon-btn">✕</button>
+</div>
+<div class="overlay-body">
+<form id="editForm">
+<input type="hidden" id="editSpotId" /> <!-- ID nascosto per il submit -->
+<div class="form-row">
+<label for="editFieldName">Nome</label>
+<input id="editFieldName" class="input" type="text" placeholder="Es. Villa, Casetta, Hotel..." required />
+</div>
+<div class="form-row">
+<label for="editFieldDesc">Descrizione</label>
+<textarea id="editFieldDesc" class="textarea" placeholder="Note, accesso, storia, warning..."></textarea>
+</div>
+<div class="cols">
+<div class="form-row">
+<label for="editFieldVoto">Voto (1–6)</label>
+<select id="editFieldVoto" class="select voto-select">
+<option value="">Nessun voto</option>
+<option value="1" style="color:#b91c1c">● 1</option>
+<option value="2" style="color:#f97316">● 2</option>
+<option value="3" style="color:#eab308">● 3</option>
+<option value="4" style="color:#2563eb">● 4</option>
+<option value="5" style="color:#16a34a">● 5</option>
+<option value="6" style="color:#a855f7">● 6</option>
+</select>
+</div>
+<div class="form-row">
+<label for="editFieldTipo">Tipologia</label>
+<select id="editFieldTipo" class="select">
+<option value="">Auto-rileva</option>
+<option value="hotel">🏨 Hotel</option>
+<option value="villa">🏡 Villa</option>
+<option value="casa">🏠 Casa</option>
+<option value="industria">🏭 Industria</option>
+<option value="scuola">🏫 Scuola</option>
+<option value="chiesa">⛪ Chiesa</option>
+<option value="colonia">🏚️ Colonia</option>
+<option value="istituzione">🏥 Istituzione</option>
+<option value="svago">🎭 Svago</option>
+<option value="castello">🏰 Castello</option>
+<option value="nave">🚢 Nave</option>
+<option value="diga">💧 Diga</option>
+<option value="militare">🪖 Militare</option>
+<option value="altro">📍 Altro</option>
+</select>
+</div>
+</div>
+<div class="cols">
+<div class="form-row">
+<label for="editFieldLat">Latitudine</label>
+<input id="editFieldLat" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
+</div>
+<div class="form-row">
+<label for="editFieldLng">Longitudine</label>
+<input id="editFieldLng" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
+</div>
+</div>
+<div class="actions-row">
+<button type="button" id="btnUseCurrentPinEdit" class="btn btn-secondary">Usa pin corrente</button>
+<button type="submit" class="btn btn-primary">Salva modifiche</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div id="settingsPanel" class="overlay hidden">
+<div class="overlay-backdrop"></div>
+<div class="overlay-card">
+<div class="overlay-header">
+<div class="overlay-header-title">
+<strong>Impostazioni LTU</strong>
+<small>Stile mappa, random, import/export</small>
+</div>
+<button id="btnCloseSettings" class="icon-btn">✕</button>
+</div>
+<div class="overlay-body">
+<section class="settings-section">
+<div class="settings-section-title">Stile mappa</div>
+<div class="settings-section-desc">
+Cambia la base map condivisa tra tutti gli utenti.
+</div>
+<div class="settings-row">
+<label for="mapStyleSelect">Tileset</label>
+<select id="mapStyleSelect" class="select">
+<option value="osm">OSM Standard</option>
+<option value="osmHot">OSM Humanitarian</option>
+<option value="satellite">Satellite Esri</option>
+<option value="satellite2">Satellite Google</option>
+<option value="satellite3">Satellite NASA</option>
+<option value="topo">OpenTopoMap</option>
+<option value="dark">Carto Dark</option>
+<option value="cartoLight">Carto Light</option>
+<option value="stamenToner">Stamen Toner</option>
+<option value="esriTopo">Esri Topo</option>
+<option value="esriOcean">Esri Ocean</option>
+<option value="esriGray">Esri Gray</option>
+</select>
+</div>
+<div class="settings-row">
+<label for="crosshairEnabled">Abilita mirino (mobile)</label>
+<input id="crosshairEnabled" type="checkbox" />
+</div>
+</section>
+<section class="settings-section">
+<div class="settings-section-title">Random & missioni</div>
+<div class="settings-section-desc">
+Come estrarre gli spot casuali per le sessioni LTU.
+</div>
+<div class="settings-row">
+<label for="randomLowRatedCheckbox">
+Includi anche spot con voto 1–2 nei random
+</label>
+<input id="randomLowRatedCheckbox" type="checkbox" />
+</div>
+</section>
+<section class="settings-section">
+<div class="settings-section-title">Import / Export</div>
+<div class="settings-section-desc">
+Puoi esportare tutti gli spot in CSV per GMaps o importare un JSON semplice.
+</div>
+<textarea id="importTextarea" placeholder='Incolla qui JSON o CSV da importare...'></textarea>
+<div class="settings-buttons-row">
+<button id="btnImportJson" class="btn btn-secondary">📥 Importa JSON</button>
+<button id="btnExportCsv" class="btn btn-secondary">📤 Export GMaps CSV</button>
+</div>
+<div style="margin-top:6px;font-size:11px;color:var(--text-dim);">
+JSON atteso: array di oggetti con <code>name, desc, lat, lng, voto</code> oppure
+oggetto con <code>places</code>.
+</div>
+<textarea id="exportTextarea" placeholder="Qui apparirà il CSV generato..." readonly></textarea>
+</section>
+<div class="actions-row">
+<button id="btnSaveAllSettings" class="btn btn-primary">💾 Salva tutte le impostazioni</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- MISSION PANEL -->
+<div id="missionPanel" class="overlay hidden">
+<div class="overlay-backdrop"></div>
+<div class="overlay-card">
+<div class="overlay-header">
+<div class="overlay-header-title">
+<strong>Missione LTU</strong>
+<small>Briefing sullo spot selezionato</small>
+</div>
+<button id="btnCloseMission" class="icon-btn">✕</button>
+</div>
+<div class="overlay-body">
+<div id="missionBodyTitle"></div>
+<div id="missionBodyCoords"></div>
+<textarea id="missionText" placeholder="Scrivi qui il briefing, obiettivi, rischi, note di esplorazione..."></textarea>
+<div class="actions-row">
+<button id="btnSaveMission" class="btn btn-primary">💾 Salva missione</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- IMPORT LINK PANEL -->
+<div id="importLinkPanel" class="overlay hidden">
+<div class="overlay-backdrop"></div>
+<div class="overlay-card">
+<div class="overlay-header">
+<div class="overlay-header-title">
+<strong>Importa da link Google Maps</strong>
+<small>Incolla un link per estrarre coordinate</small>
+</div>
+<button id="btnCloseImportLink" class="icon-btn">✕</button>
+</div>
+<div class="overlay-body">
+<div class="instructions">
+Incolla qui un link di Google Maps (es. https://maps.app.goo.gl/HY2ynACBvCrSzqxd7) 
+per estrarre automaticamente le coordinate.
+</div>
+<input type="text" id="linkInput" class="link-input" placeholder="https://maps.app.goo.gl/..." />
+<div class="actions-row">
+<button type="button" id="btnDecodeLink" class="btn btn-primary">Decodifica link</button>
+</div>
+<div id="linkResult" style="margin-top: 10px; display: none;">
+<div class="form-row">
+<label>Coordinate trovate:</label>
+<div style="font-size: 12px; color: #10b981;" id="coordsFound"></div>
+</div>
+<div class="form-row">
+<label for="linkSpotName">Nome spot</label>
+<input type="text" id="linkSpotName" class="input" placeholder="Nome dello spot..." />
+</div>
+<div class="form-row">
+<label for="linkSpotDesc">Descrizione</label>
+<textarea id="linkSpotDesc" class="textarea" placeholder="Descrizione..."></textarea>
+</div>
+<div class="actions-row">
+<button type="button" id="btnAddFromLink" class="btn btn-primary">Aggiungi spot</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- Leaflet JS -->
+<script
+src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+crossorigin="anonymous"
+></script>
+  <!-- Custom Leaflet Rotate (embedded to avoid CORS) -->
+  <script>
+    // Simple Leaflet Rotate implementation
+    L.Control.Rotate = L.Control.extend({
+      options: {
+        position: 'topright'
+      },
+      onAdd: function(map) {
+        var container = L.DomUtil.create('div', 'leaflet-control-rotate leaflet-bar');
+        container.style.backgroundColor = 'rgba(15, 23, 42, 0.9)';
+        container.style.borderRadius = '50%';
+        container.style.border = '1px solid rgba(148, 163, 184, 0.5)';
+        container.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        
+        var resetButton = L.DomUtil.create('a', 'leaflet-control-rotate-reset', container);
+        resetButton.href = '#';
+        resetButton.innerHTML = '↺';
+        resetButton.title = 'Reset rotation';
+        resetButton.style.color = '#e5e7eb';
+        resetButton.style.display = 'block';
+        resetButton.style.textAlign = 'center';
+        resetButton.style.textDecoration = 'none';
+        resetButton.style.width = '34px';
+        resetButton.style.height = '34px';
+        resetButton.style.lineHeight = '34px';
+        resetButton.style.fontSize = '18px';
+        
+        L.DomEvent.on(resetButton, 'click', function(e) {
+          L.DomEvent.preventDefault(e);
+          L.DomEvent.stopPropagation(e);
+          map.setBearing(0);
+        });
+        
+        L.DomEvent.disableClickPropagation(container);
+        return container;
+      }
+    });
     
-    <!-- LEGENDA -->
-    <div id="legendContainer">
-      <div class="legend-row"><div class="legend-dot" style="background:#b91c1c"></div><span class="legend-number">1</span></div>
-      <div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span class="legend-number">2</span></div>
-      <div class="legend-row"><div class="legend-dot" style="background:#eab308"></div><span class="legend-number">3</span></div>
-      <div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><span class="legend-number">4</span></div>
-      <div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-number">5</span></div>
-      <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span class="legend-number">6</span></div>
-    </div>
-    
-    <button id="dockToggleBtn" class="dock-btn" title="Mostra/Nascondi pulsanti" aria-label="Comprimi/espandi dock">
-      ⬆️
-    </button>
-  </div>
-  
-  <!-- MAP NAVIGATION CONTROLS -->
-  <button id="mapNavToggle" class="dock-btn" title="Navigazione rapida mappe" aria-label="Navigazione mappe">
-    🗺️
-  </button>
-  <div id="mapNavigation">
-    <div id="mapNavInfo">
-      <span id="currentMapName">OSM Standard</span>
-      <span id="mapCounter">1/12</span>
-    </div>
-    <div id="mapNavControls">
-      <button id="prevMapBtn" class="nav-btn" aria-label="Mappa precedente">◀</button>
-      <button id="nextMapBtn" class="nav-btn" aria-label="Mappa successiva">▶</button>
-    </div>
-  </div>
-  
-  <!-- LIST PANEL -->
-  <div id="listPanel" class="overlay hidden">
-    <div class="overlay-backdrop"></div>
-    <div class="overlay-card">
-      <div class="overlay-header">
-        <div class="overlay-header-title">
-          <strong>Lista spot</strong>
-          <small>Tocca uno spot per centrare la mappa</small>
-        </div>
-        <div class="flex items-center gap-4">
-          <button id="btnCloseList" class="icon-btn" aria-label="Chiudi lista">
-            ✕
-          </button>
-        </div>
-      </div>
-      <div class="overlay-body">
-        <div class="search-container">
-          <input id="listSearch" type="search" placeholder="Cerca per nome, descrizione, tipo..." aria-label="Cerca spot" />
-          <div class="search-icon">🔍</div>
-        </div>
-        <div class="stats-badge">
-          <span>Totale: <strong id="totalSpotsCount">0</strong></span>
-          <span>Filtrati: <strong id="filteredSpotsCount">0</strong></span>
-        </div>
-        <div class="filters-panel" id="filtersPanel" style="display: none;">
-          <div class="filter-group">
-            <div class="filter-group-title">Tipologia</div>
-            <div class="filter-chips" id="tipoFilters">
-              <!-- Dinamico -->
-            </div>
-          </div>
-          <div class="filter-group">
-            <div class="filter-group-title">Voto</div>
-            <div class="filter-chips" id="votoFilters">
-              <!-- Dinamico -->
-            </div>
-          </div>
-          <div class="actions-row">
-            <button id="clearFiltersBtn" class="btn btn-secondary">Pulisci filtri</button>
-            <button id="applyFiltersBtn" class="btn btn-primary">Applica</button>
-          </div>
-        </div>
-        <ul id="listContent"></ul>
-        <div id="emptyState" class="text-center text-dim mt-4" style="display: none;">
-          <p>Nessuno spot trovato.</p>
-          <button id="btnAddFromList" class="btn btn-primary mt-4">➕ Aggiungi spot</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- ADD PANEL -->
-  <div id="addPanel" class="overlay hidden">
-    <div class="overlay-backdrop"></div>
-    <div class="overlay-card">
-      <div class="overlay-header">
-        <div class="overlay-header-title">
-          <strong>Nuovo spot</strong>
-          <small>Lost Trace Unit – aggiungi un punto condiviso</small>
-        </div>
-        <button id="btnCloseAdd" class="icon-btn" aria-label="Chiudi">
-          ✕
-        </button>
-      </div>
-      <div class="overlay-body">
-        <form id="addForm">
-          <div class="form-row">
-            <label for="fieldName">Nome *</label>
-            <input id="fieldName" class="input" type="text" placeholder="Es. Villa, Casetta, Hotel..." required />
-          </div>
-          <div class="form-row">
-            <label for="fieldDesc">Descrizione</label>
-            <textarea id="fieldDesc" class="textarea" placeholder="Note, accesso, storia, warning..."></textarea>
-          </div>
-          <div class="cols">
-            <div class="form-row">
-              <label for="fieldVoto">Voto (1–6)</label>
-              <select id="fieldVoto" class="select voto-select">
-                <option value="">Nessun voto</option>
-                <option value="1" style="color:#b91c1c">● 1</option>
-                <option value="2" style="color:#f97316">● 2</option>
-                <option value="3" style="color:#eab308">● 3</option>
-                <option value="4" style="color:#2563eb">● 4</option>
-                <option value="5" style="color:#16a34a">● 5</option>
-                <option value="6" style="color:#a855f7">● 6</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label for="fieldTipo">Tipologia</label>
-              <select id="fieldTipo" class="select">
-                <option value="">Auto-rileva</option>
-                <option value="hotel">🏨 Hotel</option>
-                <option value="villa">🏡 Villa</option>
-                <option value="casa">🏠 Casa</option>
-                <option value="industria">🏭 Industria</option>
-                <option value="scuola">🏫 Scuola</option>
-                <option value="chiesa">⛪ Chiesa</option>
-                <option value="colonia">🏚️ Colonia</option>
-                <option value="istituzione">🏥 Istituzione</option>
-                <option value="svago">🎭 Svago</option>
-                <option value="castello">🏰 Castello</option>
-                <option value="nave">🚢 Nave</option>
-                <option value="diga">💧 Diga</option>
-                <option value="militare">🪖 Militare</option>
-                <option value="altro">📍 Altro</option>
-              </select>
-            </div>
-          </div>
-          <div class="cols">
-            <div class="form-row">
-              <label for="fieldLat">Latitudine *</label>
-              <input id="fieldLat" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
-            </div>
-            <div class="form-row">
-              <label for="fieldLng">Longitudine *</label>
-              <input id="fieldLng" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
-            </div>
-          </div>
-          <div class="actions-row">
-            <button type="button" id="btnUseCurrentPin" class="btn btn-secondary">Usa pin corrente</button>
-            <button type="submit" class="btn btn-primary">
-              <span>💾</span>
-              Salva spot
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  
-  <!-- EDIT PANEL -->
-  <div id="editPanel" class="overlay hidden">
-    <div class="overlay-backdrop"></div>
-    <div class="overlay-card">
-      <div class="overlay-header">
-        <div class="overlay-header-title">
-          <strong>Modifica spot</strong>
-          <small>Lost Trace Unit – aggiorna i dettagli</small>
-        </div>
-        <button id="btnCloseEdit" class="icon-btn" aria-label="Chiudi">
-          ✕
-        </button>
-      </div>
-      <div class="overlay-body">
-        <form id="editForm">
-          <input type="hidden" id="editSpotId" />
-          <div class="form-row">
-            <label for="editFieldName">Nome *</label>
-            <input id="editFieldName" class="input" type="text" placeholder="Es. Villa, Casetta, Hotel..." required />
-          </div>
-          <div class="form-row">
-            <label for="editFieldDesc">Descrizione</label>
-            <textarea id="editFieldDesc" class="textarea" placeholder="Note, accesso, storia, warning..."></textarea>
-          </div>
-          <div class="cols">
-            <div class="form-row">
-              <label for="editFieldVoto">Voto (1–6)</label>
-              <select id="editFieldVoto" class="select voto-select">
-                <option value="">Nessun voto</option>
-                <option value="1" style="color:#b91c1c">● 1</option>
-                <option value="2" style="color:#f97316">● 2</option>
-                <option value="3" style="color:#eab308">● 3</option>
-                <option value="4" style="color:#2563eb">● 4</option>
-                <option value="5" style="color:#16a34a">● 5</option>
-                <option value="6" style="color:#a855f7">● 6</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label for="editFieldTipo">Tipologia</label>
-              <select id="editFieldTipo" class="select">
-                <option value="">Auto-rileva</option>
-                <option value="hotel">🏨 Hotel</option>
-                <option value="villa">🏡 Villa</option>
-                <option value="casa">🏠 Casa</option>
-                <option value="industria">🏭 Industria</option>
-                <option value="scuola">🏫 Scuola</option>
-                <option value="chiesa">⛪ Chiesa</option>
-                <option value="colonia">🏚️ Colonia</option>
-                <option value="istituzione">🏥 Istituzione</option>
-                <option value="svago">🎭 Svago</option>
-                <option value="castello">🏰 Castello</option>
-                <option value="nave">🚢 Nave</option>
-                <option value="diga">💧 Diga</option>
-                <option value="militare">🪖 Militare</option>
-                <option value="altro">📍 Altro</option>
-              </select>
-            </div>
-          </div>
-          <div class="cols">
-            <div class="form-row">
-              <label for="editFieldLat">Latitudine *</label>
-              <input id="editFieldLat" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
-            </div>
-            <div class="form-row">
-              <label for="editFieldLng">Longitudine *</label>
-              <input id="editFieldLng" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
-            </div>
-          </div>
-          <div class="actions-row">
-            <button type="button" id="btnUseCurrentPinEdit" class="btn btn-secondary">Usa pin corrente</button>
-            <button type="submit" class="btn btn-primary">
-              <span>💾</span>
-              Salva modifiche
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  
-  <!-- SETTINGS PANEL -->
-  <div id="settingsPanel" class="overlay hidden">
-    <div class="overlay-backdrop"></div>
-    <div class="overlay-card">
-      <div class="overlay-header">
-        <div class="overlay-header-title">
-          <strong>Impostazioni LTU</strong>
-          <small>Stile mappa, random, import/export</small>
-        </div>
-        <button id="btnCloseSettings" class="icon-btn" aria-label="Chiudi">
-          ✕
-        </button>
-      </div>
-      <div class="overlay-body">
-        <section class="settings-section">
-          <div class="settings-section-title">Stile mappa</div>
-          <div class="settings-section-desc">
-            Cambia la base map condivisa tra tutti gli utenti.
-          </div>
-          <div class="settings-row">
-            <label for="mapStyleSelect">Tileset</label>
-            <select id="mapStyleSelect" class="select">
-              <option value="osm">OSM Standard</option>
-              <option value="osmHot">OSM Humanitarian</option>
-              <option value="satellite">Satellite Esri</option>
-              <option value="satellite2">Satellite Google</option>
-              <option value="satellite3">Satellite NASA</option>
-              <option value="topo">OpenTopoMap</option>
-              <option value="dark">Carto Dark</option>
-              <option value="cartoLight">Carto Light</option>
-              <option value="stamenToner">Stamen Toner</option>
-              <option value="esriTopo">Esri Topo</option>
-              <option value="esriOcean">Esri Ocean</option>
-              <option value="esriGray">Esri Gray</option>
-            </select>
-          </div>
-          <div class="settings-row">
-            <label for="crosshairEnabled">Abilita mirino (mobile)</label>
-            <input id="crosshairEnabled" type="checkbox" />
-          </div>
-        </section>
-        <section class="settings-section">
-          <div class="settings-section-title">Random & missioni</div>
-          <div class="settings-section-desc">
-            Come estrarre gli spot casuali per le sessioni LTU.
-          </div>
-          <div class="settings-row">
-            <label for="randomLowRatedCheckbox">
-              Includi anche spot con voto 1–2 nei random
-            </label>
-            <input id="randomLowRatedCheckbox" type="checkbox" />
-          </div>
-        </section>
-        <section class="settings-section">
-          <div class="settings-section-title">Import / Export</div>
-          <div class="settings-section-desc">
-            Puoi esportare tutti gli spot in CSV per GMaps o importare un JSON semplice.
-          </div>
-          <textarea id="importTextarea" placeholder='Incolla qui JSON o CSV da importare...'></textarea>
-          <div class="settings-buttons-row">
-            <button id="btnImportJson" class="btn btn-secondary">📥 Importa JSON</button>
-            <button id="btnExportCsv" class="btn btn-secondary">📤 Export GMaps CSV</button>
-            <button id="btnExportJson" class="btn btn-secondary">📤 Export JSON</button>
-          </div>
-          <div style="margin-top:12px;font-size:12px;color:var(--text-dim);">
-            JSON atteso: array di oggetti con <code>name, desc, lat, lng, voto</code> oppure
-            oggetto con <code>places</code>.
-          </div>
-          <textarea id="exportTextarea" placeholder="Qui apparirà il CSV/JSON generato..." readonly></textarea>
-        </section>
-        <div class="actions-row">
-          <button id="btnSaveAllSettings" class="btn btn-primary">
-            <span>💾</span>
-            Salva tutte le impostazioni
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- MISSION PANEL -->
-  <div id="missionPanel" class="overlay hidden">
-    <div class="overlay-backdrop"></div>
-    <div class="overlay-card">
-      <div class="overlay-header">
-        <div class="overlay-header-title">
-          <strong>Missione LTU</strong>
-          <small>Briefing sullo spot selezionato</small>
-        </div>
-        <button id="btnCloseMission" class="icon-btn" aria-label="Chiudi">
-          ✕
-        </button>
-      </div>
-      <div class="overlay-body">
-        <div id="missionBodyTitle" class="mb-4"></div>
-        <div id="missionBodyCoords" class="text-dim mb-4"></div>
-        <textarea id="missionText" class="textarea" placeholder="Scrivi qui il briefing, obiettivi, rischi, note di esplorazione..."></textarea>
-        <div class="actions-row">
-          <button id="btnSaveMission" class="btn btn-primary">
-            <span>💾</span>
-            Salva missione
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- IMPORT LINK PANEL -->
-  <div id="importLinkPanel" class="overlay hidden">
-    <div class="overlay-backdrop"></div>
-    <div class="overlay-card">
-      <div class="overlay-header">
-        <div class="overlay-header-title">
-          <strong>Importa da link Google Maps</strong>
-          <small>Incolla un link per estrarre coordinate</small>
-        </div>
-        <button id="btnCloseImportLink" class="icon-btn" aria-label="Chiudi">
-          ✕
-        </button>
-      </div>
-      <div class="overlay-body">
-        <div class="instructions mb-4">
-          Incolla qui un link di Google Maps (es. https://maps.app.goo.gl/HY2ynACBvCrSzqxd7) 
-          per estrarre automaticamente le coordinate.
-        </div>
-        <input type="text" id="linkInput" class="input mb-4" placeholder="https://maps.app.goo.gl/..." />
-        <div class="actions-row mb-4">
-          <button type="button" id="btnDecodeLink" class="btn btn-primary">Decodifica link</button>
-        </div>
-        <div id="linkResult" style="display: none;">
-          <div class="form-row">
-            <label>Coordinate trovate:</label>
-            <div class="text-success" id="coordsFound"></div>
-          </div>
-          <div class="form-row">
-            <label for="linkSpotName">Nome spot *</label>
-            <input type="text" id="linkSpotName" class="input" placeholder="Nome dello spot..." required />
-          </div>
-          <div class="form-row">
-            <label for="linkSpotDesc">Descrizione</label>
-            <textarea id="linkSpotDesc" class="textarea" placeholder="Descrizione..."></textarea>
-          </div>
-          <div class="actions-row">
-            <button type="button" id="btnAddFromLink" class="btn btn-primary">Aggiungi spot</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    L.control.rotate = function(options) {
+      return new L.Control.Rotate(options);
+    };
+  </script>
   <!-- Leaflet Rotate Plugin -->
   <script src="https://unpkg.com/leaflet.touchrotateloading/leaflet.touchrotateloading.js"></script>
-  
-  <!-- App JavaScript -->
-  <script>
-    // ==================== CONFIGURAZIONE ====================
-    const CONFIG = {
-      API_BASE_URL: window.location.origin,
-      MAP_LAYERS: {
-        osm: { name: "OSM Standard", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" },
-        osmHot: { name: "OSM Humanitarian", url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png" },
-        satellite: { name: "Satellite Esri", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" },
-        satellite2: { name: "Satellite Google", url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}" },
-        satellite3: { name: "Satellite NASA", url: "https://map1.vis.earthdata.nasa.gov/wmts-webmerc/MODIS_Terra_CorrectedReflectance_TrueColor/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg" },
-        topo: { name: "OpenTopoMap", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" },
-        dark: { name: "Carto Dark", url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" },
-        cartoLight: { name: "Carto Light", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
-        stamenToner: { name: "Stamen Toner", url: "https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}.png" },
-        esriTopo: { name: "Esri Topo", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}" },
-        esriOcean: { name: "Esri Ocean", url: "https://services.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}" },
-        esriGray: { name: "Esri Gray", url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}" }
-      },
-      VOTO_COLORS: {
-        1: '#b91c1c',
-        2: '#f97316',
-        3: '#eab308',
-        4: '#2563eb',
-        5: '#16a34a',
-        6: '#a855f7'
-      },
-      TIPO_EMOJIS: {
-        hotel: '🏨',
-        villa: '🏡',
-        casa: '🏠',
-        industria: '🏭',
-        scuola: '🏫',
-        chiesa: '⛪',
-        colonia: '🏚️',
-        istituzione: '🏥',
-        svago: '🎭',
-        castello: '🏰',
-        nave: '🚢',
-        diga: '💧',
-        militare: '🪖',
-        altro: '📍'
-      }
-    };
-
-    // ==================== STATE MANAGEMENT ====================
-    const AppState = {
-      map: null,
-      markersLayer: null,
-      baseLayers: {},
-      settings: {
-        baseLayer: 'osm',
-        randomIncludeLowRated: false,
-        crosshairEnabled: false
-      },
-      spots: [],
-      currentSpot: null,
-      missions: {},
-      filters: {
-        tipo: null,
-        voto: null,
-        search: ''
-      },
-      pendingOperations: 0,
-      isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-      temporaryPin: { lat: null, lng: null }
-    };
-
-    // ==================== UTILITY FUNCTIONS ====================
-    class Utils {
-      static showLoading(show) {
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) {
-          loadingScreen.style.display = show ? 'flex' : 'none';
-        }
-      }
-
-      static showToast(message, type = 'info', duration = 5000) {
-        const container = document.getElementById('toastContainer');
-        if (!container) return;
-
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.innerHTML = `
-          <div class="toast-icon">
-            ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}
-          </div>
-          <div class="toast-content">
-            <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
-            <div class="toast-message">${message}</div>
-          </div>
-          <button class="toast-close" aria-label="Chiudi">✕</button>
-        `;
-
-        container.appendChild(toast);
-
-        const closeBtn = toast.querySelector('.toast-close');
-        closeBtn.onclick = () => toast.remove();
-
-        if (duration > 0) {
-          setTimeout(() => {
-            if (toast.parentNode) {
-              toast.remove();
-            }
-          }, duration);
-        }
-
-        return toast;
-      }
-
-      static updateSyncStatus(message, type = 'info') {
-        const statusEl = document.getElementById('syncStatus');
-        if (!statusEl) return;
-
-        statusEl.textContent = message;
-        statusEl.className = type;
-        statusEl.classList.add('show');
-
-        setTimeout(() => {
-          statusEl.classList.remove('show');
-        }, type === 'error' ? 5000 : 3000);
-      }
-
-      static async confirm(title, message) {
-        return new Promise((resolve) => {
-          const modal = document.createElement('div');
-          modal.className = 'confirm-modal';
-          modal.innerHTML = `
-            <div class="confirm-modal-content">
-              <div class="confirm-modal-title">${title}</div>
-              <div class="confirm-modal-message">${message}</div>
-              <div class="confirm-modal-buttons">
-                <button class="btn btn-secondary" id="confirmCancel">Annulla</button>
-                <button class="btn btn-danger" id="confirmOk">Conferma</button>
-              </div>
-            </div>
-          `;
-
-          document.body.appendChild(modal);
-
-          modal.querySelector('#confirmCancel').onclick = () => {
-            modal.remove();
-            resolve(false);
-          };
-
-          modal.querySelector('#confirmOk').onclick = () => {
-            modal.remove();
-            resolve(true);
-          };
-
-          modal.onclick = (e) => {
-            if (e.target === modal) {
-              modal.remove();
-              resolve(false);
-            }
-          };
-        });
-      }
-
-      static getRatingColor(voto) {
-        return CONFIG.VOTO_COLORS[voto] || '#64748b';
-      }
-
-      static getEmojiByTipo(tipo) {
-        return CONFIG.TIPO_EMOJIS[tipo] || '📍';
-      }
-
-      static getTipo(name, desc) {
-        const text = ((name || '') + ' ' + (desc || '')).toLowerCase();
-        
-        if (text.includes('hotel') || text.includes('ostello') || text.includes('residence')) return 'hotel';
-        if (text.includes('villa') || text.includes('villone') || text.includes('villino')) return 'villa';
-        if (text.includes('casa') || text.includes('casetta') || text.includes('casone')) return 'casa';
-        if (text.includes('fabbrica') || text.includes('capannone') || text.includes('magazzino')) return 'industria';
-        if (text.includes('scuola') || text.includes('itis')) return 'scuola';
-        if (text.includes('chiesa')) return 'chiesa';
-        if (text.includes('colonia')) return 'colonia';
-        if (text.includes('prigione') || text.includes('manicomio') || text.includes('ospedale')) return 'istituzione';
-        if (text.includes('discoteca') || text.includes('bar') || text.includes('ristorante')) return 'svago';
-        if (text.includes('castello')) return 'castello';
-        if (text.includes('nave')) return 'nave';
-        if (text.includes('diga')) return 'diga';
-        if (text.includes('base nato')) return 'militare';
-        
-        return 'altro';
-      }
-
-      static formatDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('it-IT', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        });
-      }
-
-      static debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-          const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-          };
-          clearTimeout(timeout);
-          timeout = setTimeout(later, wait);
-        };
-      }
-    }
-
-    // ==================== API SERVICE ====================
-    class ApiService {
-      static async request(endpoint, options = {}) {
-        const defaultHeaders = {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa('unit:ltunit')
-        };
-
-        const config = {
-          ...options,
-          headers: {
-            ...defaultHeaders,
-            ...options.headers
-          }
-        };
-
-        try {
-          const response = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, config);
-          
-          if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
-            throw new Error(error.message || `HTTP ${response.status}`);
-          }
-
-          return await response.json();
-        } catch (error) {
-          console.error('API Error:', error);
-          Utils.showToast(error.message, 'error');
-          throw error;
-        }
-      }
-
-      static async getSpots(filters = {}) {
-        const params = new URLSearchParams();
-        if (filters.tipo) params.append('tipo', filters.tipo);
-        if (filters.voto) params.append('voto', filters.voto);
-        if (filters.search) params.append('search', filters.search);
-
-        const query = params.toString();
-        const endpoint = query ? `/api/spots?${query}` : '/api/spots';
-        
-        return this.request(endpoint);
-      }
-
-      static async getSpot(id) {
-        return this.request(`/api/spots/${id}`);
-      }
-
-      static async createSpot(data) {
-        return this.request('/api/spots', {
-          method: 'POST',
-          body: JSON.stringify(data)
-        });
-      }
-
-      static async updateSpot(id, data) {
-        return this.request(`/api/spots/${id}`, {
-          method: 'PUT',
-          body: JSON.stringify(data)
-        });
-      }
-
-      static async deleteSpot(id) {
-        return this.request(`/api/spots/${id}`, {
-          method: 'DELETE'
-        });
-      }
-
-      static async getMission(spotId) {
-        return this.request(`/api/spots/${spotId}/mission`);
-      }
-
-      static async saveMission(spotId, missionText) {
-        return this.request(`/api/spots/${spotId}/mission`, {
-          method: 'POST',
-          body: JSON.stringify({ mission_text: missionText })
-        });
-      }
-
-      static async getSettings() {
-        return this.request('/api/settings');
-      }
-
-      static async saveSettings(data) {
-        return this.request('/api/settings', {
-          method: 'POST',
-          body: JSON.stringify(data)
-        });
-      }
-
-      static async decodeGoogleMapsUrl(url) {
-        return this.request('/api/decode-gmaps-url', {
-          method: 'POST',
-          body: JSON.stringify({ url })
-        });
-      }
-    }
-
-    // ==================== MAP MANAGER ====================
-    class MapManager {
-      static init() {
-        AppState.map = L.map('map', {
-          zoomControl: false,
-          gestureHandling: true,
-          maxZoom: 22,
-          minZoom: 1,
-          touchRotate: true,
-          rotate: true,
-          rotateControl: true
-        });
-
-        this.initLayers();
-        this.initMarkers();
-        this.initEvents();
-
-        AppState.map.setView([44.5, 8.9], 7);
-        
-        // Add rotate control
-        L.control.rotate({ position: 'topright' }).addTo(AppState.map);
-      }
-
-      static initLayers() {
-        Object.entries(CONFIG.MAP_LAYERS).forEach(([key, layer]) => {
-          AppState.baseLayers[key] = L.tileLayer(layer.url, {
-            maxZoom: key === 'satellite3' ? 9 : 22,
-            attribution: `&copy; ${layer.name}`
-          });
-        });
-
-        const defaultLayer = AppState.baseLayers[AppState.settings.baseLayer] || AppState.baseLayers.osm;
-        defaultLayer.addTo(AppState.map);
-      }
-
-      static initMarkers() {
-        AppState.markersLayer = L.layerGroup().addTo(AppState.map);
-      }
-
-      static initEvents() {
-        // Map click
-        AppState.map.on('click', (e) => {
-          if (AppState.isMobile) return;
-
-          AppState.temporaryPin = { lat: e.latlng.lat, lng: e.latlng.lng };
-          this.showTemporaryPin(e.latlng.lat, e.latlng.lng);
-          FormManager.updateCoordinates(e.latlng.lat, e.latlng.lng);
-        });
-
-        // Right click to remove pin
-        AppState.map.on('contextmenu', (e) => {
-          e.originalEvent.preventDefault();
-          this.removeTemporaryPin();
-          return false;
-        });
-
-        // Disable context menu on map
-        AppState.map.getContainer().addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-          return false;
-        });
-      }
-
-      static showTemporaryPin(lat, lng) {
-        const pin = document.getElementById('temporaryPin');
-        if (!pin) return;
-
-        const point = AppState.map.latLngToContainerPoint([lat, lng]);
-        const mapRect = AppState.map.getContainer().getBoundingClientRect();
-        
-        pin.style.left = (mapRect.left + point.x) + 'px';
-        pin.style.top = (mapRect.top + point.y) + 'px';
-        pin.style.display = 'block';
-      }
-
-      static removeTemporaryPin() {
-        const pin = document.getElementById('temporaryPin');
-        if (pin) {
-          pin.style.display = 'none';
-        }
-        AppState.temporaryPin = { lat: null, lng: null };
-      }
-
-      static switchLayer(layerKey) {
-        if (!AppState.baseLayers[layerKey]) return;
-
-        Object.values(AppState.baseLayers).forEach(layer => {
-          if (AppState.map.hasLayer(layer)) {
-            AppState.map.removeLayer(layer);
-          }
-        });
-
-        AppState.baseLayers[layerKey].addTo(AppState.map);
-        AppState.settings.baseLayer = layerKey;
-        
-        const mapStyleSelect = document.getElementById('mapStyleSelect');
-        if (mapStyleSelect) {
-          mapStyleSelect.value = layerKey;
-        }
-      }
-
-      static renderSpots() {
-        if (!AppState.markersLayer) return;
-        
-        AppState.markersLayer.clearLayers();
-        
-        AppState.spots.forEach(spot => {
-          this.createMarker(spot);
-        });
-      }
-
-      static createMarker(spot) {
-        const color = Utils.getRatingColor(spot.voto);
-        const emoji = Utils.getEmojiByTipo(spot.tipo);
-
-        const iconHtml = `
-          <div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
-            <svg width="32" height="44" viewBox="0 0 32 44" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16,0 C7.163,0 0,7.163 0,16 C0,25.938 16,44 16,44 C16,44 32,25.938 32,16 C32,7.163 24.837,0 16,0 Z"
-                    fill="${color}"
-                    stroke="none"/>
-              <circle cx="16" cy="15" r="10" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
-              <text x="16" y="20" font-size="16" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
-            </svg>
-          </div>
-        `;
-
-        const icon = L.divIcon({
-          html: iconHtml,
-          className: 'ltu-custom-pin',
-          iconSize: [32, 44],
-          iconAnchor: [16, 44],
-          popupAnchor: [0, -38]
-        });
-
-        const marker = L.marker([spot.lat, spot.lng], { icon }).addTo(AppState.markersLayer);
-        marker.bindPopup(this.createPopupHtml(spot));
-
-        marker.on('click', () => {
-          AppState.currentSpot = spot;
-        });
-
-        return marker;
-      }
-
-      static createPopupHtml(spot) {
-        return `
-          <div class="popup-content">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-              <div style="font-size:36px;">${Utils.getEmojiByTipo(spot.tipo)}</div>
-              <div style="flex:1;">
-                <div style="font-size:16px; font-weight:700; margin-bottom:4px;">${spot.name}</div>
-                ${spot.voto ? `
-                  <span style="background:${Utils.getRatingColor(spot.voto)}; color:#fff; padding:4px 12px; border-radius:999px; font-size:13px; font-weight:700;">
-                    ${spot.voto} ★
-                  </span>
-                ` : ''}
-              </div>
-            </div>
-            ${spot.description ? `<div style="font-size:13px; line-height:1.5; margin-bottom:16px;">${spot.description}</div>` : ''}
-            <div style="font-size:12px; color:#94a3b8; margin-bottom:16px;">
-              ${spot.lat.toFixed(6)}, ${spot.lng.toFixed(6)}
-              ${spot.created_at ? `<br>Creato: ${Utils.formatDate(spot.created_at)}` : ''}
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <a href="https://www.google.com/maps?q=${spot.lat},${spot.lng}"
-                 target="_blank"
-                 style="background:#2563eb; color:white; padding:10px 16px; border-radius:8px; text-decoration:none; flex:1; text-align:center; font-weight:600;">
-                Google Maps ↗
-              </a>
-              <button onclick="window.editSpot('${spot.id}')"
-                      style="background:#10b981; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600;">
-                Modifica
-              </button>
-              <button onclick="window.deleteSpot('${spot.id}')"
-                      style="background:#ef4444; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600;">
-                Elimina
-              </button>
-            </div>
-          </div>
-        `;
-      }
-
-      static centerOnSpot(spot) {
-        if (!spot) return;
-        AppState.map.setView([spot.lat, spot.lng], 16);
-        
-        // Find and open marker popup
-        AppState.markersLayer.eachLayer((layer) => {
-          if (layer.getLatLng().lat === spot.lat && layer.getLatLng().lng === spot.lng) {
-            layer.openPopup();
-          }
-        });
-      }
-
-      static getCurrentCenter() {
-        return AppState.map.getCenter();
-      }
-    }
-
-    // ==================== FORM MANAGER ====================
-    class FormManager {
-      static updateCoordinates(lat, lng) {
-        const latInput = document.getElementById('fieldLat');
-        const lngInput = document.getElementById('fieldLng');
-        const editLatInput = document.getElementById('editFieldLat');
-        const editLngInput = document.getElementById('editFieldLng');
-
-        if (latInput && lngInput) {
-          latInput.value = lat.toFixed(6);
-          lngInput.value = lng.toFixed(6);
-        }
-
-        if (editLatInput && editLngInput) {
-          editLatInput.value = lat.toFixed(6);
-          editLngInput.value = lng.toFixed(6);
-        }
-      }
-
-      static useCurrentPin() {
-        if (AppState.temporaryPin.lat && AppState.temporaryPin.lng) {
-          this.updateCoordinates(AppState.temporaryPin.lat, AppState.temporaryPin.lng);
-        } else {
-          const center = MapManager.getCurrentCenter();
-          this.updateCoordinates(center.lat, center.lng);
-        }
-      }
-
-      static async handleAddSubmit(e) {
-        e.preventDefault();
-
-        if (AppState.pendingOperations > 0) {
-          Utils.showToast('Attendi il completamento delle operazioni in corso', 'warning');
-          return;
-        }
-
-        const formData = {
-          name: document.getElementById('fieldName').value.trim(),
-          desc: document.getElementById('fieldDesc').value.trim(),
-          lat: parseFloat(document.getElementById('fieldLat').value),
-          lng: parseFloat(document.getElementById('fieldLng').value),
-          voto: document.getElementById('fieldVoto').value || null,
-          tipo: document.getElementById('fieldTipo').value || Utils.getTipo(document.getElementById('fieldName').value)
-        };
-
-        if (!formData.name || isNaN(formData.lat) || isNaN(formData.lng)) {
-          Utils.showToast('Compila tutti i campi obbligatori', 'error');
-          return;
-        }
-
-        try {
-          AppState.pendingOperations++;
-          Utils.updateSyncStatus('Salvataggio spot...', 'syncing');
-
-          const response = await ApiService.createSpot(formData);
-          
-          if (response.success) {
-            AppState.spots.push(response.data);
-            MapManager.renderSpots();
-            ListManager.render();
-            
-            document.getElementById('addPanel').classList.add('hidden');
-            document.getElementById('addForm').reset();
-            
-            Utils.updateSyncStatus('Spot salvato', 'success');
-            Utils.showToast('Spot aggiunto con successo!', 'success');
-            
-            MapManager.centerOnSpot(response.data);
-          }
-        } catch (error) {
-          Utils.updateSyncStatus('Errore salvataggio', 'error');
-          Utils.showToast(`Errore: ${error.message}`, 'error');
-        } finally {
-          AppState.pendingOperations--;
-        }
-      }
-
-      static async handleEditSubmit(e) {
-        e.preventDefault();
-
-        if (AppState.pendingOperations > 0) {
-          Utils.showToast('Attendi il completamento delle operazioni in corso', 'warning');
-          return;
-        }
-
-        const spotId = document.getElementById('editSpotId').value;
-        const formData = {
-          name: document.getElementById('editFieldName').value.trim(),
-          desc: document.getElementById('editFieldDesc').value.trim(),
-          lat: parseFloat(document.getElementById('editFieldLat').value),
-          lng: parseFloat(document.getElementById('editFieldLng').value),
-          voto: document.getElementById('editFieldVoto').value || null,
-          tipo: document.getElementById('editFieldTipo').value || Utils.getTipo(document.getElementById('editFieldName').value)
-        };
-
-        if (!formData.name || isNaN(formData.lat) || isNaN(formData.lng)) {
-          Utils.showToast('Compila tutti i campi obbligatori', 'error');
-          return;
-        }
-
-        try {
-          AppState.pendingOperations++;
-          Utils.updateSyncStatus('Aggiornamento spot...', 'syncing');
-
-          const response = await ApiService.updateSpot(spotId, formData);
-          
-          if (response.success) {
-            const index = AppState.spots.findIndex(s => s.id === spotId);
-            if (index !== -1) {
-              AppState.spots[index] = response.data;
-            }
-            
-            MapManager.renderSpots();
-            ListManager.render();
-            
-            document.getElementById('editPanel').classList.add('hidden');
-            
-            Utils.updateSyncStatus('Spot aggiornato', 'success');
-            Utils.showToast('Spot aggiornato con successo!', 'success');
-            
-            MapManager.centerOnSpot(response.data);
-          }
-        } catch (error) {
-          Utils.updateSyncStatus('Errore aggiornamento', 'error');
-          Utils.showToast(`Errore: ${error.message}`, 'error');
-        } finally {
-          AppState.pendingOperations--;
-        }
-      }
-
-      static loadSpotIntoForm(spot) {
-        if (!spot) return;
-
-        document.getElementById('editSpotId').value = spot.id;
-        document.getElementById('editFieldName').value = spot.name || '';
-        document.getElementById('editFieldDesc').value = spot.description || '';
-        document.getElementById('editFieldVoto').value = spot.voto || '';
-        document.getElementById('editFieldLat').value = spot.lat.toFixed(6);
-        document.getElementById('editFieldLng').value = spot.lng.toFixed(6);
-        document.getElementById('editFieldTipo').value = spot.tipo || '';
-      }
-    }
-
-    // ==================== LIST MANAGER ====================
-    class ListManager {
-      static render() {
-        const listEl = document.getElementById('listContent');
-        const searchEl = document.getElementById('listSearch');
-        const totalEl = document.getElementById('totalSpotsCount');
-        const filteredEl = document.getElementById('filteredSpotsCount');
-        const emptyState = document.getElementById('emptyState');
-
-        if (!listEl || !searchEl) return;
-
-        const searchTerm = searchEl.value.toLowerCase().trim();
-        AppState.filters.search = searchTerm;
-
-        let filtered = AppState.spots.filter(spot => {
-          const matchesSearch = !searchTerm || 
-            spot.name.toLowerCase().includes(searchTerm) ||
-            (spot.description && spot.description.toLowerCase().includes(searchTerm)) ||
-            (spot.tipo && spot.tipo.toLowerCase().includes(searchTerm));
-
-          const matchesTipo = !AppState.filters.tipo || spot.tipo === AppState.filters.tipo;
-          const matchesVoto = !AppState.filters.voto || spot.voto == AppState.filters.voto;
-
-          return matchesSearch && matchesTipo && matchesVoto;
-        });
-
-        // Update counts
-        if (totalEl) totalEl.textContent = AppState.spots.length;
-        if (filteredEl) filteredEl.textContent = filtered.length;
-
-        // Clear list
-        listEl.innerHTML = '';
-
-        // Show/hide empty state
-        if (emptyState) {
-          emptyState.style.display = filtered.length === 0 ? 'block' : 'none';
-        }
-
-        // Sort by voto (desc), then by name
-        filtered.sort((a, b) => {
-          if (a.voto !== b.voto) return (b.voto || 0) - (a.voto || 0);
-          return a.name.localeCompare(b.name);
-        });
-
-        // Render spots
-        filtered.forEach(spot => {
-          const row = this.createSpotRow(spot);
-          listEl.appendChild(row);
-        });
-      }
-
-      static createSpotRow(spot) {
-        const row = document.createElement('li');
-        row.className = 'spot-row';
-        
-        if (AppState.currentSpot && spot.id === AppState.currentSpot.id) {
-          row.classList.add('highlighted');
-        }
-
-        row.innerHTML = `
-          <div class="spot-emoji">${Utils.getEmojiByTipo(spot.tipo)}</div>
-          <div class="spot-main">
-            <div class="spot-main-title">
-              <strong>${spot.name || 'Senza nome'}</strong>
-              ${spot.voto ? `<div class="spot-vote-pill" style="background:${Utils.getRatingColor(spot.voto)}20;color:${Utils.getRatingColor(spot.voto)};">${spot.voto}★</div>` : '<div class="spot-vote-pill">-</div>'}
-            </div>
-            <div class="spot-desc">${spot.description || ''}</div>
-            <div class="spot-meta">
-              <span>${spot.lat.toFixed(4)}, ${spot.lng.toFixed(4)}</span>
-              <span>${spot.created_at ? Utils.formatDate(spot.created_at) : ''}</span>
-            </div>
-          </div>
-          <div class="spot-actions">
-            <button class="spot-action-btn" onclick="window.editSpot('${spot.id}')" title="Modifica">✏️</button>
-            <button class="spot-action-btn" onclick="window.deleteSpot('${spot.id}')" title="Elimina">🗑️</button>
-          </div>
-        `;
-
-        row.onclick = (e) => {
-          if (!e.target.closest('.spot-actions')) {
-            AppState.currentSpot = spot;
-            MapManager.centerOnSpot(spot);
-            document.getElementById('listPanel').classList.add('hidden');
-          }
-        };
-
-        return row;
-      }
-
-      static initFilters() {
-        const tipoFilters = document.getElementById('tipoFilters');
-        const votoFilters = document.getElementById('votoFilters');
-
-        if (!tipoFilters || !votoFilters) return;
-
-        // Tipologia filters
-        const tipos = [...new Set(AppState.spots.map(s => s.tipo).filter(Boolean))];
-        tipoFilters.innerHTML = `
-          <div class="filter-chip ${!AppState.filters.tipo ? 'active' : ''}" data-filter="tipo" data-value="">Tutte</div>
-          ${tipos.map(tipo => `
-            <div class="filter-chip ${AppState.filters.tipo === tipo ? 'active' : ''}" data-filter="tipo" data-value="${tipo}">
-              ${Utils.getEmojiByTipo(tipo)} ${tipo}
-            </div>
-          `).join('')}
-        `;
-
-        // Voto filters
-        votoFilters.innerHTML = `
-          <div class="filter-chip ${!AppState.filters.voto ? 'active' : ''}" data-filter="voto" data-value="">Tutti</div>
-          ${[1, 2, 3, 4, 5, 6].map(voto => `
-            <div class="filter-chip ${AppState.filters.voto == voto ? 'active' : ''}" data-filter="voto" data-value="${voto}">
-              <span style="color:${Utils.getRatingColor(voto)}">●</span> ${voto}
-            </div>
-          `).join('')}
-        `;
-
-        // Add click handlers
-        document.querySelectorAll('.filter-chip').forEach(chip => {
-          chip.onclick = () => {
-            const filter = chip.dataset.filter;
-            const value = chip.dataset.value || null;
-
-            // Update active state
-            document.querySelectorAll(`[data-filter="${filter}"]`).forEach(c => {
-              c.classList.remove('active');
-            });
-            chip.classList.add('active');
-
-            // Update filter
-            AppState.filters[filter] = value;
-          };
-        });
-      }
-    }
-
-    // ==================== SETTINGS MANAGER ====================
-    class SettingsManager {
-      static async load() {
-        try {
-          Utils.updateSyncStatus('Caricamento impostazioni...', 'syncing');
-          
-          const response = await ApiService.getSettings();
-          if (response.success) {
-            AppState.settings = { ...AppState.settings, ...response.data };
-            this.updateUI();
-            Utils.updateSyncStatus('Impostazioni caricate', 'success');
-          }
-        } catch (error) {
-          console.warn('Impossibile caricare settings:', error);
-          Utils.updateSyncStatus('Errore caricamento settings', 'error');
-        }
-      }
-
-      static async save() {
-        try {
-          const settings = {
-            baseLayer: document.getElementById('mapStyleSelect').value,
-            randomIncludeLowRated: document.getElementById('randomLowRatedCheckbox').checked,
-            crosshairEnabled: document.getElementById('crosshairEnabled').checked
-          };
-
-          Utils.updateSyncStatus('Salvataggio impostazioni...', 'syncing');
-          
-          const response = await ApiService.saveSettings(settings);
-          if (response.success) {
-            AppState.settings = { ...AppState.settings, ...response.data };
-            this.updateUI();
-            
-            // Update map layer if needed
-            if (AppState.settings.baseLayer !== settings.baseLayer) {
-              MapManager.switchLayer(settings.baseLayer);
-            }
-            
-            Utils.updateSyncStatus('Impostazioni salvate', 'success');
-            Utils.showToast('Impostazioni salvate con successo!', 'success');
-          }
-        } catch (error) {
-          Utils.updateSyncStatus('Errore salvataggio settings', 'error');
-          Utils.showToast(`Errore: ${error.message}`, 'error');
-        }
-      }
-
-      static updateUI() {
-        const mapStyleSelect = document.getElementById('mapStyleSelect');
-        const randomLowRatedCheckbox = document.getElementById('randomLowRatedCheckbox');
-        const crosshairEnabledCheckbox = document.getElementById('crosshairEnabled');
-        const crosshairToggleBtn = document.getElementById('crosshairToggleBtn');
-
-        if (mapStyleSelect) {
-          mapStyleSelect.value = AppState.settings.baseLayer || 'osm';
-        }
-
-        if (randomLowRatedCheckbox) {
-          randomLowRatedCheckbox.checked = AppState.settings.randomIncludeLowRated || false;
-        }
-
-        if (crosshairEnabledCheckbox) {
-          crosshairEnabledCheckbox.checked = AppState.settings.crosshairEnabled || false;
-        }
-
-        if (crosshairToggleBtn) {
-          crosshairToggleBtn.classList.toggle('active', AppState.settings.crosshairEnabled);
-        }
-
-        // Update crosshair visibility
-        const crosshair = document.getElementById('crosshair');
-        if (crosshair) {
-          crosshair.style.display = AppState.settings.crosshairEnabled && AppState.isMobile ? 'block' : 'none';
-        }
-      }
-
-      static toggleCrosshair() {
-        AppState.settings.crosshairEnabled = !AppState.settings.crosshairEnabled;
-        this.updateUI();
-        Utils.showToast(
-          AppState.settings.crosshairEnabled ? 'Mirino attivato' : 'Mirino disattivato',
-          'info'
-        );
-      }
-    }
-
-    // ==================== DATA MANAGER ====================
-    class DataManager {
-      static async loadSpots() {
-        try {
-          AppState.pendingOperations++;
-          Utils.updateSyncStatus('Caricamento spot...', 'syncing');
-
-          const response = await ApiService.getSpots();
-          if (response.success) {
-            AppState.spots = response.data || [];
-            
-            MapManager.renderSpots();
-            ListManager.render();
-            ListManager.initFilters();
-            
-            // Update badge
-            const badge = document.getElementById('spotsBadge');
-            if (badge) {
-              badge.textContent = AppState.spots.length;
-              badge.style.display = AppState.spots.length > 0 ? 'flex' : 'none';
-            }
-            
-            Utils.updateSyncStatus(`${AppState.spots.length} spot caricati`, 'success');
-          }
-        } catch (error) {
-          Utils.updateSyncStatus('Errore caricamento spot', 'error');
-          Utils.showToast(`Errore caricamento spot: ${error.message}`, 'error');
-        } finally {
-          AppState.pendingOperations--;
-        }
-      }
-
-      static async pickRandomSpot() {
-        if (AppState.spots.length === 0) {
-          Utils.showToast('Nessuno spot disponibile', 'warning');
-          return;
-        }
-
-        let candidates = AppState.spots;
-        if (!AppState.settings.randomIncludeLowRated) {
-          candidates = AppState.spots.filter(spot => !spot.voto || spot.voto >= 3);
-          if (candidates.length === 0) {
-            candidates = AppState.spots;
-          }
-        }
-
-        const randomIndex = Math.floor(Math.random() * candidates.length);
-        const spot = candidates[randomIndex];
-        
-        AppState.currentSpot = spot;
-        MapManager.centerOnSpot(spot);
-        
-        Utils.showToast(`Spot casuale: ${spot.name}`, 'info');
-      }
-
-      static async deleteSpot(spotId) {
-        const confirmed = await Utils.confirm(
-          'Eliminazione spot',
-          'Sei sicuro di voler eliminare questo spot? Questa azione non può essere annullata.'
-        );
-
-        if (!confirmed) return;
-
-        try {
-          AppState.pendingOperations++;
-          Utils.updateSyncStatus('Eliminazione spot...', 'syncing');
-
-          const response = await ApiService.deleteSpot(spotId);
-          if (response.success) {
-            AppState.spots = AppState.spots.filter(spot => spot.id !== spotId);
-            
-            MapManager.renderSpots();
-            ListManager.render();
-            
-            Utils.updateSyncStatus('Spot eliminato', 'success');
-            Utils.showToast('Spot eliminato con successo', 'success');
-          }
-        } catch (error) {
-          Utils.updateSyncStatus('Errore eliminazione', 'error');
-          Utils.showToast(`Errore: ${error.message}`, 'error');
-        } finally {
-          AppState.pendingOperations--;
-        }
-      }
-
-      static async saveAllData() {
-        try {
-          Utils.updateSyncStatus('Salvataggio completo...', 'syncing');
-
-          await SettingsManager.save();
-          await this.loadSpots();
-
-          Utils.updateSyncStatus('Dati salvati', 'success');
-          Utils.showToast('Tutti i dati sono stati salvati', 'success');
-        } catch (error) {
-          Utils.updateSyncStatus('Errore salvataggio', 'error');
-          Utils.showToast(`Errore: ${error.message}`, 'error');
-        }
-      }
-    }
-
-    // ==================== MISSION MANAGER ====================
-    class MissionManager {
-      static async open() {
-        if (!AppState.currentSpot) {
-          Utils.showToast('Seleziona prima uno spot dalla mappa', 'warning');
-          return;
-        }
-
-        const titleEl = document.getElementById('missionBodyTitle');
-        const coordsEl = document.getElementById('missionBodyCoords');
-        const textEl = document.getElementById('missionText');
-
-        if (!titleEl || !coordsEl || !textEl) return;
-
-        titleEl.textContent = AppState.currentSpot.name;
-        coordsEl.textContent = `${AppState.currentSpot.lat.toFixed(6)}, ${AppState.currentSpot.lng.toFixed(6)}`;
-
-        try {
-          const response = await ApiService.getMission(AppState.currentSpot.id);
-          if (response.success) {
-            textEl.value = response.data || '';
-          }
-        } catch (error) {
-          textEl.value = '';
-        }
-
-        document.getElementById('missionPanel').classList.remove('hidden');
-      }
-
-      static async save() {
-        if (!AppState.currentSpot) return;
-
-        const text = document.getElementById('missionText').value;
-
-        try {
-          Utils.updateSyncStatus('Salvataggio missione...', 'syncing');
-
-          const response = await ApiService.saveMission(AppState.currentSpot.id, text);
-          if (response.success) {
-            Utils.updateSyncStatus('Missione salvata', 'success');
-            Utils.showToast('Missione salvata con successo', 'success');
-            
-            document.getElementById('missionPanel').classList.add('hidden');
-          }
-        } catch (error) {
-          Utils.updateSyncStatus('Errore salvataggio', 'error');
-          Utils.showToast(`Errore: ${error.message}`, 'error');
-        }
-      }
-    }
-
-    // ==================== IMPORT LINK MANAGER ====================
-    class ImportLinkManager {
-      static async decode() {
-        const urlInput = document.getElementById('linkInput');
-        const resultDiv = document.getElementById('linkResult');
-        const coordsEl = document.getElementById('coordsFound');
-
-        if (!urlInput || !resultDiv || !coordsEl) return;
-
-        const url = urlInput.value.trim();
-        if (!url) {
-          Utils.showToast('Incolla un link di Google Maps', 'error');
-          return;
-        }
-
-        try {
-          Utils.updateSyncStatus('Decodifica link...', 'syncing');
-
-          const response = await ApiService.decodeGoogleMapsUrl(url);
-          if (response.success) {
-            const { lat, lng } = response.data;
-            
-            coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            resultDiv.style.display = 'block';
-            
-            FormManager.updateCoordinates(lat, lng);
-            
-            Utils.updateSyncStatus('Coordinate estratte', 'success');
-            Utils.showToast('Coordinate estratte con successo!', 'success');
-          }
-        } catch (error) {
-          Utils.updateSyncStatus('Errore decodifica', 'error');
-          Utils.showToast(`Errore: ${error.message}`, 'error');
-        }
-      }
-
-      static async addFromLink() {
-        const nameInput = document.getElementById('linkSpotName');
-        const descInput = document.getElementById('linkSpotDesc');
-        const latInput = document.getElementById('fieldLat');
-        const lngInput = document.getElementById('fieldLng');
-
-        if (!nameInput || !descInput || !latInput || !lngInput) return;
-
-        const name = nameInput.value.trim();
-        const desc = descInput.value.trim();
-        const lat = parseFloat(latInput.value);
-        const lng = parseFloat(lngInput.value);
-
-        if (!name || isNaN(lat) || isNaN(lng)) {
-          Utils.showToast('Compila tutti i campi obbligatori', 'error');
-          return;
-        }
-
-        const formData = {
-          name,
-          desc,
-          lat,
-          lng,
-          voto: null,
-          tipo: Utils.getTipo(name, desc)
-        };
-
-        try {
-          AppState.pendingOperations++;
-          Utils.updateSyncStatus('Aggiunta spot...', 'syncing');
-
-          const response = await ApiService.createSpot(formData);
-          
-          if (response.success) {
-            AppState.spots.push(response.data);
-            MapManager.renderSpots();
-            ListManager.render();
-            
-            document.getElementById('importLinkPanel').classList.add('hidden');
-            urlInput.value = '';
-            nameInput.value = '';
-            descInput.value = '';
-            resultDiv.style.display = 'none';
-            
-            Utils.updateSyncStatus('Spot aggiunto', 'success');
-            Utils.showToast('Spot aggiunto dal link!', 'success');
-          }
-        } catch (error) {
-          Utils.updateSyncStatus('Errore aggiunta', 'error');
-          Utils.showToast(`Errore: ${error.message}`, 'error');
-        } finally {
-          AppState.pendingOperations--;
-        }
-      }
-    }
-
-    // ==================== UI EVENT HANDLERS ====================
-    class EventHandlers {
-      static init() {
-        // Loading screen
-        Utils.showLoading(true);
-
-        // Map navigation
-        document.getElementById('mapNavToggle')?.addEventListener('click', () => {
-          const nav = document.getElementById('mapNavigation');
-          const toggle = document.getElementById('mapNavToggle');
-          
-          nav.classList.toggle('show');
-          toggle.classList.toggle('active');
-        });
-
-        document.getElementById('prevMapBtn')?.addEventListener('click', () => {
-          const layers = Object.keys(CONFIG.MAP_LAYERS);
-          const currentIndex = layers.indexOf(AppState.settings.baseLayer);
-          const prevIndex = (currentIndex - 1 + layers.length) % layers.length;
-          MapManager.switchLayer(layers[prevIndex]);
-        });
-
-        document.getElementById('nextMapBtn')?.addEventListener('click', () => {
-          const layers = Object.keys(CONFIG.MAP_LAYERS);
-          const currentIndex = layers.indexOf(AppState.settings.baseLayer);
-          const nextIndex = (currentIndex + 1) % layers.length;
-          MapManager.switchLayer(layers[nextIndex]);
-        });
-
-        // Dock buttons
-        document.getElementById('saveAllBtn')?.addEventListener('click', DataManager.saveAllData);
-        document.getElementById('streetviewBtn')?.addEventListener('click', () => {
-          const lat = AppState.temporaryPin.lat || MapManager.getCurrentCenter().lat;
-          const lng = AppState.temporaryPin.lng || MapManager.getCurrentCenter().lng;
-          window.open(`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`, '_blank');
-        });
-        
-        document.getElementById('filtersBtn')?.addEventListener('click', () => {
-          const filtersPanel = document.getElementById('filtersPanel');
-          filtersPanel.style.display = filtersPanel.style.display === 'none' ? 'block' : 'none';
-        });
-
-        document.getElementById('importLinkBtn')?.addEventListener('click', () => {
-          document.getElementById('importLinkPanel').classList.remove('hidden');
-        });
-
-        document.getElementById('settingsBtn')?.addEventListener('click', () => {
-          document.getElementById('settingsPanel').classList.remove('hidden');
-          SettingsManager.updateUI();
-        });
-
-        document.getElementById('crosshairToggleBtn')?.addEventListener('click', SettingsManager.toggleCrosshair);
-
-        document.getElementById('btnList')?.addEventListener('click', () => {
-          document.getElementById('listPanel').classList.remove('hidden');
-          ListManager.render();
-        });
-
-        document.getElementById('btnAdd')?.addEventListener('click', () => {
-          document.getElementById('addPanel').classList.remove('hidden');
-          FormManager.useCurrentPin();
-        });
-
-        document.getElementById('btnRandom')?.addEventListener('click', DataManager.pickRandomSpot);
-        document.getElementById('missionBtn')?.addEventListener('click', MissionManager.open);
-
-        // Dock toggle
-        document.getElementById('dockToggleBtn')?.addEventListener('click', () => {
-          const dock = document.getElementById('rightDock');
-          const isCollapsed = dock.classList.contains('collapsed');
-          
-          dock.classList.toggle('collapsed');
-          document.getElementById('dockToggleBtn').innerHTML = isCollapsed ? '⬆️' : '⬇️';
-        });
-
-        // Close buttons
-        document.querySelectorAll('.icon-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.target.closest('.overlay').classList.add('hidden');
-          });
-        });
-
-        // Overlay backdrop click
-        document.querySelectorAll('.overlay-backdrop').forEach(backdrop => {
-          backdrop.addEventListener('click', (e) => {
-            if (e.target === backdrop) {
-              backdrop.closest('.overlay').classList.add('hidden');
-            }
-          });
-        });
-
-        // Forms
-        document.getElementById('addForm')?.addEventListener('submit', FormManager.handleAddSubmit);
-        document.getElementById('editForm')?.addEventListener('submit', FormManager.handleEditSubmit);
-        document.getElementById('btnUseCurrentPin')?.addEventListener('click', FormManager.useCurrentPin);
-        document.getElementById('btnUseCurrentPinEdit')?.addEventListener('click', FormManager.useCurrentPin);
-
-        // Settings
-        document.getElementById('btnSaveAllSettings')?.addEventListener('click', SettingsManager.save);
-        document.getElementById('btnDecodeLink')?.addEventListener('click', ImportLinkManager.decode);
-        document.getElementById('btnAddFromLink')?.addEventListener('click', ImportLinkManager.addFromLink);
-        document.getElementById('btnSaveMission')?.addEventListener('click', MissionManager.save);
-
-        // Search with debounce
-        const searchInput = document.getElementById('listSearch');
-        if (searchInput) {
-          searchInput.addEventListener('input', Utils.debounce(() => {
-            ListManager.render();
-          }, 300));
-        }
-
-        // Filters
-        document.getElementById('clearFiltersBtn')?.addEventListener('click', () => {
-          AppState.filters = { tipo: null, voto: null, search: '' };
-          ListManager.initFilters();
-          ListManager.render();
-        });
-
-        document.getElementById('applyFiltersBtn')?.addEventListener('click', () => {
-          ListManager.render();
-          document.getElementById('filtersPanel').style.display = 'none';
-        });
-
-        // Add from list empty state
-        document.getElementById('btnAddFromList')?.addEventListener('click', () => {
-          document.getElementById('listPanel').classList.add('hidden');
-          document.getElementById('addPanel').classList.remove('hidden');
-          FormManager.useCurrentPin();
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-          // Close modals with Escape
-          if (e.key === 'Escape') {
-            document.querySelectorAll('.overlay:not(.hidden)').forEach(overlay => {
-              overlay.classList.add('hidden');
-            });
-          }
-
-          // Map navigation with A/D
-          if (e.key === 'a' || e.key === 'A') {
-            const prevBtn = document.getElementById('prevMapBtn');
-            if (prevBtn) prevBtn.click();
-          }
-          
-          if (e.key === 'd' || e.key === 'D') {
-            const nextBtn = document.getElementById('nextMapBtn');
-            if (nextBtn) nextBtn.click();
-          }
-        });
-
-        // Online/offline detection
-        window.addEventListener('online', () => {
-          Utils.showToast('Connessione ripristinata', 'success');
-          DataManager.loadSpots();
-        });
-
-        window.addEventListener('offline', () => {
-          Utils.showToast('Connessione persa - modalità offline', 'warning');
-        });
-
-        // Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-          window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(error => {
-              console.log('Service Worker registration failed:', error);
-            });
-          });
-        }
-      }
-    }
-
-    // ==================== INITIALIZATION ====================
-    async function init() {
+<script>
+// =========================
+// UTILS
+// =========================
+function parseCSVRow(line) {
+const result = [];
+let current = "";
+let inQuotes = false;
+for (let i = 0; i < line.length; i++) {
+const char = line[i];
+if (char === '"') {
+if (inQuotes && line[i + 1] === '"') {
+current += '"';
+i++;
+} else {
+inQuotes = !inQuotes;
+}
+} else if (char === "," && !inQuotes) {
+result.push(current);
+current = "";
+} else {
+current += char;
+}
+}
+result.push(current);
+return result;
+}
+
+function parseCSV(text) {
+const lines = text.trim().split(/\r?\n/);
+const rows = [];
+for (const line of lines) {
+if (!line.trim()) continue;
+rows.push(parseCSVRow(line));
+}
+return rows;
+}
+
+function escapeHtml(str) {
+return String(str).replace(/[&<>"']/g, function (c) {
+switch (c) {
+case "&": return "&amp;";
+case "<": return "&lt;";
+case ">": return "&gt;";
+case '"': return "&quot;";
+case "'": return "&#39;";
+default: return c;
+}
+});
+}
+
+function extractVoto(desc) {
+if (!desc) return null;
+const match = desc.match(/Voto:\s*([0-9]+)\s*\/\s*6/i);
+if (!match) return null;
+const v = parseInt(match[1], 10);
+if (v >= 1 && v <= 6) return v;
+return null;
+}
+
+// nuovi colori in stile LTU (come nel tuo script originale)
+function getRatingColor(r) {
+if (typeof r !== "number" || !isFinite(r)) return "#64748b";
+if (r === 1) return "#b91c1c";
+if (r === 2) return "#f97316";
+if (r === 3) return "#eab308";
+if (r === 4) return "#2563eb";
+if (r === 5) return "#16a34a";
+if (r === 6) return "#a855f7";
+return "#64748b";
+}
+
+function getTipo(name, desc) {
+const text = (name + " " + (desc || "")).toLowerCase();
+if (text.includes("hotel") || text.includes("ostello") || text.includes("residence")) return "hotel";
+if (text.includes("villa") || text.includes("villone") || text.includes("villino") || text.includes("villetta") || text.includes("ville")) return "villa";
+if (text.includes("casa") || text.includes("casetta") || text.includes("casone") || text.includes("case") || text.includes("cascina") || text.includes("casolare")) return "casa";
+if (text.includes("fabbrica") || text.includes("capannone") || text.includes("magazzino") || text.includes("distilleria") || text.includes("cantiere") || text.includes("impresa edile") || text.includes("stazione") || text.includes("centro commerciale")) return "industria";
+if (text.includes("scuola") || text.includes("itis")) return "scuola";
+if (text.includes("chiesa")) return "chiesa";
+if (text.includes("colonia")) return "colonia";
+if (text.includes("prigione") || text.includes("manicomio") || text.includes("ospedale") || text.includes("clinica") || text.includes("convento")) return "istituzione";
+if (text.includes("discoteca") || text.includes("bar") || text.includes("ristorante") || text.includes("pizzeria")) return "svago";
+if (text.includes("castello")) return "castello";
+if (text.includes("nave")) return "nave";
+if (text.includes("diga")) return "diga";
+if (text.includes("base nato")) return "militare";
+return "altro";
+}
+
+function getEmojiByTipo(tipo) {
+switch (tipo) {
+case "hotel": return "🏨";
+case "villa": return "🏡";
+case "casa": return "🏠";
+case "industria": return "🏭";
+case "scuola": return "🏫";
+case "chiesa": return "⛪";
+case "colonia": return "🏚️";
+case "istituzione": return "🏥";
+case "svago": return "🎭";
+case "castello": return "🏰";
+case "nave": return "🚢";
+case "diga": return "💧";
+case "militare": return "🪖";
+default: return "📍";
+}
+}
+
+function showToast(msg, type = "info") {
+const t = document.getElementById("toast");
+if (!t) return;
+
+// Set color based on type
+if (type === "error") {
+t.style.background = "rgba(239, 68, 68, 0.9)";
+t.style.borderColor = "#ef4444";
+} else if (type === "success") {
+t.style.background = "rgba(34, 197, 94, 0.9)";
+t.style.borderColor = "#22c55e";
+} else if (type === "warning") {
+t.style.background = "rgba(245, 158, 11, 0.9)";
+t.style.borderColor = "#f59e0b";
+} else {
+t.style.background = "rgba(15, 23, 42, 0.96)";
+t.style.borderColor = "rgba(148, 163, 184, 0.6)";
+}
+
+t.textContent = msg;
+t.classList.add("show");
+setTimeout(() => {
+t.classList.remove("show");
+// Reset to default after hiding
+setTimeout(() => {
+t.style.background = "";
+t.style.borderColor = "";
+}, 300);
+}, 2500);
+}
+
+// =========================
+// ENHANCED FETCH WITH RETRY
+// =========================
+let retryAttempts = 0;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+async function fetchWithRetry(url, options = {}, maxRetries = MAX_RETRIES) {
+let lastError;
+
+for (let attempt = 0; attempt <= maxRetries; attempt++) {
+try {
+const response = await fetch(url, options);
+
+// Check for HTTP errors
+if (!response.ok) {
+// Try to parse error response
+let errorData;
+try {
+errorData = await response.json();
+} catch {
+errorData = { error: `HTTP ${response.status}` };
+}
+
+// Don't retry on client errors (4xx) except 429
+if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+}
+
+// Retry on server errors (5xx) or 429
+if (attempt < maxRetries) {
+const delay = RETRY_DELAY * Math.pow(2, attempt); // Exponential backoff
+await new Promise(resolve => setTimeout(resolve, delay));
+continue;
+}
+
+throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+}
+
+// Parse successful response
+const result = await response.json();
+
+// Check for backend success flag
+if (result.success === false) {
+throw new Error(result.error || result.message || "Operazione fallita");
+}
+
+return result;
+
+} catch (error) {
+lastError = error;
+
+// Show sync status
+updateSyncStatus(`Tentativo ${attempt + 1}/${maxRetries + 1} fallito`, "error");
+
+if (attempt < maxRetries) {
+const delay = RETRY_DELAY * Math.pow(2, attempt);
+await new Promise(resolve => setTimeout(resolve, delay));
+}
+}
+}
+
+throw lastError;
+}
+
+// =========================
+// SYNC STATUS INDICATOR
+// =========================
+function updateSyncStatus(message, type = "info") {
+const statusEl = document.getElementById("syncStatus");
+if (!statusEl) return;
+
+statusEl.textContent = message;
+statusEl.className = type;
+statusEl.classList.add("show");
+
+// Auto-hide after 3 seconds for success, 5 seconds for error
+const hideTime = type === "success" ? 3000 : 5000;
+setTimeout(() => {
+statusEl.classList.remove("show");
+}, hideTime);
+}
+
+// =========================
+// CONFIRM DIALOG
+// =========================
+function showConfirm(title, message) {
+return new Promise((resolve) => {
+// Remove existing modal if any
+const existingModal = document.querySelector('.confirm-modal');
+if (existingModal) existingModal.remove();
+
+const modal = document.createElement('div');
+modal.className = 'confirm-modal';
+modal.innerHTML = `
+         <div class="confirm-modal-content">
+           <div class="confirm-modal-title">${title}</div>
+           <div class="confirm-modal-message">${message}</div>
+           <div class="confirm-modal-buttons">
+             <button class="confirm-btn confirm-btn-cancel">Annulla</button>
+             <button class="confirm-btn confirm-btn-confirm">Conferma</button>
+           </div>
+         </div>
+       `;
+
+document.body.appendChild(modal);
+
+const cancelBtn = modal.querySelector('.confirm-btn-cancel');
+const confirmBtn = modal.querySelector('.confirm-btn-confirm');
+
+cancelBtn.onclick = () => {
+modal.remove();
+resolve(false);
+};
+
+confirmBtn.onclick = () => {
+modal.remove();
+resolve(true);
+};
+
+// Close on backdrop click
+modal.onclick = (e) => {
+if (e.target === modal) {
+modal.remove();
+resolve(false);
+}
+};
+
+// Close on Escape key
+const handleEscape = (e) => {
+if (e.key === 'Escape') {
+modal.remove();
+document.removeEventListener('keydown', handleEscape);
+resolve(false);
+}
+};
+document.addEventListener('keydown', handleEscape);
+});
+}
+
+    // =========================
+    // SAVE ALL DATA FUNCTION
+    // =========================
+    async function saveAllData() {
       try {
-        // Initialize map
-        MapManager.init();
-
-        // Load settings
-        await SettingsManager.load();
-
-        // Load spots
-        await DataManager.loadSpots();
-
-        // Initialize event handlers
-        EventHandlers.init();
-
-        // Hide loading screen
-        setTimeout(() => {
-          Utils.showLoading(false);
-          Utils.showToast('LTU Mappa caricata ✓', 'success');
-        }, 1000);
-
-        // Auto-refresh every 5 minutes
-        setInterval(() => {
-          if (AppState.pendingOperations === 0) {
-            DataManager.loadSpots();
-          }
-        }, 5 * 60 * 1000);
-
+        updateSyncStatus("Salvataggio completo in corso...", "syncing");
+        
+        // 1. Salva le impostazioni locali
+        saveLocalSettings();
+        
+        // 2. Salva le missioni
+        saveMissions();
+        
+        // 3. Salva le impostazioni sul server
+        await saveSettings({
+          baseLayer: appSettings.baseLayer,
+          mapStyle: appSettings.mapStyle,
+          randomIncludeLowRated: appSettings.randomIncludeLowRated
+        });
+        
+        // 4. Forza un refresh degli spot dal server
+        await reloadAllSpots();
+        
+        updateSyncStatus("Tutti i dati sono stati salvati", "success");
+        showToast("Salvataggio completato con successo!", "success");
+        
       } catch (error) {
-        console.error('Initialization error:', error);
-        Utils.showToast('Errore inizializzazione applicazione', 'error');
-        Utils.showLoading(false);
+        console.error("Errore durante il salvataggio completo:", error);
+        updateSyncStatus("Errore durante il salvataggio", "error");
+        showToast(`Errore durante il salvataggio: ${error.message}`, "error");
       }
     }
+    
+// =========================
+// GLOBAL STATE
+// =========================
+let map;
+let markersLayer;
+let baseLayers = {};
+let appSettings = {
+baseLayer: "osm",
+mapStyle: "default",
+randomIncludeLowRated: false,
+crosshairEnabled: false
+};
+let allSpots = []; // tutti (csv + extra)
+let currentSpot = null; // ultimo spot cliccato (per missioni / random)
+let missions = {}; // localStorage
+let lastAddedSpotId = null; // per centrare spot appena aggiunto
+let spotToHighlight = null; // ID dello spot da evidenziare nella lista
+let temporaryPin = { lat: null, lng: null, element: null }; // Pin temporaneo per PC
+let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let ctrlPressed = false; // Stato del tasto Ctrl
+let isRotating = false; // Stato rotazione
+let mapNavigationActive = false; // Stato navigazione mappe
+let mapLayersOrder = []; // Ordine delle mappe per navigazione
+let currentMapIndex = 0; // Indice mappa corrente
+let pendingOperations = 0; // Contatore operazioni in corso
 
-    // ==================== GLOBAL FUNCTIONS ====================
-    window.editSpot = async (spotId) => {
-      const spot = AppState.spots.find(s => s.id === spotId);
-      if (!spot) {
-        Utils.showToast('Spot non trovato', 'error');
-        return;
+function loadMissions() {
+try {
+const raw = localStorage.getItem("ltu_missions_v1");
+if (!raw) {
+missions = {};
+return;
+}
+missions = JSON.parse(raw) || {};
+} catch (e) {
+missions = {};
+}
+}
+
+function saveMissions() {
+try {
+localStorage.setItem("ltu_missions_v1", JSON.stringify(missions));
+} catch (e) {}
+}
+
+function spotKey(p) {
+return `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+}
+
+async function loadSettings() {
+try {
+updateSyncStatus("Caricamento impostazioni...", "syncing");
+const result = await fetchWithRetry("/api/settings");
+const data = result.data;
+appSettings = Object.assign({}, appSettings, data || {});
+
+// Carica impostazioni locali
+const localSettings = localStorage.getItem("ltu_local_settings");
+if (localSettings) {
+const local = JSON.parse(localSettings);
+appSettings.crosshairEnabled = local.crosshairEnabled || false;
+mapNavigationActive = local.mapNavigationActive || false;
+}
+
+updateSyncStatus("Impostazioni caricate", "success");
+} catch (e) {
+console.warn("Impossibile caricare settings, uso default.");
+updateSyncStatus("Errore caricamento impostazioni", "error");
+}
+}
+
+async function saveSettings(partial) {
+try {
+appSettings = Object.assign({}, appSettings, partial || {});
+updateSyncStatus("Salvataggio impostazioni...", "syncing");
+
+const result = await fetchWithRetry("/api/settings", {
+method: "POST",
+headers: { 
+"Content-Type": "application/json",
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
+body: JSON.stringify({
+baseLayer: appSettings.baseLayer,
+mapStyle: appSettings.mapStyle,
+randomIncludeLowRated: appSettings.randomIncludeLowRated
+})
+});
+
+const data = result.data;
+appSettings.baseLayer = data.baseLayer || appSettings.baseLayer;
+appSettings.mapStyle = data.mapStyle || appSettings.mapStyle;
+appSettings.randomIncludeLowRated = data.randomIncludeLowRated || appSettings.randomIncludeLowRated;
+
+updateSyncStatus("Impostazioni salvate", "success");
+} catch (e) {
+console.warn("Errore salvataggio settings", e);
+updateSyncStatus("Errore salvataggio settings", "error");
+showToast(`Errore salvataggio settings: ${e.message}`, "error");
+}
+}
+
+function saveLocalSettings() {
+try {
+localStorage.setItem("ltu_local_settings", JSON.stringify({
+crosshairEnabled: appSettings.crosshairEnabled,
+mapNavigationActive: mapNavigationActive
+}));
+} catch (e) {
+console.warn("Errore salvataggio settings locali", e);
+}
+}
+
+async function loadBaseSpots() {
+try {
+const res = await fetch("/spots.csv");
+if (!res.ok) throw new Error("Impossibile caricare spots.csv");
+const text = await res.text();
+const rows = parseCSV(text);
+const dataRows = rows.slice(1);
+const points = [];
+dataRows.forEach(cols => {
+if (cols.length < 4) return;
+const name = cols[0] || "";
+const desc = cols[1] || "";
+const lat = parseFloat(cols[2]);
+const lng = parseFloat(cols[3]);
+if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+const voto = extractVoto(desc);
+const tipo = getTipo(name, desc);
+points.push({ 
+id: `csv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+name, 
+desc, 
+lat, 
+lng, 
+voto, 
+tipo, 
+source: "csv" 
+});
+});
+return points;
+} catch (error) {
+console.error("Errore caricamento base spots:", error);
+showToast("Errore caricamento spots base", "error");
+return [];
+}
+}
+
+async function loadExtraSpots() {
+try {
+updateSyncStatus("Caricamento spot extra...", "syncing");
+const result = await fetchWithRetry("/api/spots-extra");
+const arr = result.data;
+if (!Array.isArray(arr)) {
+updateSyncStatus("Formato dati non valido", "error");
+return [];
+}
+
+const spots = arr.map(raw => {
+const lat = parseFloat(raw.lat);
+const lng = parseFloat(raw.lng);
+if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+const name = raw.name || "";
+const desc = raw.desc || "";
+const voto = raw.voto != null ? parseInt(raw.voto, 10) : extractVoto(desc);
+const tipo = raw.tipo || getTipo(name, desc);
+return {
+id: raw.id,
+name,
+desc,
+lat,
+lng,
+voto: (voto >= 1 && voto <= 6) ? voto : null,
+tipo,
+source: "extra",
+createdAt: raw.createdAt || null,
+updatedAt: raw.updatedAt || null
+};
+}).filter(Boolean);
+
+updateSyncStatus(`${spots.length} spot extra caricati`, "success");
+return spots;
+} catch (e) {
+console.warn("Errore caricando spots-extra", e);
+updateSyncStatus("Errore caricamento spot", "error");
+showToast("Errore caricamento spot extra", "error");
+return [];
+}
+}
+
+async function reloadAllSpots() {
+try {
+pendingOperations++;
+updateSyncStatus("Aggiornamento spot...", "syncing");
+
+const [base, extra] = await Promise.all([
+loadBaseSpots(),
+loadExtraSpots()
+]);
+
+allSpots = base.concat(extra);
+renderMarkers();
+renderList();
+
+updateSyncStatus(`${allSpots.length} spot caricati`, "success");
+} catch (e) {
+console.error(e);
+updateSyncStatus("Errore caricamento spot", "error");
+showToast("Errore nel caricamento degli spot.", "error");
+} finally {
+pendingOperations--;
+}
+}
+
+// =========================
+    // MAPPA
+    // MAPPA - FIXED VERSION
+// =========================
+function initMap() {
+      // Configurazione mappa
+      // Configurazione mappa con rotazione abilitata
+const mapOptions = { 
+zoomControl: false,
+gestureHandling: true,
+maxZoom: 22,
+        minZoom: 1
+        minZoom: 1,
+        touchRotate: true, // Abilita rotazione touch
+        rotate: true, // Abilita rotazione
+        rotateControl: true // Mostra controllo rotazione
+};
+
+map = L.map("map", mapOptions);
+
+      // Definisci tutti i layer di mappa
+      // Definisci tutti i layer di mappa FUNZIONANTI
+const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+maxZoom: 22,
+attribution: "&copy; OpenStreetMap contributors"
+});
+
+const osmHot = L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+maxZoom: 22,
+attribution: "&copy; OpenStreetMap contributors, Tiles style by HOT"
+});
+
+const esriSatellite = L.tileLayer(
+"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+{
+maxZoom: 22,
+attribution: "Tiles &copy; Esri"
+}
+);
+
+      const nasaGibs = L.tileLayer(
+        "https://gibs-{s}.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{time}/{tileMatrixSet}/{z}/{y}/{x}.jpg",
+        {
+          maxZoom: 9,
+          attribution: "Imagery provided by NASA GIBS",
+          tileMatrixSet: "GoogleMapsCompatible_Level9",
+          time: "2023-06-01",
+          subdomains: "abc",
+          bounds: [[-85.0511, -180], [85.0511, 180]]
+        }
+      );
+      
+      // Satellite Google (funzionante)
+const googleSatellite = L.tileLayer(
+"https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+{
+maxZoom: 22,
+attribution: "Google Satellite"
+}
+);
+
+      // Satellite NASA alternativo (funzionante)
+      const nasaSatellite = L.tileLayer(
+        "https://map1.vis.earthdata.nasa.gov/wmts-webmerc/MODIS_Terra_CorrectedReflectance_TrueColor/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
+        {
+          maxZoom: 9,
+          attribution: "NASA GIBS",
+          bounds: [[-85.0511, -180], [85.0511, 180]]
+        }
+      );
+      
+      // OpenTopoMap (funzionante)
+const openTopoMap = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+maxZoom: 17,
+        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+});
+
+      // Carto Dark
+const cartoDark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+maxZoom: 22,
+attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+subdomains: 'abcd'
+});
+
+      // Carto Light
+const cartoLight = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+maxZoom: 22,
+attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+subdomains: 'abcd'
+});
+
+      const stamenToner = L.tileLayer("https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png", {
+      // Stamen Toner LITE (versione funzionante)
+      const stamenToner = L.tileLayer("https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}.png", {
+maxZoom: 20,
+attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+subdomains: 'abcd'
+});
+
+      // Esri WorldTopoMap
+const esriTopo = L.tileLayer(
+"https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+{
+maxZoom: 22,
+attribution: "Tiles &copy; Esri"
+}
+);
+
+      // Esri Ocean Basemap (alternativa funzionante)
+const esriOcean = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}",
+        "https://services.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}",
+{
+          maxZoom: 22,
+          maxZoom: 13,
+attribution: "Tiles &copy; Esri"
+}
+);
+
+      // Esri Light Gray Canvas (alternativa a Gray)
+const esriGray = L.tileLayer(
+"https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+{
+          maxZoom: 22,
+          maxZoom: 16,
+attribution: "Tiles &copy; Esri"
+}
+);
+
+      // Mappe che funzionano
+baseLayers = {
+osm,
+osmHot,
+satellite: esriSatellite,
+satellite2: googleSatellite,
+        satellite3: nasaGibs,
+        satellite3: nasaSatellite,
+topo: openTopoMap,
+dark: cartoDark,
+cartoLight,
+stamenToner,
+esriTopo,
+esriOcean,
+esriGray
+};
+
+      // Ordine per navigazione
+mapLayersOrder = ["osm", "osmHot", "satellite", "satellite2", "satellite3", "topo", "dark", "cartoLight", "stamenToner", "esriTopo", "esriOcean", "esriGray"];
+
+// Applica baseLayer da settings
+let chosen = baseLayers[appSettings.baseLayer] || osm;
+chosen.addTo(map);
+currentMapIndex = mapLayersOrder.indexOf(appSettings.baseLayer) || 0;
+
+markersLayer = L.layerGroup().addTo(map);
+
+      // Aggiungi controllo rotazione personalizzato
+      L.control.rotate().addTo(map);
+      // Aggiungi controllo rotazione
+      L.control.rotate({
+        position: 'topright'
+      }).addTo(map);
+      
+      // Abilita rotazione touch per mobile
+      if (isMobile) {
+        map.touchRotate.enable();
       }
 
-      FormManager.loadSpotIntoForm(spot);
-      document.getElementById('editPanel').classList.remove('hidden');
-    };
+// Inizializza con vista Italia
+map.setView([44.5, 8.9], 7);
 
-    window.deleteSpot = async (spotId) => {
-      await DataManager.deleteSpot(spotId);
-    };
+// Gestione click sulla mappa per PC e mobile
+map.on("click", function (e) {
+if (isRotating) return;
 
-    // ==================== START APP ====================
-    document.addEventListener('DOMContentLoaded', init);
-  </script>
+const lat = e.latlng.lat;
+const lng = e.latlng.lng;
+
+temporaryPin.lat = lat;
+temporaryPin.lng = lng;
+
+if (!isMobile) {
+showTemporaryPin(lat, lng);
+}
+
+updateFormCoordinates(lat, lng);
+});
+
+// Gestione contextmenu (tasto destro) per rimuovere pin
+map.on("contextmenu", function(e) {
+e.originalEvent.preventDefault();
+removeTemporaryPin();
+return false;
+});
+
+// Disabilita menu contestuale sulla mappa
+const mapContainer = map.getContainer();
+mapContainer.addEventListener('contextmenu', function(e) {
+e.preventDefault();
+return false;
+});
+
+// Gestione rotazione con Ctrl su PC
+if (!isMobile) {
+document.addEventListener('keydown', function(e) {
+if (e.key === 'Control') {
+ctrlPressed = true;
+map.dragging.disable();
+document.getElementById('map').style.cursor = 'grab';
+}
+if (mapNavigationActive && (e.key === 'a' || e.key === 'A')) {
+e.preventDefault();
+prevMap();
+}
+if (mapNavigationActive && (e.key === 'd' || e.key === 'D')) {
+e.preventDefault();
+nextMap();
+}
+});
+
+document.addEventListener('keyup', function(e) {
+if (e.key === 'Control') {
+ctrlPressed = false;
+isRotating = false;
+map.dragging.enable();
+document.getElementById('map').style.cursor = 'crosshair';
+}
+});
+
+let lastX = 0;
+
+mapContainer.addEventListener('mousedown', function(e) {
+if (ctrlPressed && e.button === 0) {
+isRotating = true;
+lastX = e.clientX;
+document.getElementById('map').style.cursor = 'grabbing';
+e.preventDefault();
+}
+});
+
+document.addEventListener('mousemove', function(e) {
+if (isRotating && ctrlPressed) {
+const deltaX = e.clientX - lastX;
+if (map.setBearing) {
+const currentBearing = map.getBearing ? map.getBearing() : 0;
+map.setBearing(currentBearing + deltaX * 0.5);
+}
+lastX = e.clientX;
+e.preventDefault();
+}
+});
+
+document.addEventListener('mouseup', function(e) {
+if (isRotating) {
+isRotating = false;
+document.getElementById('map').style.cursor = ctrlPressed ? 'grab' : 'crosshair';
+}
+});
+}
+
+updateMapNavigationUI();
+updateCrosshairVisibility();
+}
+
+function showTemporaryPin(lat, lng) {
+if (!temporaryPin.element) {
+temporaryPin.element = document.getElementById('temporaryPin');
+if (!temporaryPin.element) {
+const pin = document.createElement('div');
+pin.id = 'temporaryPin';
+document.body.appendChild(pin);
+temporaryPin.element = pin;
+}
+}
+
+const pinEl = temporaryPin.element;
+if (!pinEl) return;
+
+const point = map.latLngToContainerPoint([lat, lng]);
+const mapRect = map.getContainer().getBoundingClientRect();
+pinEl.style.position = 'absolute';
+pinEl.style.left = (mapRect.left + point.x) + 'px';
+pinEl.style.top = (mapRect.top + point.y) + 'px';
+pinEl.style.display = 'block';
+
+if (!temporaryPin.moveHandler) {
+temporaryPin.moveHandler = function() {
+if (temporaryPin.lat && temporaryPin.lng) {
+const newPoint = map.latLngToContainerPoint([temporaryPin.lat, temporaryPin.lng]);
+const mapRect = map.getContainer().getBoundingClientRect();
+pinEl.style.left = (mapRect.left + newPoint.x) + 'px';
+pinEl.style.top = (mapRect.top + newPoint.y) + 'px';
+}
+};
+map.on('move', temporaryPin.moveHandler);
+map.on('resize', temporaryPin.moveHandler);
+}
+}
+
+function removeTemporaryPin() {
+if (temporaryPin.element) {
+temporaryPin.element.style.display = 'none';
+}
+temporaryPin.lat = null;
+temporaryPin.lng = null;
+
+if (temporaryPin.moveHandler) {
+map.off('move', temporaryPin.moveHandler);
+map.off('resize', temporaryPin.moveHandler);
+temporaryPin.moveHandler = null;
+}
+}
+
+function updateFormCoordinates(lat, lng) {
+const latInput = document.getElementById("fieldLat");
+const lngInput = document.getElementById("fieldLng");
+const editLatInput = document.getElementById("editFieldLat");
+const editLngInput = document.getElementById("editFieldLng");
+
+if (latInput && lngInput) {
+latInput.value = lat.toFixed(6);
+lngInput.value = lng.toFixed(6);
+}
+
+if (editLatInput && editLngInput) {
+editLatInput.value = lat.toFixed(6);
+editLngInput.value = lng.toFixed(6);
+}
+}
+
+function updateCrosshairVisibility() {
+const crosshairEl = document.getElementById('crosshair');
+if (!crosshairEl) return;
+
+if (isMobile && appSettings.crosshairEnabled) {
+crosshairEl.style.display = 'block';
+} else {
+crosshairEl.style.display = 'none';
+}
+}
+
+function switchBaseLayer(key) {
+if (!map || !baseLayers[key]) return;
+Object.values(baseLayers).forEach(layer => {
+if (map.hasLayer(layer)) map.removeLayer(layer);
+});
+baseLayers[key].addTo(map);
+appSettings.baseLayer = key;
+currentMapIndex = mapLayersOrder.indexOf(key);
+updateMapNavigationUI();
+saveSettings({ baseLayer: key });
+}
+
+function updateMapNavigationUI() {
+const currentKey = mapLayersOrder[currentMapIndex];
+const mapNames = {
+osm: "OSM Standard",
+osmHot: "OSM Humanitarian",
+satellite: "Satellite Esri",
+satellite2: "Satellite Google",
+satellite3: "Satellite NASA",
+topo: "OpenTopoMap",
+dark: "Carto Dark",
+cartoLight: "Carto Light",
+stamenToner: "Stamen Toner",
+esriTopo: "Esri Topo",
+esriOcean: "Esri Ocean",
+esriGray: "Esri Gray"
+};
+
+document.getElementById('currentMapName').textContent = mapNames[currentKey] || currentKey;
+document.getElementById('mapCounter').textContent = `${currentMapIndex + 1}/${mapLayersOrder.length}`;
+
+const mapStyleSelect = document.getElementById('mapStyleSelect');
+if (mapStyleSelect) {
+mapStyleSelect.value = currentKey;
+}
+}
+
+function toggleMapNavigation() {
+mapNavigationActive = !mapNavigationActive;
+const navElement = document.getElementById('mapNavigation');
+const toggleBtn = document.getElementById('mapNavToggle');
+
+if (mapNavigationActive) {
+navElement.classList.add('show');
+toggleBtn.classList.add('active');
+showToast("Navigazione mappe attiva (A/D per scorrere)", "info");
+} else {
+navElement.classList.remove('show');
+toggleBtn.classList.remove('active');
+showToast("Navigazione mappe disattivata", "info");
+}
+
+saveLocalSettings();
+}
+
+function nextMap() {
+currentMapIndex = (currentMapIndex + 1) % mapLayersOrder.length;
+const nextKey = mapLayersOrder[currentMapIndex];
+switchBaseLayer(nextKey);
+showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`, "info");
+}
+
+function prevMap() {
+currentMapIndex = (currentMapIndex - 1 + mapLayersOrder.length) % mapLayersOrder.length;
+const prevKey = mapLayersOrder[currentMapIndex];
+switchBaseLayer(prevKey);
+showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`, "info");
+}
+
+function buildPopupHtml(p) {
+const title = escapeHtml(p.name || "Spot senza nome");
+const desc = p.desc ? escapeHtml(p.desc).replace(/\n/g, '<br>') : "";
+const coords = `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+const votoText = p.voto ? `${p.voto}` : "n.d.";
+const color = getRatingColor(p.voto || 0);
+const emoji = getEmojiByTipo(p.tipo);
+const spotId = p.id || '';
+const updatedInfo = p.updatedAt ? 
+`<br><small>Aggiornato: ${new Date(p.updatedAt).toLocaleDateString('it-IT')}</small>` : '';
+
+return `
+       <div class="ltu-popup">
+         <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+           <div style="font-size:36px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${emoji}</div>
+           <div style="flex:1;">
+             <div class="popup-title" style="font-size:15px; font-weight:700; margin-bottom:4px; color:#ffffff !important;">${title}</div>
+             ${p.voto ? `<span style="background:${color}; color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">${votoText} ★</span>` : ''}
+           </div>
+         </div>
+         ${desc ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:12px; color:#e5e7eb;">${desc}</div>` : ''}
+         <div style="font-size:11px; color:var(--text-dim); margin-bottom:14px;">
+           ${coords}
+           ${p.source === "extra" ? " • LTU extra" : " • Importato"}
+           ${updatedInfo}
+         </div>
+         <a href="https://www.google.com/maps?q=${p.lat},${p.lng}"
+            target="_blank"
+            rel="noopener"
+            style="background:#2563eb; color:white; padding:9px 16px; border-radius:999px; text-decoration:none; display:block; text-align:center; font-weight:600; font-size:13px;">
+           Apri in Google Maps ↗
+         </a>
+         <div style="margin-top: 8px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+           <button id="list-btn-${spotId}" data-spot-id="${spotId}" style="background: #16a34a; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📋 Lista</button>
+           ${spotId ? `
+             <button id="edit-btn-${spotId}" data-spot-id="${spotId}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
+             <button id="delete-btn-${spotId}" data-spot-id="${spotId}" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Elimina</button>
+           ` : ''}
+         </div>
+       </div>
+     `;
+}
+
+function renderMarkers() {
+if (!markersLayer) return;
+markersLayer.clearLayers();
+let bounds = [];
+
+allSpots.forEach(p => {
+const color = getRatingColor(p.voto || 0);
+const emoji = getEmojiByTipo(p.tipo);
+
+const iconHtml = `
+         <div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
+           <svg width="26" height="36" viewBox="0 0 26 36" xmlns="http://www.w3.org/2000/svg">
+             <path d="M13,0 C5.373,0 0,5.373 0,13 C0,21.938 13,36 13,36 C13,36 26,21.938 26,13 C26,5.373 20.627,0 13,0 Z"
+                   fill="${color}"
+                   stroke="none"/>
+             <circle cx="13" cy="12.5" r="8" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
+             <text x="13" y="16" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
+           </svg>
+         </div>
+       `;
+
+const icon = L.divIcon({
+html: iconHtml,
+className: "ltu-custom-pin",
+iconSize: [26, 36],
+iconAnchor: [13, 36],
+popupAnchor: [0, -32]
+});
+
+const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
+marker.bindPopup(buildPopupHtml(p));
+
+p._marker = marker;
+marker.on("click", () => {
+currentSpot = p;
+});
+bounds.push([p.lat, p.lng]);
+});
+
+if (lastAddedSpotId) {
+const newSpot = allSpots.find(s => s.id === lastAddedSpotId);
+if (newSpot && newSpot._marker) {
+map.setView([newSpot.lat, newSpot.lng], 16);
+newSpot._marker.openPopup();
+lastAddedSpotId = null;
+}
+} else if (bounds.length > 0) {
+map.fitBounds(bounds, { padding: [40, 40] });
+} else {
+map.setView([44.5, 8.9], 7);
+}
+}
+
+// =========================
+// LISTA
+// =========================
+function renderList() {
+const listEl = document.getElementById("listContent");
+const searchEl = document.getElementById("listSearch");
+const summaryEl = document.getElementById("listSummary");
+if (!listEl || !searchEl || !summaryEl) return;
+
+const q = (searchEl.value || "").toLowerCase().trim();
+let filtered = allSpots;
+
+if (q) {
+filtered = allSpots.filter(p => {
+const txt = (p.name + " " + (p.desc || "")).toLowerCase();
+return txt.includes(q);
+});
+}
+
+filtered.sort((a, b) => {
+const va = a.voto || 0;
+const vb = b.voto || 0;
+if (va !== vb) return vb - va;
+if (a.updatedAt && b.updatedAt) {
+return new Date(b.updatedAt) - new Date(a.updatedAt);
+}
+return a.name.localeCompare(b.name);
+});
+
+summaryEl.textContent = `${filtered.length} spot su ${allSpots.length} totali`;
+listEl.innerHTML = "";
+
+filtered.forEach(p => {
+const row = document.createElement("li");
+row.className = "spot-row";
+if (spotToHighlight && p.id === spotToHighlight) {
+row.classList.add("highlighted");
+}
+
+const emojiDiv = document.createElement("div");
+emojiDiv.className = "spot-emoji";
+emojiDiv.textContent = getEmojiByTipo(p.tipo);
+
+const mainDiv = document.createElement("div");
+mainDiv.className = "spot-main";
+
+const titleRow = document.createElement("div");
+titleRow.className = "spot-main-title";
+
+const title = document.createElement("strong");
+title.textContent = p.name || "(senza nome)";
+
+const vote = document.createElement("div");
+vote.className = "spot-vote-pill";
+vote.textContent = p.voto ? `${p.voto}` : "-";
+
+titleRow.appendChild(title);
+titleRow.appendChild(vote);
+
+const desc = document.createElement("div");
+desc.className = "spot-desc";
+desc.textContent = p.desc || "";
+
+const meta = document.createElement("div");
+meta.className = "spot-meta";
+
+const dateInfo = p.updatedAt ? 
+new Date(p.updatedAt).toLocaleDateString('it-IT') : 
+(p.createdAt ? new Date(p.createdAt).toLocaleDateString('it-IT') : '');
+
+meta.innerHTML = `
+         <span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>
+         <span>${p.source === "extra" ? "LTU" : "Importato"} ${dateInfo ? '• ' + dateInfo : ''}</span>
+       `;
+
+mainDiv.appendChild(titleRow);
+mainDiv.appendChild(desc);
+mainDiv.appendChild(meta);
+
+row.appendChild(emojiDiv);
+row.appendChild(mainDiv);
+
+row.addEventListener("click", () => {
+currentSpot = p;
+map.setView([p.lat, p.lng], 16);
+if (p._marker) {
+p._marker.openPopup();
+}
+document.getElementById("listPanel").classList.add("hidden");
+});
+
+listEl.appendChild(row);
+});
+}
+
+// =========================
+// ADD SPOT
+// =========================
+async function handleAddSubmit(evt) {
+evt.preventDefault();
+
+if (pendingOperations > 0) {
+showToast("Attendi il completamento delle operazioni in corso", "warning");
+return;
+}
+
+const name = document.getElementById("fieldName").value.trim();
+const desc = document.getElementById("fieldDesc").value.trim();
+const latStr = document.getElementById("fieldLat").value.trim();
+const lngStr = document.getElementById("fieldLng").value.trim();
+const votoSelect = document.getElementById("fieldVoto");
+const votoStr = votoSelect.value;
+const tipoSelect = document.getElementById("fieldTipo");
+const tipo = tipoSelect.value || getTipo(name, desc);
+
+if (!name || !latStr || !lngStr) {
+showToast("Nome, latitudine e longitudine sono obbligatori", "error");
+return;
+}
+
+const lat = parseFloat(latStr.replace(",", "."));
+const lng = parseFloat(lngStr.replace(",", "."));
+
+if (Number.isNaN(lat) || Number.isNaN(lng)) {
+showToast("Coordinate non valide", "error");
+return;
+}
+
+let voto = null;
+if (votoStr) {
+const v = parseInt(votoStr, 10);
+if (v >= 1 && v <= 6) voto = v;
+}
+
+const payload = { name, desc, lat, lng, voto, tipo };
+
+try {
+pendingOperations++;
+updateSyncStatus("Salvataggio spot...", "syncing");
+
+const result = await fetchWithRetry("/api/spots-extra", {
+method: "POST",
+headers: { 
+"Content-Type": "application/json",
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
+body: JSON.stringify(payload)
+});
+
+const saved = result.data;
+const spot = {
+id: saved.id,
+name: saved.name || name,
+desc: saved.desc || desc,
+lat: saved.lat,
+lng: saved.lng,
+voto: saved.voto != null ? saved.voto : voto,
+tipo: saved.tipo || tipo,
+source: "extra",
+createdAt: saved.createdAt || new Date().toISOString(),
+updatedAt: saved.updatedAt || new Date().toISOString()
+};
+
+allSpots.push(spot);
+lastAddedSpotId = spot.id;
+renderMarkers();
+renderList();
+
+document.getElementById("addPanel").classList.add("hidden");
+document.getElementById("addForm").reset();
+document.getElementById("fieldTipo").value = "";
+document.getElementById("fieldVoto").value = "";
+
+updateSyncStatus("Spot aggiunto con successo", "success");
+showToast("Spot aggiunto!", "success");
+
+} catch (e) {
+console.error("Errore salvataggio spot:", e);
+updateSyncStatus("Errore salvataggio spot", "error");
+
+if (e.message.includes("Spot già esistente") || e.message.includes("DUPLICATE_SPOT")) {
+showToast("Esiste già uno spot in questa posizione", "error");
+} else {
+showToast(`Errore nel salvataggio: ${e.message}`, "error");
+}
+} finally {
+pendingOperations--;
+}
+}
+
+function useCurrentPin() {
+if (temporaryPin.lat && temporaryPin.lng) {
+updateFormCoordinates(temporaryPin.lat, temporaryPin.lng);
+} else {
+const center = map.getCenter();
+updateFormCoordinates(center.lat, center.lng);
+}
+}
+
+// =========================
+// RANDOM SPOT
+// =========================
+function pickRandomSpot() {
+if (!allSpots.length) {
+showToast("Nessuno spot disponibile", "warning");
+return;
+}
+
+let candidates = allSpots;
+if (!appSettings.randomIncludeLowRated) {
+const filtered = allSpots.filter(p => !p.voto || p.voto >= 3);
+if (filtered.length) candidates = filtered;
+}
+
+const idx = Math.floor(Math.random() * candidates.length);
+const chosen = candidates[idx];
+if (!chosen) return;
+
+currentSpot = chosen;
+map.setView([chosen.lat, chosen.lng], 16);
+if (chosen._marker) {
+chosen._marker.openPopup();
+}
+showToast("Random LTU: " + (chosen.name || "spot"), "info");
+}
+
+// =========================
+// MISSIONI
+// =========================
+function openMissionPanel() {
+if (!currentSpot) {
+showToast("Seleziona prima uno spot dalla mappa", "warning");
+return;
+}
+
+const key = spotKey(currentSpot);
+const panel = document.getElementById("missionPanel");
+const titleEl = document.getElementById("missionBodyTitle");
+const coordsEl = document.getElementById("missionBodyCoords");
+const textEl = document.getElementById("missionText");
+
+titleEl.textContent = "Spot: " + (currentSpot.name || "(senza nome)");
+coordsEl.textContent = `${currentSpot.lat.toFixed(6)}, ${currentSpot.lng.toFixed(6)}`;
+textEl.value = missions[key]?.text || "";
+panel.classList.remove("hidden");
+}
+
+function saveMissionForCurrent() {
+if (!currentSpot) return;
+
+const key = spotKey(currentSpot);
+const text = document.getElementById("missionText").value;
+missions[key] = { text };
+saveMissions();
+showToast("Missione salvata", "success");
+document.getElementById("missionPanel").classList.add("hidden");
+}
+
+// =========================
+// STREETVIEW
+// =========================
+function openStreetView() {
+let lat, lng;
+
+if (temporaryPin.lat && temporaryPin.lng) {
+lat = temporaryPin.lat;
+lng = temporaryPin.lng;
+} else {
+const center = map.getCenter();
+lat = center.lat;
+lng = center.lng;
+}
+
+const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+window.open(url, '_blank', 'noopener,noreferrer');
+showToast("Street View aperto in nuova finestra", "info");
+}
+
+// =========================
+// IMPORT LINK
+// =========================
+function openImportLinkPanel() {
+document.getElementById("importLinkPanel").classList.remove("hidden");
+}
+
+async function decodeGoogleMapsLink() {
+const url = document.getElementById("linkInput").value.trim();
+if (!url) {
+showToast("Incolla un link di Google Maps", "error");
+return;
+}
+
+try {
+updateSyncStatus("Decodifica link...", "syncing");
+
+const result = await fetchWithRetry("/api/decode-gmaps-url", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ url })
+});
+
+const data = result.data;
+document.getElementById("coordsFound").textContent = `${data.lat}, ${data.lng}`;
+document.getElementById("linkResult").style.display = "block";
+
+updateFormCoordinates(data.lat, data.lng);
+
+updateSyncStatus("Coordinate estratte", "success");
+showToast("Coordinate estratte con successo!", "success");
+
+} catch (error) {
+console.error("Errore decodifica:", error);
+updateSyncStatus("Errore decodifica link", "error");
+showToast("Impossibile decodificare il link. Assicurati che sia un link Google Maps valido.", "error");
+}
+}
+
+async function addSpotFromLink() {
+const name = document.getElementById("linkSpotName").value.trim();
+const desc = document.getElementById("linkSpotDesc").value.trim();
+const lat = parseFloat(document.getElementById("fieldLat").value);
+const lng = parseFloat(document.getElementById("fieldLng").value);
+
+if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
+showToast("Nome e coordinate valide sono obbligatori", "error");
+return;
+}
+
+const voto = null;
+const tipo = getTipo(name, desc);
+const payload = { name, desc, lat, lng, voto, tipo };
+
+try {
+pendingOperations++;
+updateSyncStatus("Aggiunta spot da link...", "syncing");
+
+const result = await fetchWithRetry("/api/spots-extra", {
+method: "POST",
+headers: { 
+"Content-Type": "application/json",
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
+body: JSON.stringify(payload)
+});
+
+const saved = result.data;
+const spot = {
+id: saved.id,
+name: saved.name || name,
+desc: saved.desc || desc,
+lat: saved.lat,
+lng: saved.lng,
+voto: saved.voto,
+tipo: saved.tipo || tipo,
+source: "extra",
+createdAt: saved.createdAt || new Date().toISOString(),
+updatedAt: saved.updatedAt || new Date().toISOString()
+};
+
+allSpots.push(spot);
+lastAddedSpotId = spot.id;
+renderMarkers();
+renderList();
+
+document.getElementById("importLinkPanel").classList.add("hidden");
+document.getElementById("linkInput").value = "";
+document.getElementById("linkSpotName").value = "";
+document.getElementById("linkSpotDesc").value = "";
+document.getElementById("linkResult").style.display = "none";
+
+updateSyncStatus("Spot aggiunto dal link", "success");
+showToast("Spot aggiunto dal link!", "success");
+
+} catch (e) {
+console.error(e);
+updateSyncStatus("Errore aggiunta spot", "error");
+showToast(`Errore nel salvataggio dello spot: ${e.message}`, "error");
+} finally {
+pendingOperations--;
+}
+}
+
+// =========================
+// SETTINGS: IMPORT / EXPORT
+// =========================
+async function handleImportJson() {
+const raw = document.getElementById("importTextarea").value.trim();
+if (!raw) {
+showToast("Incolla prima il JSON", "error");
+return;
+}
+
+let obj;
+try {
+obj = JSON.parse(raw);
+} catch (e) {
+showToast("JSON non valido", "error");
+return;
+}
+
+let arr = [];
+if (Array.isArray(obj)) {
+arr = obj;
+} else if (Array.isArray(obj.places)) {
+arr = obj.places;
+} else {
+showToast("Formato JSON non riconosciuto", "error");
+return;
+}
+
+const confirmed = await showConfirm(
+"Importazione JSON",
+`Sei sicuro di voler importare ${arr.length} spot?`
+);
+
+if (!confirmed) return;
+
+let importedCount = 0;
+let errors = [];
+
+try {
+pendingOperations++;
+updateSyncStatus(`Importazione ${arr.length} spot...`, "syncing");
+
+for (let i = 0; i < arr.length; i++) {
+const place = arr[i];
+const name = place.name || place.title || "";
+const desc = place.desc || place.description || "";
+const lat = parseFloat(place.lat ?? place.latitude);
+const lng = parseFloat(place.lng ?? place.longitude);
+
+if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
+errors.push(`Spot ${i + 1}: Dati mancanti o invalidi`);
+continue;
+}
+
+const voto = place.voto != null ? parseInt(place.voto, 10) : extractVoto(desc);
+const tipo = place.tipo || getTipo(name, desc);
+const payload = { name, desc, lat, lng, voto, tipo };
+
+try {
+const result = await fetchWithRetry("/api/spots-extra", {
+method: "POST",
+headers: { 
+"Content-Type": "application/json",
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
+body: JSON.stringify(payload)
+});
+
+if (result.success) {
+const saved = result.data;
+const spot = {
+id: saved.id,
+name: saved.name || name,
+desc: saved.desc || desc,
+lat: saved.lat,
+lng: saved.lng,
+voto: saved.voto != null ? saved.voto : voto,
+tipo: saved.tipo || tipo,
+source: "extra",
+createdAt: saved.createdAt || new Date().toISOString(),
+updatedAt: saved.updatedAt || new Date().toISOString()
+};
+allSpots.push(spot);
+importedCount++;
+}
+} catch (e) {
+errors.push(`Spot ${i + 1}: ${e.message}`);
+}
+}
+
+if (importedCount > 0) {
+renderMarkers();
+renderList();
+}
+
+updateSyncStatus(`Importati ${importedCount} spot`, "success");
+
+let message = `Importati ${importedCount} spot su ${arr.length}`;
+if (errors.length > 0) {
+message += `\nErrori: ${errors.length}`;
+if (errors.length <= 5) {
+message += `\n${errors.join('\n')}`;
+}
+}
+
+showToast(message, importedCount > 0 ? "success" : "warning");
+
+} catch (error) {
+console.error("Errore importazione:", error);
+updateSyncStatus("Errore importazione", "error");
+showToast(`Errore durante l'importazione: ${error.message}`, "error");
+} finally {
+pendingOperations--;
+}
+}
+
+function handleExportCsv() {
+if (!allSpots.length) {
+showToast("Nessuno spot da esportare", "warning");
+return;
+}
+
+let csv = "Name,Description,Latitude,Longitude,Voto,Tipo,CreatedAt,UpdatedAt,Source\n";
+allSpots.forEach(p => {
+const name = (p.name || "").replace(/"/g, '""');
+const desc = (p.desc || "").replace(/"/g, '""');
+const voto = p.voto || "";
+const tipo = p.tipo || "";
+const createdAt = p.createdAt || "";
+const updatedAt = p.updatedAt || "";
+const source = p.source || "";
+csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo},${createdAt},${updatedAt},${source}\n`;
+});
+
+document.getElementById("exportTextarea").value = csv;
+showToast(`CSV generato: ${allSpots.length} spot`, "success");
+}
+
+// =========================
+// UI INIT
+// =========================
+function initUI() {
+// LISTA
+const btnList = document.getElementById("btnList");
+const btnCloseList = document.getElementById("btnCloseList");
+const listPanel = document.getElementById("listPanel");
+const listSearch = document.getElementById("listSearch");
+
+btnList.addEventListener("click", () => {
+const hidden = listPanel.classList.contains("hidden");
+if (hidden) {
+spotToHighlight = null;
+renderList();
+listPanel.classList.remove("hidden");
+} else {
+listPanel.classList.add("hidden");
+}
+});
+
+btnCloseList.addEventListener("click", () => {
+listPanel.classList.add("hidden");
+spotToHighlight = null;
+});
+
+listSearch.addEventListener("input", () => {
+renderList();
+});
+
+// ADD
+const btnAdd = document.getElementById("btnAdd");
+const btnCloseAdd = document.getElementById("btnCloseAdd");
+const addPanel = document.getElementById("addPanel");
+const addForm = document.getElementById("addForm");
+const btnUseCurrentPin = document.getElementById("btnUseCurrentPin");
+
+btnAdd.addEventListener("click", () => {
+addPanel.classList.remove("hidden");
+useCurrentPin();
+});
+
+btnCloseAdd.addEventListener("click", () => {
+addPanel.classList.add("hidden");
+});
+
+addForm.addEventListener("submit", handleAddSubmit);
+btnUseCurrentPin.addEventListener("click", (e) => {
+e.preventDefault();
+useCurrentPin();
+});
+
+// SETTINGS
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsPanel = document.getElementById("settingsPanel");
+const btnCloseSettings = document.getElementById("btnCloseSettings");
+const mapStyleSelect = document.getElementById("mapStyleSelect");
+const randomLowRatedCheckbox = document.getElementById("randomLowRatedCheckbox");
+const crosshairEnabledCheckbox = document.getElementById("crosshairEnabled");
+const btnImportJson = document.getElementById("btnImportJson");
+const btnExportCsv = document.getElementById("btnExportCsv");
+const btnSaveAllSettings = document.getElementById("btnSaveAllSettings");
+
+settingsBtn.addEventListener("click", () => {
+mapStyleSelect.value = appSettings.baseLayer || "osm";
+randomLowRatedCheckbox.checked = !!appSettings.randomIncludeLowRated;
+crosshairEnabledCheckbox.checked = !!appSettings.crosshairEnabled;
+settingsPanel.classList.remove("hidden");
+settingsBtn.classList.add("active");
+});
+
+btnCloseSettings.addEventListener("click", () => {
+settingsPanel.classList.add("hidden");
+settingsBtn.classList.remove("active");
+});
+
+mapStyleSelect.addEventListener("change", (e) => {
+const val = e.target.value;
+switchBaseLayer(val);
+showToast("Stile mappa aggiornato", "success");
+});
+
+randomLowRatedCheckbox.addEventListener("change", (e) => {
+const checked = e.target.checked;
+appSettings.randomIncludeLowRated = checked;
+showToast("Impostazione random aggiornata", "success");
+});
+
+crosshairEnabledCheckbox.addEventListener("change", (e) => {
+const checked = e.target.checked;
+appSettings.crosshairEnabled = checked;
+updateCrosshairVisibility();
+showToast("Impostazione mirino aggiornata", "success");
+});
+
+btnImportJson.addEventListener("click", handleImportJson);
+btnExportCsv.addEventListener("click", handleExportCsv);
+
+btnSaveAllSettings.addEventListener("click", () => {
+saveSettings({
+baseLayer: mapStyleSelect.value,
+randomIncludeLowRated: randomLowRatedCheckbox.checked
+});
+saveLocalSettings();
+showToast("Tutte le impostazioni salvate!", "success");
+});
+
+// RANDOM
+const btnRandom = document.getElementById("btnRandom");
+btnRandom.addEventListener("click", pickRandomSpot);
+
+// CROSSHAIR TOGGLE
+const crosshairToggleBtn = document.getElementById("crosshairToggleBtn");
+crosshairToggleBtn.addEventListener("click", () => {
+appSettings.crosshairEnabled = !appSettings.crosshairEnabled;
+updateCrosshairVisibility();
+crosshairEnabledCheckbox.checked = appSettings.crosshairEnabled;
+showToast(appSettings.crosshairEnabled ? "Mirino attivo" : "Mirino disattivato", "info");
+});
+
+// MISSIONI
+const missionBtn = document.getElementById("missionBtn");
+const missionPanel = document.getElementById("missionPanel");
+const btnCloseMission = document.getElementById("btnCloseMission");
+const btnSaveMission = document.getElementById("btnSaveMission");
+
+missionBtn.addEventListener("click", openMissionPanel);
+btnCloseMission.addEventListener("click", () => {
+missionPanel.classList.add("hidden");
+});
+btnSaveMission.addEventListener("click", saveMissionForCurrent);
+
+      // STREETVIEW
+      // STREETVIEW (ora nel dock sinistro)
+const streetviewBtn = document.getElementById("streetviewBtn");
+streetviewBtn.addEventListener("click", openStreetView);
+
+      // SALVA TUTTO (nuovo bottone nel dock sinistro)
+      const saveAllBtn = document.getElementById("saveAllBtn");
+      saveAllBtn.addEventListener("click", saveAllData);
+      
+// IMPORT LINK
+const importLinkBtn = document.getElementById("importLinkBtn");
+const importLinkPanel = document.getElementById("importLinkPanel");
+const btnCloseImportLink = document.getElementById("btnCloseImportLink");
+const btnDecodeLink = document.getElementById("btnDecodeLink");
+const btnAddFromLink = document.getElementById("btnAddFromLink");
+
+importLinkBtn.addEventListener("click", openImportLinkPanel);
+btnCloseImportLink.addEventListener("click", () => {
+importLinkPanel.classList.add("hidden");
+document.getElementById("linkInput").value = "";
+document.getElementById("linkResult").style.display = "none";
+});
+btnDecodeLink.addEventListener("click", decodeGoogleMapsLink);
+btnAddFromLink.addEventListener("click", addSpotFromLink);
+
+// DOCK TOGGLE
+const dockToggleBtn = document.getElementById("dockToggleBtn");
+const rightDock = document.getElementById("rightDock");
+
+dockToggleBtn.addEventListener("click", () => {
+rightDock.classList.toggle("collapsed");
+const isCollapsed = rightDock.classList.contains("collapsed");
+dockToggleBtn.innerHTML = isCollapsed ? "⬇️" : "⬆️";
+dockToggleBtn.title = isCollapsed ? "Espandi pulsanti" : "Comprimi pulsanti";
+});
+
+// MAP NAVIGATION
+const mapNavToggle = document.getElementById("mapNavToggle");
+const prevMapBtn = document.getElementById("prevMapBtn");
+const nextMapBtn = document.getElementById("nextMapBtn");
+
+mapNavToggle.addEventListener("click", toggleMapNavigation);
+prevMapBtn.addEventListener("click", prevMap);
+nextMapBtn.addEventListener("click", nextMap);
+
+// EVENTI PER POPUP DINAMICI
+document.addEventListener('click', async (e) => {
+if (e.target.id && e.target.id.startsWith('list-btn-')) {
+e.preventDefault();
+const spotId = e.target.dataset.spotId;
+const spot = allSpots.find(s => s.id === spotId);
+if (!spot) {
+showToast('Spot non trovato', 'error');
+return;
+}
+
+spotToHighlight = spotId;
+renderList();
+document.getElementById("listPanel").classList.remove("hidden");
+map.closePopup();
+}
+
+if (e.target.id && e.target.id.startsWith('delete-btn-')) {
+e.preventDefault();
+const spotId = e.target.dataset.spotId;
+if (!spotId) {
+showToast('Spot non modificabile', 'error');
+return;
+}
+
+const spot = allSpots.find(s => s.id === spotId);
+if (!spot) {
+showToast('Spot non trovato', 'error');
+return;
+}
+
+const confirmed = await showConfirm(
+'Eliminazione spot',
+`Sei sicuro di eliminare "${spot.name}"?\nQuesta azione non può essere annullata.`
+);
+
+if (!confirmed) return;
+
+try {
+pendingOperations++;
+updateSyncStatus("Eliminazione spot...", "syncing");
+
+const result = await fetchWithRetry(`/api/spots-extra/${spotId}`, { 
+method: 'DELETE',
+headers: {
+"Authorization": "Basic " + btoa("unit:ltunit")
+}
+});
+
+allSpots = allSpots.filter(s => s.id !== spotId);
+renderMarkers();
+renderList();
+map.closePopup();
+
+updateSyncStatus("Spot eliminato", "success");
+showToast('Spot eliminato', 'success');
+
+} catch (err) {
+console.error(err);
+updateSyncStatus("Errore eliminazione", "error");
+showToast(`Errore eliminazione: ${err.message}`, 'error');
+} finally {
+pendingOperations--;
+}
+}
+
+if (e.target.id && e.target.id.startsWith('edit-btn-')) {
+e.preventDefault();
+const spotId = e.target.dataset.spotId;
+const spot = allSpots.find(s => s.id === spotId);
+if (!spot) {
+showToast('Spot non trovato', 'error');
+return;
+}
+
+document.getElementById('editSpotId').value = spotId;
+document.getElementById('editFieldName').value = spot.name || '';
+document.getElementById('editFieldDesc').value = spot.desc || '';
+document.getElementById('editFieldVoto').value = spot.voto || '';
+document.getElementById('editFieldLat').value = spot.lat.toFixed(6);
+document.getElementById('editFieldLng').value = spot.lng.toFixed(6);
+document.getElementById('editFieldTipo').value = spot.tipo || '';
+
+document.getElementById('editPanel').classList.remove('hidden');
+currentSpot = spot;
+map.closePopup();
+}
+});
+
+// SUBMIT EDIT FORM
+const editForm = document.getElementById('editForm');
+const btnCloseEdit = document.getElementById('btnCloseEdit');
+const editPanel = document.getElementById('editPanel');
+const btnUseCurrentPinEdit = document.getElementById('btnUseCurrentPinEdit');
+
+editForm.addEventListener('submit', async (evt) => {
+evt.preventDefault();
+
+if (pendingOperations > 0) {
+showToast("Attendi il completamento delle operazioni in corso", "warning");
+return;
+}
+
+const spotId = document.getElementById('editSpotId').value;
+const name = document.getElementById('editFieldName').value.trim();
+const desc = document.getElementById('editFieldDesc').value.trim();
+const latStr = document.getElementById('editFieldLat').value.trim();
+const lngStr = document.getElementById('editFieldLng').value.trim();
+const votoSelect = document.getElementById('editFieldVoto');
+const votoStr = votoSelect.value;
+const tipoSelect = document.getElementById('editFieldTipo');
+const tipo = tipoSelect.value || getTipo(name, desc);
+
+if (!name || !latStr || !lngStr) {
+showToast('Nome, latitudine e longitudine sono obbligatori', 'error');
+return;
+}
+
+const lat = parseFloat(latStr.replace(',', '.'));
+const lng = parseFloat(lngStr.replace(',', '.'));
+
+if (Number.isNaN(lat) || Number.isNaN(lng)) {
+showToast('Coordinate non valide', 'error');
+return;
+}
+
+let voto = null;
+if (votoStr) {
+const v = parseInt(votoStr, 10);
+if (v >= 1 && v <= 6) voto = v;
+}
+
+const payload = { name, desc, lat, lng, voto, tipo };
+
+try {
+pendingOperations++;
+updateSyncStatus("Aggiornamento spot...", "syncing");
+
+const result = await fetchWithRetry(`/api/spots-extra/${spotId}`, {
+method: 'PUT',
+headers: { 
+'Content-Type': 'application/json',
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
+body: JSON.stringify(payload)
+});
+
+const updatedSpot = result.data;
+const index = allSpots.findIndex(s => s.id === spotId);
+
+if (index !== -1) {
+allSpots[index] = { 
+...allSpots[index],
+...updatedSpot,
+source: 'extra',
+updatedAt: updatedSpot.updatedAt || new Date().toISOString()
+};
+}
+
+renderMarkers();
+renderList();
+editPanel.classList.add('hidden');
+editForm.reset();
+
+updateSyncStatus("Spot aggiornato", "success");
+showToast('Spot modificato', 'success');
+
+} catch (err) {
+console.error(err);
+updateSyncStatus("Errore aggiornamento", "error");
+
+if (err.message.includes("Esiste già un altro spot")) {
+showToast("Esiste già un altro spot in questa posizione", "error");
+} else {
+showToast(`Errore nel salvataggio delle modifiche: ${err.message}`, 'error');
+}
+} finally {
+pendingOperations--;
+}
+});
+
+btnCloseEdit.addEventListener('click', () => {
+editPanel.classList.add('hidden');
+});
+
+btnUseCurrentPinEdit.addEventListener('click', (e) => {
+e.preventDefault();
+useCurrentPin();
+});
+
+// Nascondi pin temporaneo quando si apre un overlay
+document.querySelectorAll('.overlay').forEach(overlay => {
+overlay.addEventListener('click', (e) => {
+if (e.target.classList.contains('overlay-backdrop')) {
+removeTemporaryPin();
+}
+});
+});
+
+// Gestione tasti A e D per navigazione mappe
+document.addEventListener('keydown', (e) => {
+if (mapNavigationActive && (e.key === 'a' || e.key === 'A')) {
+e.preventDefault();
+prevMap();
+}
+if (mapNavigationActive && (e.key === 'd' || e.key === 'D')) {
+e.preventDefault();
+nextMap();
+}
+});
+
+// Auto-refresh ogni 30 secondi se ci sono operazioni pendenti
+setInterval(() => {
+if (pendingOperations > 0) {
+console.log("Auto-refresh per operazioni pendenti");
+reloadAllSpots();
+}
+}, 30000);
+}
+
+// =========================
+// BOOT
+// =========================
+document.addEventListener("DOMContentLoaded", async () => {
+try {
+loadMissions();
+await loadSettings();
+initMap();
+initUI();
+await reloadAllSpots();
+
+if (mapNavigationActive) {
+document.getElementById('mapNavigation').classList.add('show');
+document.getElementById('mapNavToggle').classList.add('active');
+}
+
+// Mostra notifica di caricamento completato
+setTimeout(() => {
+showToast("LTU Mappa caricata ✓", "success");
+}, 1000);
+
+} catch (error) {
+console.error("Errore inizializzazione:", error);
+showToast("Errore inizializzazione applicazione", "error");
+}
+});
+
+// Gestione offline/online
+window.addEventListener('online', () => {
+showToast("Connessione ripristinata", "success");
+reloadAllSpots();
+});
+
+window.addEventListener('offline', () => {
+showToast("Connessione persa - modalità offline", "warning");
+});
+</script>
 </body>
-</html>
