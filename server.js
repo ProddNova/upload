@@ -4,6 +4,7 @@ const fs = require("fs").promises;
 const fsSync = require("fs");
 const https = require("https");
 const { v4: uuidv4 } = require("uuid");
+const { MongoClient, ObjectId } = require("mongodb");
 
 const app = express();
 
@@ -12,341 +13,382 @@ const app = express();
 // ===============================
 const USERNAME = process.env.APP_USERNAME || "unit";
 const PASSWORD = process.env.APP_PASSWORD || "ltunit";
-const EXTRA_FILE = path.join(__dirname, "spots-extra.json");
-const CSV_FILE = path.join(__dirname, "spots.csv");
-const SETTINGS_FILE = path.join(__dirname, "settings.json");
-const UNSAVED_SPOTS_FILE = path.join(__dirname, "unsaved-spots.json");
-const BACKUP_DIR = path.join(__dirname, "backups");
-const SPOT_BACKUP_DIR = path.join(__dirname, "spot-backups");
 
-// Crea le directory se non esistono
-async function ensureDirectories() {
-  const dirs = [BACKUP_DIR, SPOT_BACKUP_DIR];
-  for (const dir of dirs) {
-    try {
-      await fs.mkdir(dir, { recursive: true });
-    } catch (error) {
-      console.warn(`Impossibile creare directory ${dir}:`, error.message);
+// MongoDB Configuration - USA LA TUA STRINGA
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://ltunit:ltunit420@cluster0.bqs9ecb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "ltu-database";
+
+let db = null;
+let mongoClient = null;
+let isMongoConnected = false;
+
+// ===============================
+// FUNZIONI CSV PER IMPORT INIZIALE
+// ===============================
+function parseCSVRow(line) {
+  const result = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === "," && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += char;
     }
+  }
+  result.push(current);
+  return result;
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const rows = [];
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    rows.push(parseCSVRow(line));
+  }
+  return rows;
+}
+
+function extractVoto(desc) {
+  if (!desc) return null;
+  const match = desc.match(/Voto:\s*([0-9]+)\s*\/\s*6/i);
+  if (!match) return null;
+  const v = parseInt(match[1], 10);
+  if (v >= 1 && v <= 6) return v;
+  return null;
+}
+
+function getTipo(name, desc) {
+  const text = ((name || '') + ' ' + (desc || '')).toLowerCase();
+  
+  if (text.includes("hotel") || text.includes("ostello") || text.includes("residence")) return "hotel";
+  if (text.includes("villa") || text.includes("villone") || text.includes("villino")) return "villa";
+  if (text.includes("casa") || text.includes("casetta") || text.includes("casone")) return "casa";
+  if (text.includes("fabbrica") || text.includes("capannone") || text.includes("magazzino")) return "industria";
+  if (text.includes("scuola") || text.includes("itis")) return "scuola";
+  if (text.includes("chiesa")) return "chiesa";
+  if (text.includes("colonia")) return "colonia";
+  if (text.includes("prigione") || text.includes("manicomio") || text.includes("ospedale")) return "istituzione";
+  if (text.includes("discoteca") || text.includes("bar") || text.includes("ristorante")) return "svago";
+  if (text.includes("castello")) return "castello";
+  if (text.includes("nave")) return "nave";
+  if (text.includes("diga")) return "diga";
+  if (text.includes("base nato")) return "militare";
+  return "altro";
+}
+
+// ===============================
+// CONNESSIONE E INIZIALIZZAZIONE MONGODB
+// ===============================
+async function connectToMongoDB() {
+  try {
+    console.log(`🔌 Tentativo connessione MongoDB...`);
+    console.log(`📡 URI: ${MONGODB_URI.replace(/ltunit420/, '******')}`);
+    
+    mongoClient = new MongoClient(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 15000
+    });
+    
+    await mongoClient.connect();
+    db = mongoClient.db(MONGODB_DB_NAME);
+    
+    console.log(`✅ Connesso a MongoDB! Database: ${MONGODB_DB_NAME}`);
+    
+    // Crea collection se non esistono
+    const collections = await db.listCollections().toArray();
+    const collectionNames = collections.map(c => c.name);
+    
+    if (!collectionNames.includes('spots')) {
+      await db.createCollection('spots');
+      console.log(`📁 Collection 'spots' creata`);
+    }
+    
+    if (!collectionNames.includes('settings')) {
+      await db.createCollection('settings');
+      console.log(`📁 Collection 'settings' creata`);
+    }
+    
+    // Crea indici per performance
+    try {
+      await db.collection('spots').createIndex({ lat: 1, lng: 1 });
+      await db.collection('spots').createIndex({ id: 1 }, { unique: true });
+      console.log(`📊 Indici creati per spots`);
+    } catch (e) {
+      console.log(`ℹ️  Indici già esistenti`);
+    }
+    
+    isMongoConnected = true;
+    return true;
+    
+  } catch (error) {
+    console.error(`❌ ERRORE connessione MongoDB:`, error.message);
+    console.log(`⚠️  Verifica:`);
+    console.log(`   1. Network Access su Atlas (aggiungi 0.0.0.0/0)`);
+    console.log(`   2. Username/password corretti`);
+    console.log(`   3. Cluster attivo`);
+    isMongoConnected = false;
+    return false;
   }
 }
 
+// ===============================
+// IMPORT INIZIALE DA CSV
+// ===============================
+async function importInitialCSV() {
+  try {
+    console.log(`📥 Verifico import iniziale da CSV...`);
+    
+    // Conta spot nel database
+    const spotCount = await db.collection('spots').countDocuments();
+    
+    if (spotCount > 0) {
+      console.log(`📊 Database già contiene ${spotCount} spot, salto import`);
+      return { imported: 0, skipped: spotCount };
+    }
+    
+    // Leggi CSV locale
+    const csvPath = path.join(__dirname, 'spots.csv');
+    if (!fsSync.existsSync(csvPath)) {
+      console.log(`📁 CSV non trovato: ${csvPath}`);
+      return { imported: 0, skipped: 0 };
+    }
+    
+    const csvContent = await fs.readFile(csvPath, 'utf8');
+    const rows = parseCSV(csvContent);
+    
+    if (rows.length <= 1) {
+      console.log(`📁 CSV vuoto o solo header`);
+      return { imported: 0, skipped: 0 };
+    }
+    
+    const header = rows[0];
+    const dataRows = rows.slice(1);
+    
+    console.log(`📖 Letti ${dataRows.length} spot da CSV`);
+    
+    const spotsToImport = [];
+    let importedCount = 0;
+    
+    for (const row of dataRows) {
+      if (row.length < 4) continue;
+      
+      const name = row[0] || "";
+      const desc = row[1] || "";
+      const lat = parseFloat(row[2]);
+      const lng = parseFloat(row[3]);
+      
+      if (isNaN(lat) || isNaN(lng)) continue;
+      
+      const voto = extractVoto(desc);
+      const tipo = getTipo(name, desc);
+      
+      const spot = {
+        id: uuidv4(),
+        name: name.trim(),
+        desc: desc.trim(),
+        lat,
+        lng,
+        voto,
+        tipo,
+        source: "csv-import",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: "system-import",
+        version: 1,
+        status: "active"
+      };
+      
+      spotsToImport.push(spot);
+    }
+    
+    if (spotsToImport.length > 0) {
+      console.log(`🔄 Importo ${spotsToImport.length} spot nel database...`);
+      const result = await db.collection('spots').insertMany(spotsToImport);
+      importedCount = result.insertedCount;
+      console.log(`✅ Importati ${importedCount} spot da CSV`);
+    }
+    
+    return { imported: importedCount, skipped: dataRows.length - importedCount };
+    
+  } catch (error) {
+    console.error(`❌ Errore import CSV:`, error.message);
+    return { imported: 0, skipped: 0, error: error.message };
+  }
+}
+
+// ===============================
+// FUNZIONI DATABASE
+// ===============================
+async function getAllSpots() {
+  if (isMongoConnected && db) {
+    try {
+      return await db.collection('spots')
+        .find({})
+        .sort({ updatedAt: -1 })
+        .toArray();
+    } catch (error) {
+      console.error(`❌ Errore lettura spots:`, error);
+      return [];
+    }
+  }
+  return [];
+}
+
+async function getSpotById(id) {
+  if (isMongoConnected && db) {
+    try {
+      return await db.collection('spots').findOne({ id });
+    } catch (error) {
+      console.error(`❌ Errore get spot by ID:`, error);
+      return null;
+    }
+  }
+  return null;
+}
+
+async function createSpot(spot) {
+  if (isMongoConnected && db) {
+    try {
+      const result = await db.collection('spots').insertOne(spot);
+      console.log(`✅ Spot creato in DB: ${spot.id} - ${spot.name}`);
+      return spot;
+    } catch (error) {
+      console.error(`❌ Errore creazione spot:`, error);
+      
+      // Se è errore di duplicato, ritorna lo spot esistente
+      if (error.code === 11000) {
+        const existing = await db.collection('spots').findOne({ id: spot.id });
+        if (existing) {
+          console.log(`⚠️  Spot già esistente, ritorno quello`);
+          return existing;
+        }
+      }
+      
+      throw error;
+    }
+  } else {
+    throw new Error("Database non connesso");
+  }
+}
+
+async function updateSpot(id, updates) {
+  if (isMongoConnected && db) {
+    try {
+      const result = await db.collection('spots').updateOne(
+        { id },
+        { $set: { ...updates, updatedAt: new Date().toISOString() } }
+      );
+      
+      if (result.matchedCount === 0) {
+        throw new Error("Spot non trovato");
+      }
+      
+      console.log(`✅ Spot aggiornato: ${id}`);
+      return await getSpotById(id);
+    } catch (error) {
+      console.error(`❌ Errore aggiornamento spot:`, error);
+      throw error;
+    }
+  } else {
+    throw new Error("Database non connesso");
+  }
+}
+
+async function deleteSpot(id) {
+  if (isMongoConnected && db) {
+    try {
+      const result = await db.collection('spots').deleteOne({ id });
+      
+      if (result.deletedCount === 0) {
+        throw new Error("Spot non trovato");
+      }
+      
+      console.log(`✅ Spot eliminato: ${id}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Errore eliminazione spot:`, error);
+      throw error;
+    }
+  } else {
+    throw new Error("Database non connesso");
+  }
+}
+
+async function checkForDuplicates(lat, lng, excludeId = null) {
+  if (isMongoConnected && db) {
+    try {
+      const query = {
+        lat: { $gte: lat - 0.0001, $lte: lat + 0.0001 },
+        lng: { $gte: lng - 0.0001, $lte: lng + 0.0001 }
+      };
+      
+      if (excludeId) {
+        query.id = { $ne: excludeId };
+      }
+      
+      return await db.collection('spots').findOne(query);
+    } catch (error) {
+      console.error(`❌ Errore controllo duplicati:`, error);
+      return null;
+    }
+  }
+  return null;
+}
+
+// ===============================
+// SETTINGS
+// ===============================
 const DEFAULT_SETTINGS = {
-  version: 2,
+  version: 3,
   baseLayer: "osm",
   mapStyle: "default",
   randomIncludeLowRated: false,
-  lastUpdated: null
+  lastUpdated: new Date().toISOString(),
+  database: "mongodb"
 };
 
-// Locks per prevenire race conditions
-const locks = {
-  spots: { locked: false, queue: [] },
-  settings: { locked: false, queue: [] },
-  unsaved: { locked: false, queue: [] }
-};
-
-// ===============================
-// UTILITY FUNCTIONS CON LOCKING ROBUSTO
-// ===============================
-async function acquireLock(resource) {
-  return new Promise((resolve, reject) => {
-    const lock = locks[resource];
-    
-    const tryAcquire = () => {
-      if (!lock.locked) {
-        lock.locked = true;
-        resolve(() => {
-          lock.locked = false;
-          if (lock.queue.length > 0) {
-            const next = lock.queue.shift();
-            setTimeout(next, 0);
-          }
-        });
-      } else {
-        lock.queue.push(tryAcquire);
-      }
-    };
-    
-    tryAcquire();
-    
-    // Timeout dopo 10 secondi per evitare deadlock
-    setTimeout(() => {
-      if (lock.queue.includes(tryAcquire)) {
-        const index = lock.queue.indexOf(tryAcquire);
-        if (index > -1) lock.queue.splice(index, 1);
-        reject(new Error(`Timeout acquiring lock for ${resource}`));
-      }
-    }, 10000);
-  });
-}
-
-async function withLock(resource, operation) {
-  const release = await acquireLock(resource);
-  try {
-    const result = await operation();
-    return result;
-  } finally {
-    release();
-  }
-}
-
-async function safeReadJson(filePath, defaultValue = null) {
-  try {
-    const data = await fs.readFile(filePath, 'utf8');
-    const parsed = JSON.parse(data);
-    
-    // Validazione base
-    if (Array.isArray(defaultValue) && !Array.isArray(parsed)) {
-      console.warn(`Invalid data format in ${filePath}, returning default`);
-      return defaultValue;
-    }
-    
-    return parsed;
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      // File non esiste, crea con valore di default
-      try {
-        await safeWriteJson(filePath, defaultValue);
-        return defaultValue;
-      } catch (writeError) {
-        console.error(`Failed to create ${filePath}:`, writeError);
-        return defaultValue;
-      }
-    }
-    
-    console.error(`Error reading ${filePath}:`, error);
-    return defaultValue;
-  }
-}
-
-async function safeWriteJson(filePath, data) {
-  const tempFile = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).substr(2, 9)}`;
-  
-  try {
-    // Scrive su file temporaneo
-    await fs.writeFile(tempFile, JSON.stringify(data, null, 2), 'utf8');
-    
-    // Verifica che il file sia valido JSON
-    const verifyData = await fs.readFile(tempFile, 'utf8');
-    JSON.parse(verifyData); // Se fallisce, throw
-    
-    // Backup del file originale se esiste
+async function getSettings() {
+  if (isMongoConnected && db) {
     try {
-      if (fsSync.existsSync(filePath)) {
-        const backupFile = `${filePath}.backup.${Date.now()}`;
-        await fs.copyFile(filePath, backupFile);
-      }
-    } catch (e) {
-      // Ignora errori di backup
-    }
-    
-    // Rinomina atomico
-    await fs.rename(tempFile, filePath);
-    
-    console.log(`File salvato con successo: ${filePath}`);
-    return true;
-  } catch (error) {
-    // Cleanup in caso di errore
-    try {
-      await fs.unlink(tempFile).catch(() => {});
-    } catch (e) {}
-    
-    console.error(`Error writing ${filePath}:`, error);
-    throw error;
-  }
-}
-
-// Funzione per salvataggio spot con backup
-async function saveSpotWithBackup(spot) {
-  const backupFile = path.join(SPOT_BACKUP_DIR, `spot-${Date.now()}-${spot.id}.json`);
-  try {
-    await fs.writeFile(backupFile, JSON.stringify(spot, null, 2), 'utf8');
-    console.log(`Backup spot creato: ${backupFile}`);
-  } catch (error) {
-    console.warn(`Impossibile creare backup per spot ${spot.id}:`, error.message);
-  }
-}
-
-// ===============================
-// FUNZIONI CSV
-// ===============================
-async function syncSpotsToCSV() {
-  try {
-    console.log(`[CSV SYNC] Sincronizzazione CSV in corso...`);
-    
-    // Leggi tutti gli spot da JSON
-    const jsonSpots = await safeReadJson(EXTRA_FILE, []);
-    
-    if (!Array.isArray(jsonSpots) || jsonSpots.length === 0) {
-      console.log(`[CSV SYNC] Nessuno spot da sincronizzare`);
-      return;
-    }
-    
-    // Leggi gli spot esistenti dal CSV per non sovrascrivere quelli importati manualmente
-    let existingCSVSpots = [];
-    try {
-      if (fsSync.existsSync(CSV_FILE)) {
-        const csvContent = await fs.readFile(CSV_FILE, 'utf8');
-        const lines = csvContent.trim().split('\n');
-        
-        // Salva l'intestazione
-        const header = lines[0];
-        
-        // Processa le righe esistenti
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-          
-          // Parsing semplice CSV (supporta virgolette)
-          const parts = [];
-          let currentPart = '';
-          let inQuotes = false;
-          
-          for (let char of line) {
-            if (char === '"') {
-              inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-              parts.push(currentPart);
-              currentPart = '';
-            } else {
-              currentPart += char;
-            }
-          }
-          parts.push(currentPart);
-          
-          if (parts.length >= 4) {
-            existingCSVSpots.push({
-              name: parts[0].replace(/"/g, ''),
-              desc: parts[1].replace(/"/g, ''),
-              lat: parseFloat(parts[2]),
-              lng: parseFloat(parts[3])
-            });
-          }
-        }
-      }
+      const settings = await db.collection('settings').findOne({});
+      return settings || DEFAULT_SETTINGS;
     } catch (error) {
-      console.warn(`[CSV SYNC] Errore lettura CSV esistente:`, error.message);
+      console.error(`❌ Errore lettura settings:`, error);
+      return DEFAULT_SETTINGS;
     }
-    
-    // Filtra gli spot JSON che non sono già nel CSV
-    const newSpots = jsonSpots.filter(jsonSpot => {
-      return !existingCSVSpots.some(csvSpot => 
-        Math.abs(csvSpot.lat - jsonSpot.lat) < 0.00001 && 
-        Math.abs(csvSpot.lng - jsonSpot.lng) < 0.00001
-      );
-    });
-    
-    if (newSpots.length === 0) {
-      console.log(`[CSV SYNC] Nessuno nuovo spot da aggiungere al CSV`);
-      return;
-    }
-    
-    // Formatta i nuovi spot per CSV
-    const csvLines = [];
-    newSpots.forEach(spot => {
-      const name = spot.name || "Spot senza nome";
-      let desc = spot.desc || "";
-      
-      // Aggiungi metadati alla descrizione
-      if (spot.voto) {
-        desc += (desc ? " | " : "") + `Voto: ${spot.voto}/6`;
-      }
-      if (spot.tipo) {
-        desc += (desc ? " | " : "") + `Tipo: ${spot.tipo}`;
-      }
-      if (spot.createdAt) {
-        const date = new Date(spot.createdAt).toLocaleDateString('it-IT');
-        desc += (desc ? " | " : "") + `Aggiunto: ${date}`;
-      }
-      
-      // Aggiungi prefisso per identificare gli spot LTU
-      desc = `Importato LTU | ${desc}`;
-      
-      // Escape delle virgolette
-      const escapedName = `"${name.replace(/"/g, '""')}"`;
-      const escapedDesc = `"${desc.replace(/"/g, '""')}"`;
-      
-      csvLines.push(`${escapedName},${escapedDesc},${spot.lat},${spot.lng}`);
-    });
-    
-    // Prepara il contenuto CSV completo
-    let csvContent = "Name,Description,Latitude,Longitude\n";
-    
-    // Aggiungi prima gli spot esistenti
-    existingCSVSpots.forEach(spot => {
-      const escapedName = `"${spot.name.replace(/"/g, '""')}"`;
-      const escapedDesc = `"${spot.desc.replace(/"/g, '""')}"`;
-      csvContent += `${escapedName},${escapedDesc},${spot.lat},${spot.lng}\n`;
-    });
-    
-    // Aggiungi i nuovi spot
-    csvContent += csvLines.join('\n');
-    
-    // Salva il file CSV
-    await fs.writeFile(CSV_FILE, csvContent, 'utf8');
-    
-    console.log(`[CSV SYNC] CSV aggiornato: aggiunti ${newSpots.length} spot`);
-    console.log(`[CSV SYNC] Totale spot nel CSV: ${existingCSVSpots.length + newSpots.length}`);
-    
-  } catch (error) {
-    console.error(`[CSV SYNC] Errore sincronizzazione CSV:`, error);
-    throw error;
   }
+  return DEFAULT_SETTINGS;
 }
 
-// Funzione per leggere CSV esistente
-async function readCSV() {
-  try {
-    if (!fsSync.existsSync(CSV_FILE)) {
-      return { header: "Name,Description,Latitude,Longitude", spots: [] };
+async function saveSettings(settings) {
+  if (isMongoConnected && db) {
+    try {
+      await db.collection('settings').updateOne(
+        {},
+        { $set: { ...settings, lastUpdated: new Date().toISOString() } },
+        { upsert: true }
+      );
+      console.log(`✅ Settings salvati`);
+      return settings;
+    } catch (error) {
+      console.error(`❌ Errore salvataggio settings:`, error);
+      throw error;
     }
-    
-    const content = await fs.readFile(CSV_FILE, 'utf8');
-    const lines = content.trim().split('\n');
-    
-    if (lines.length === 0) {
-      return { header: "Name,Description,Latitude,Longitude", spots: [] };
-    }
-    
-    const header = lines[0];
-    const spots = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      
-      // Parsing CSV con virgolette
-      const parts = [];
-      let currentPart = '';
-      let inQuotes = false;
-      
-      for (let char of line) {
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          parts.push(currentPart);
-          currentPart = '';
-        } else {
-          currentPart += char;
-        }
-      }
-      parts.push(currentPart);
-      
-      if (parts.length >= 4) {
-        spots.push({
-          name: parts[0].replace(/"/g, ''),
-          desc: parts[1].replace(/"/g, ''),
-          lat: parseFloat(parts[2]),
-          lng: parseFloat(parts[3])
-        });
-      }
-    }
-    
-    return { header, spots };
-  } catch (error) {
-    console.error(`Errore lettura CSV:`, error);
-    return { header: "Name,Description,Latitude,Longitude", spots: [] };
+  } else {
+    throw new Error("Database non connesso");
   }
 }
 
@@ -357,11 +399,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// CORS middleware completo
+// CORS middleware
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  // Permetti qualsiasi origine in sviluppo, o specifica in produzione
   if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
     res.header('Access-Control-Allow-Origin', origin || '*');
   } else {
@@ -383,11 +424,10 @@ app.use((req, res, next) => {
 // Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
-  const timestamp = new Date().toISOString();
   
   res.on('finish', () => {
     const duration = Date.now() - start;
-    console.log(`${timestamp} ${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
+    console.log(`${new Date().toISOString()} ${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
   });
   
   next();
@@ -395,7 +435,6 @@ app.use((req, res, next) => {
 
 // Middleware di autenticazione
 const authMiddleware = (req, res, next) => {
-  // Skip auth per GET requests (solo lettura)
   if (req.method === 'GET') {
     return next();
   }
@@ -441,98 +480,24 @@ const authMiddleware = (req, res, next) => {
 };
 
 // ===============================
-// FUNZIONI HELPER
-// ===============================
-function getTipo(name, desc) {
-  const text = ((name || '') + ' ' + (desc || '')).toLowerCase();
-  
-  const patterns = {
-    hotel: ['hotel', 'ostello', 'residence', 'albergo', 'motel', 'bed and breakfast', 'b&b'],
-    villa: ['villa', 'villone', 'villino', 'villetta', 'ville', 'villette'],
-    casa: ['casa', 'casetta', 'casone', 'case', 'cascina', 'casolare', 'abitazione', 'appartamento'],
-    industria: ['fabbrica', 'capannone', 'magazzino', 'distilleria', 'cantiere', 'impresa edile', 'stazione', 'centro commerciale', 'officina', 'stabilimento', 'deposito'],
-    scuola: ['scuola', 'itis', 'liceo', 'istituto', 'università', 'college', 'asilo'],
-    chiesa: ['chiesa', 'cattedrale', 'basilica', 'santuario', 'duomo', 'tempio'],
-    colonia: ['colonia', 'campeggio', 'villaggio vacanze'],
-    istituzione: ['prigione', 'manicomio', 'ospedale', 'clinica', 'convento', 'monastero', 'carcere', 'caserma'],
-    svago: ['discoteca', 'bar', 'ristorante', 'pizzeria', 'cinema', 'teatro', 'pub', 'locale'],
-    castello: ['castello', 'forte', 'fortezza', 'rocca', 'palazzo'],
-    nave: ['nave', 'barca', 'imbarcazione', 'relitto', 'traghetto'],
-    diga: ['diga', 'sbarramento', 'bacino'],
-    militare: ['base nato', 'militare', 'caserma', 'poligono', 'installazione militare']
-  };
-  
-  for (const [tipo, keywords] of Object.entries(patterns)) {
-    if (keywords.some(keyword => text.includes(keyword))) {
-      return tipo;
-    }
-  }
-  
-  return "altro";
-}
-
-// Funzione per salvare spot non salvati
-async function saveUnsavedSpot(spotData, error) {
-  return await withLock('unsaved', async () => {
-    try {
-      let unsavedSpots = await safeReadJson(UNSAVED_SPOTS_FILE, []);
-      
-      const unsavedSpot = {
-        ...spotData,
-        error: error.message || error.toString(),
-        timestamp: new Date().toISOString(),
-        saved: false,
-        attempts: 1
-      };
-      
-      const existingIndex = unsavedSpots.findIndex(s => 
-        Math.abs(s.lat - spotData.lat) < 0.0001 && 
-        Math.abs(s.lng - spotData.lng) < 0.0001
-      );
-      
-      if (existingIndex !== -1) {
-        unsavedSpots[existingIndex].attempts++;
-        unsavedSpots[existingIndex].lastError = error.message || error.toString();
-        unsavedSpots[existingIndex].timestamp = new Date().toISOString();
-      } else {
-        unsavedSpots.push(unsavedSpot);
-      }
-      
-      if (unsavedSpots.length > 50) {
-        unsavedSpots = unsavedSpots.slice(-50);
-      }
-      
-      await safeWriteJson(UNSAVED_SPOTS_FILE, unsavedSpots);
-      console.log(`Spot non salvato archiviato: ${spotData.name} (${spotData.lat}, ${spotData.lng}) - ${error.message}`);
-      
-      return unsavedSpot;
-    } catch (e) {
-      console.error('Errore nel salvataggio dello spot non salvato:', e);
-      return null;
-    }
-  });
-}
-
-// ===============================
-// API: SPOT EXTRA CON SALVATAGGIO PERMANENTE E CSV
+// API ENDPOINTS
 // ===============================
 app.get("/api/spots-extra", async (req, res) => {
   try {
-    const data = await withLock('spots', async () => {
-      return await safeReadJson(EXTRA_FILE, []);
-    });
+    const spots = await getAllSpots();
     
     res.json({
       success: true,
-      data: Array.isArray(data) ? data : [],
-      count: Array.isArray(data) ? data.length : 0,
-      timestamp: new Date().toISOString()
+      data: spots,
+      count: spots.length,
+      timestamp: new Date().toISOString(),
+      database: isMongoConnected ? "mongodb" : "offline"
     });
   } catch (err) {
-    console.error("Errore lettura spots-extra:", err);
+    console.error("❌ Errore lettura spots:", err);
     res.status(500).json({ 
       success: false,
-      error: "Errore lettura spots-extra",
+      error: "Errore lettura spots",
       message: err.message,
       code: "READ_ERROR"
     });
@@ -543,9 +508,9 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
   try {
     const { name, desc, lat, lng, voto, tipo } = req.body || {};
     
-    console.log(`[POST] Salvataggio spot: ${name} (${lat}, ${lng}) - User: ${req.user?.name || 'anonymous'}`);
+    console.log(`[POST] Nuovo spot: ${name} (${lat}, ${lng})`);
     
-    // Validazione input
+    // Validazione
     if (!name || name.trim().length === 0) {
       return res.status(400).json({ 
         success: false,
@@ -565,7 +530,7 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
     
-    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+    if (isNaN(latNum) || isNaN(lngNum)) {
       return res.status(400).json({ 
         success: false,
         error: "Coordinate non valide",
@@ -576,7 +541,7 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
     if (latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
       return res.status(400).json({ 
         success: false,
-        error: "Coordinate fuori range valido",
+        error: "Coordinate fuori range",
         code: "COORDINATES_OUT_OF_RANGE"
       });
     }
@@ -585,6 +550,17 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
     if (voto != null && voto !== "" && !isNaN(voto)) {
       const v = parseInt(voto, 10);
       if (v >= 1 && v <= 6) votoNum = v;
+    }
+    
+    // Verifica duplicati
+    const duplicate = await checkForDuplicates(latNum, lngNum);
+    if (duplicate) {
+      return res.status(409).json({
+        success: false,
+        error: "Esiste già uno spot in questa posizione",
+        existingSpot: duplicate,
+        code: "DUPLICATE_SPOT"
+      });
     }
     
     const newSpot = {
@@ -602,75 +578,25 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
       status: "active"
     };
 
-    const result = await withLock('spots', async () => {
-      let current = await safeReadJson(EXTRA_FILE, []);
-      
-      if (!Array.isArray(current)) {
-        console.warn("Resetting spots data: not an array");
-        current = [];
-      }
-      
-      // Verifica duplicati (tolleranza di 10 metri)
-      const duplicate = current.find(spot => {
-        const latDiff = Math.abs(spot.lat - latNum);
-        const lngDiff = Math.abs(spot.lng - lngNum);
-        return latDiff < 0.0001 && lngDiff < 0.0001;
-      });
-      
-      if (duplicate) {
-        throw {
-          status: 409,
-          message: "Esiste già uno spot in questa posizione",
-          existingSpot: duplicate
-        };
-      }
-      
-      current.push(newSpot);
-      
-      // SALVATAGGIO PERMANENTE SUL FILE JSON
-      await safeWriteJson(EXTRA_FILE, current);
-      
-      // SINCRONIZZAZIONE CON CSV
-      try {
-        await syncSpotsToCSV();
-        console.log(`[CSV SYNC] Spot sincronizzato con CSV: ${newSpot.name}`);
-      } catch (csvError) {
-        console.warn(`[CSV WARN] Errore sincronizzazione CSV: ${csvError.message}`);
-        // Non blocchiamo l'operazione se il CSV fallisce
-      }
-      
-      // Backup individuale dello spot
-      await saveSpotWithBackup(newSpot);
-      
-      console.log(`Spot salvato permanentemente: ${newSpot.id} - ${newSpot.name}`);
-      
-      return {
-        spot: newSpot,
-        totalCount: current.length
-      };
-    });
+    const savedSpot = await createSpot(newSpot);
+    const totalSpots = await db.collection('spots').countDocuments();
     
     res.status(201).json({
       success: true,
-      message: "Spot aggiunto con successo e salvato permanentemente",
-      data: result.spot,
-      totalSpots: result.totalCount,
-      timestamp: newSpot.createdAt
+      message: "Spot aggiunto con successo",
+      data: savedSpot,
+      totalSpots: totalSpots,
+      timestamp: newSpot.createdAt,
+      database: "mongodb"
     });
     
   } catch (err) {
-    console.error("Errore salvataggio spot:", err);
+    console.error("❌ Errore salvataggio spot:", err);
     
-    // Salva lo spot non salvato per recupero successivo
-    if (req.body) {
-      await saveUnsavedSpot(req.body, err);
-    }
-    
-    if (err.status === 409) {
+    if (err.message.includes("duplicate")) {
       return res.status(409).json({
         success: false,
-        error: err.message,
-        existingSpot: err.existingSpot,
+        error: "Spot già esistente",
         code: "DUPLICATE_SPOT"
       });
     }
@@ -696,59 +622,24 @@ app.delete("/api/spots-extra/:id", authMiddleware, async (req, res) => {
       });
     }
     
-    const result = await withLock('spots', async () => {
-      let current = await safeReadJson(EXTRA_FILE, []);
-      
-      if (!Array.isArray(current)) {
-        console.warn("Resetting spots data: not an array");
-        current = [];
-      }
-      
-      const initialLength = current.length;
-      const filtered = current.filter(spot => spot.id !== spotId);
-      
-      if (filtered.length === initialLength) {
-        throw {
-          status: 404,
-          message: "Spot non trovato"
-        };
-      }
-      
-      // SALVATAGGIO PERMANENTE DEL FILE JSON AGGIORNATO
-      await safeWriteJson(EXTRA_FILE, filtered);
-      
-      // SINCRONIZZAZIONE CON CSV
-      try {
-        await syncSpotsToCSV();
-        console.log(`[CSV SYNC] CSV aggiornato dopo eliminazione`);
-      } catch (csvError) {
-        console.warn(`[CSV WARN] Errore sincronizzazione CSV: ${csvError.message}`);
-      }
-      
-      console.log(`Spot eliminato permanentemente: ${spotId}`);
-      
-      return {
-        deletedId: spotId,
-        previousCount: initialLength,
-        newCount: filtered.length
-      };
-    });
+    await deleteSpot(spotId);
+    const remainingCount = await db.collection('spots').countDocuments();
     
     console.log(`[DELETE] Spot eliminato: ${spotId}`);
     
     res.json({
       success: true,
-      message: "Spot eliminato con successo e file aggiornati",
-      deletedId: result.deletedId,
-      previousCount: result.previousCount,
-      remainingCount: result.newCount,
-      timestamp: new Date().toISOString()
+      message: "Spot eliminato con successo",
+      deletedId: spotId,
+      remainingCount: remainingCount,
+      timestamp: new Date().toISOString(),
+      database: "mongodb"
     });
     
   } catch (err) {
-    console.error("Errore eliminazione spot:", err);
+    console.error("❌ Errore eliminazione spot:", err);
     
-    if (err.status === 404) {
+    if (err.message === "Spot non trovato") {
       return res.status(404).json({
         success: false,
         error: err.message,
@@ -770,7 +661,7 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
     const spotId = req.params.id;
     const { name, desc, lat, lng, voto, tipo } = req.body || {};
     
-    console.log(`[PUT] Aggiornamento spot ${spotId}: ${name} - User: ${req.user?.name || 'anonymous'}`);
+    console.log(`[PUT] Aggiornamento spot ${spotId}: ${name}`);
     
     if (!spotId || spotId.length < 10) {
       return res.status(400).json({
@@ -799,7 +690,7 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
     
-    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+    if (isNaN(latNum) || isNaN(lngNum)) {
       return res.status(400).json({
         success: false,
         error: "Coordinate non valide",
@@ -813,106 +704,56 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
       if (v >= 1 && v <= 6) votoNum = v;
     }
     
-    const result = await withLock('spots', async () => {
-      let current = await safeReadJson(EXTRA_FILE, []);
-      
-      if (!Array.isArray(current)) {
-        console.warn("Resetting spots data: not an array");
-        current = [];
-      }
-      
-      const index = current.findIndex(spot => spot.id === spotId);
-      
-      if (index === -1) {
-        throw {
-          status: 404,
-          message: "Spot non trovato"
-        };
-      }
-      
-      // Verifica duplicati (escludendo lo spot corrente)
-      const duplicate = current.find((spot, idx) => {
-        if (idx === index) return false;
-        const latDiff = Math.abs(spot.lat - latNum);
-        const lngDiff = Math.abs(spot.lng - lngNum);
-        return latDiff < 0.0001 && lngDiff < 0.0001;
-      });
-      
-      if (duplicate) {
-        throw {
-          status: 409,
-          message: "Esiste già un altro spot in questa posizione",
-          existingSpot: duplicate
-        };
-      }
-      
-      const updatedSpot = {
-        ...current[index],
-        name: String(name).trim(),
-        desc: desc !== undefined ? String(desc).trim() : current[index].desc,
-        lat: latNum,
-        lng: lngNum,
-        voto: votoNum,
-        tipo: tipo ? String(tipo) : getTipo(name, desc || current[index].desc),
-        updatedAt: new Date().toISOString(),
-        updatedBy: req.user ? req.user.name : "anonymous"
-      };
-      
-      current[index] = updatedSpot;
-      
-      // SALVATAGGIO PERMANENTE DEL FILE JSON AGGIORNATO
-      await safeWriteJson(EXTRA_FILE, current);
-      
-      // SINCRONIZZAZIONE CON CSV
-      try {
-        await syncSpotsToCSV();
-        console.log(`[CSV SYNC] CSV aggiornato dopo modifica`);
-      } catch (csvError) {
-        console.warn(`[CSV WARN] Errore sincronizzazione CSV: ${csvError.message}`);
-      }
-      
-      // Backup individuale dello spot aggiornato
-      await saveSpotWithBackup(updatedSpot);
-      
-      console.log(`Spot aggiornato permanentemente: ${spotId}`);
-      
-      return {
-        spot: updatedSpot,
-        index: index,
-        totalCount: current.length
-      };
-    });
-    
-    res.json({
-      success: true,
-      message: "Spot aggiornato con successo e salvato permanentemente",
-      data: result.spot,
-      totalSpots: result.totalCount,
-      timestamp: result.spot.updatedAt
-    });
-    
-  } catch (err) {
-    console.error("Errore aggiornamento spot:", err);
-    
-    // Salva lo spot non salvato per recupero successivo
-    if (req.body) {
-      await saveUnsavedSpot(req.body, err);
-    }
-    
-    if (err.status === 404) {
+    // Verifica che lo spot esista
+    const existingSpot = await getSpotById(spotId);
+    if (!existingSpot) {
       return res.status(404).json({
         success: false,
-        error: err.message,
+        error: "Spot non trovato",
         code: "SPOT_NOT_FOUND"
       });
     }
     
-    if (err.status === 409) {
+    // Verifica duplicati (escludendo corrente)
+    const duplicate = await checkForDuplicates(latNum, lngNum, spotId);
+    if (duplicate) {
       return res.status(409).json({
         success: false,
-        error: err.message,
-        existingSpot: err.existingSpot,
+        error: "Esiste già un altro spot in questa posizione",
+        existingSpot: duplicate,
         code: "DUPLICATE_COORDINATES"
+      });
+    }
+    
+    const updates = {
+      name: String(name).trim(),
+      desc: desc !== undefined ? String(desc).trim() : existingSpot.desc,
+      lat: latNum,
+      lng: lngNum,
+      voto: votoNum,
+      tipo: tipo ? String(tipo) : getTipo(name, desc || existingSpot.desc),
+      updatedAt: new Date().toISOString(),
+      updatedBy: req.user ? req.user.name : "anonymous"
+    };
+    
+    const updatedSpot = await updateSpot(spotId, updates);
+    
+    res.json({
+      success: true,
+      message: "Spot aggiornato con successo",
+      data: updatedSpot,
+      timestamp: updatedSpot.updatedAt,
+      database: "mongodb"
+    });
+    
+  } catch (err) {
+    console.error("❌ Errore aggiornamento spot:", err);
+    
+    if (err.message === "Spot non trovato") {
+      return res.status(404).json({
+        success: false,
+        error: err.message,
+        code: "SPOT_NOT_FOUND"
       });
     }
     
@@ -926,7 +767,7 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
 });
 
 // ===============================
-// ENDPOINT FORCE-SAVE MIGLIORATO CON CSV
+// FORCE SAVE ENDPOINT
 // ===============================
 app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
   try {
@@ -940,7 +781,7 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
       });
     }
     
-    console.log(`[FORCE-SAVE] Richiesta per ${spots.length} spot`);
+    console.log(`[FORCE-SAVE] ${spots.length} spot da salvare`);
     
     const results = {
       total: spots.length,
@@ -949,179 +790,108 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
       duplicates: []
     };
     
-    const savedSpots = await withLock('spots', async () => {
-      let currentSpots = await safeReadJson(EXTRA_FILE, []);
-      
-      if (!Array.isArray(currentSpots)) {
-        console.warn("Resetting spots data: not an array");
-        currentSpots = [];
-      }
-      
-      for (const spotData of spots) {
-        try {
-          const { name, desc, lat, lng, voto, tipo, id } = spotData || {};
-          
-          // Validazione base
-          if (!name || lat == null || lng == null) {
-            results.errors.push({
-              spot: spotData,
-              error: "Dati mancanti (nome o coordinate)",
-              coordinates: `${lat}, ${lng}`
-            });
-            continue;
-          }
-          
-          const latNum = parseFloat(lat);
-          const lngNum = parseFloat(lng);
-          
-          if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
-            results.errors.push({
-              spot: spotData,
-              error: "Coordinate non valide",
-              coordinates: `${lat}, ${lng}`
-            });
-            continue;
-          }
-          
-          let votoNum = null;
-          if (voto !== undefined && voto !== "" && !isNaN(voto)) {
-            const v = parseInt(voto, 10);
-            if (v >= 1 && v <= 6) votoNum = v;
-          }
-          
-          const tipoFinal = tipo ? String(tipo) : getTipo(name, desc);
-          
-          if (id && id.length >= 10) {
-            // Spot con ID - cerca se esiste già
-            const existingIndex = currentSpots.findIndex(s => s.id === id);
-            
-            if (existingIndex !== -1) {
-              // Aggiorna spot esistente
-              currentSpots[existingIndex] = {
-                ...currentSpots[existingIndex],
-                name: String(name).trim(),
-                desc: desc != null ? String(desc).trim() : currentSpots[existingIndex].desc,
-                lat: latNum,
-                lng: lngNum,
-                voto: votoNum,
-                tipo: tipoFinal,
-                updatedAt: new Date().toISOString(),
-                updatedBy: req.user ? req.user.name : "force_save"
-              };
-              results.success++;
-              console.log(`Spot aggiornato via force-save: ${id} - ${name}`);
-            } else {
-              // Nuovo spot con ID
-              const newSpot = {
-                id: id,
-                name: String(name).trim(),
-                desc: desc != null ? String(desc).trim() : "",
-                lat: latNum,
-                lng: lngNum,
-                voto: votoNum,
-                tipo: tipoFinal,
-                createdAt: spotData.createdAt || new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                createdBy: req.user ? req.user.name : "force_save",
-                version: 1,
-                status: "active"
-              };
-              
-              // Verifica duplicati per coordinate
-              const duplicate = currentSpots.find(s => {
-                const latDiff = Math.abs(s.lat - latNum);
-                const lngDiff = Math.abs(s.lng - lngNum);
-                return latDiff < 0.0001 && lngDiff < 0.0001;
-              });
-              
-              if (duplicate) {
-                results.duplicates.push({
-                  spot: newSpot,
-                  existingSpot: duplicate,
-                  coordinates: `${latNum}, ${lngNum}`
-                });
-              } else {
-                currentSpots.push(newSpot);
-                results.success++;
-                console.log(`Nuovo spot creato via force-save: ${id} - ${name}`);
-              }
-            }
-          } else {
-            // Nuovo spot senza ID
-            const newSpot = {
-              id: uuidv4(),
-              name: String(name).trim(),
-              desc: desc != null ? String(desc).trim() : "",
-              lat: latNum,
-              lng: lngNum,
-              voto: votoNum,
-              tipo: tipoFinal,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              createdBy: req.user ? req.user.name : "force_save",
-              version: 1,
-              status: "active"
-            };
-            
-            // Verifica duplicati per coordinate
-            const duplicate = currentSpots.find(s => {
-              const latDiff = Math.abs(s.lat - latNum);
-              const lngDiff = Math.abs(s.lng - lngNum);
-              return latDiff < 0.0001 && lngDiff < 0.0001;
-            });
-            
-            if (duplicate) {
-              results.duplicates.push({
-                spot: newSpot,
-                existingSpot: duplicate,
-                coordinates: `${latNum}, ${lngNum}`
-              });
-            } else {
-              currentSpots.push(newSpot);
-              results.success++;
-              console.log(`Nuovo spot creato via force-save: ${newSpot.id} - ${name}`);
-            }
-          }
-        } catch (error) {
+    for (const spotData of spots) {
+      try {
+        const { name, desc, lat, lng, voto, tipo, id } = spotData || {};
+        
+        if (!name || lat == null || lng == null) {
           results.errors.push({
             spot: spotData,
-            error: error.message || "Errore sconosciuto",
+            error: "Dati mancanti",
+            coordinates: `${lat}, ${lng}`
+          });
+          continue;
+        }
+        
+        const latNum = parseFloat(lat);
+        const lngNum = parseFloat(lng);
+        
+        if (isNaN(latNum) || isNaN(lngNum)) {
+          results.errors.push({
+            spot: spotData,
+            error: "Coordinate non valide",
+            coordinates: `${lat}, ${lng}`
+          });
+          continue;
+        }
+        
+        let votoNum = null;
+        if (voto !== undefined && voto !== "" && !isNaN(voto)) {
+          const v = parseInt(voto, 10);
+          if (v >= 1 && v <= 6) votoNum = v;
+        }
+        
+        const tipoFinal = tipo ? String(tipo) : getTipo(name, desc);
+        
+        const spot = {
+          name: String(name).trim(),
+          desc: desc != null ? String(desc).trim() : "",
+          lat: latNum,
+          lng: lngNum,
+          voto: votoNum,
+          tipo: tipoFinal,
+          updatedAt: new Date().toISOString(),
+          updatedBy: req.user ? req.user.name : "force_save",
+          version: 1,
+          status: "active"
+        };
+        
+        if (id && id.length >= 10) {
+          // Aggiorna o crea con ID specifico
+          spot.id = id;
+          spot.createdAt = spotData.createdAt || new Date().toISOString();
+          
+          const existing = await getSpotById(id);
+          if (existing) {
+            await updateSpot(id, spot);
+          } else {
+            await createSpot(spot);
+          }
+        } else {
+          // Nuovo spot
+          spot.id = uuidv4();
+          spot.createdAt = new Date().toISOString();
+          spot.createdBy = req.user ? req.user.name : "force_save";
+          
+          await createSpot(spot);
+        }
+        
+        results.success++;
+        
+      } catch (error) {
+        if (error.message.includes("duplicate") || error.code === 11000) {
+          results.duplicates.push({
+            spot: spotData,
+            error: "Duplicato",
             coordinates: `${spotData.lat}, ${spotData.lng}`
           });
-          console.error(`Errore processing spot:`, error);
+        } else {
+          results.errors.push({
+            spot: spotData,
+            error: error.message,
+            coordinates: `${spotData.lat}, ${spotData.lng}`
+          });
         }
       }
-      
-      // SALVATAGGIO PERMANENTE DI TUTTI GLI SPOT
-      await safeWriteJson(EXTRA_FILE, currentSpots);
-      
-      // SINCRONIZZAZIONE CON CSV
-      try {
-        await syncSpotsToCSV();
-        console.log(`[CSV SYNC] CSV aggiornato dopo force-save`);
-      } catch (csvError) {
-        console.warn(`[CSV WARN] Errore sincronizzazione CSV: ${csvError.message}`);
-      }
-      
-      console.log(`File spots-extra.json aggiornato con ${currentSpots.length} spot totali`);
-      
-      return currentSpots;
-    });
+    }
+    
+    const totalCount = await db.collection('spots').countDocuments();
     
     console.log(`[FORCE-SAVE] Completato: ${results.success} successi, ${results.errors.length} errori, ${results.duplicates.length} duplicati`);
     
     res.json({
       success: true,
-      message: `Salvataggio forzato completato: ${results.success} successi, ${results.errors.length} errori, ${results.duplicates.length} duplicati`,
+      message: `Salvataggio completato: ${results.success} successi`,
       data: {
         results: results,
-        totalSaved: savedSpots.length
+        totalSpots: totalCount
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      database: "mongodb"
     });
     
   } catch (err) {
-    console.error("Errore salvataggio forzato:", err);
+    console.error("❌ Errore salvataggio forzato:", err);
     res.status(500).json({
       success: false,
       error: "Errore salvataggio forzato",
@@ -1132,110 +902,117 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
 });
 
 // ===============================
-// ENDPOINT PER VERIFICA FILE
+// SETTINGS ENDPOINTS
 // ===============================
-app.get("/api/debug/file-info", async (req, res) => {
+app.get("/api/settings", async (req, res) => {
   try {
-    const jsonPath = EXTRA_FILE;
-    const csvPath = CSV_FILE;
+    const settings = await getSettings();
     
-    const jsonExists = fsSync.existsSync(jsonPath);
-    const csvExists = fsSync.existsSync(csvPath);
+    res.json({
+      success: true,
+      data: settings,
+      timestamp: new Date().toISOString(),
+      database: isMongoConnected ? "mongodb" : "offline"
+    });
+  } catch (err) {
+    console.error("❌ Errore lettura settings:", err);
+    res.status(500).json({
+      success: false,
+      error: "Errore lettura settings",
+      message: err.message,
+      code: "SETTINGS_READ_ERROR"
+    });
+  }
+});
+
+app.post("/api/settings", authMiddleware, async (req, res) => {
+  try {
+    const { baseLayer, mapStyle, randomIncludeLowRated } = req.body || {};
     
-    let jsonStats = null, csvStats = null;
-    let jsonContent = null, csvContent = null;
+    const currentSettings = await getSettings();
     
-    if (jsonExists) {
-      jsonStats = await fs.stat(jsonPath);
-      const content = await fs.readFile(jsonPath, 'utf8');
-      jsonContent = JSON.parse(content);
-    }
+    const updatedSettings = {
+      ...currentSettings,
+      baseLayer: baseLayer || currentSettings.baseLayer,
+      mapStyle: mapStyle || currentSettings.mapStyle,
+      randomIncludeLowRated: randomIncludeLowRated !== undefined ? randomIncludeLowRated : currentSettings.randomIncludeLowRated,
+      lastUpdated: new Date().toISOString()
+    };
     
-    if (csvExists) {
-      csvStats = await fs.stat(csvPath);
-      csvContent = await fs.readFile(csvPath, 'utf8');
-    }
+    await saveSettings(updatedSettings);
+    
+    res.json({
+      success: true,
+      message: "Impostazioni salvate",
+      data: updatedSettings,
+      timestamp: new Date().toISOString(),
+      database: "mongodb"
+    });
+    
+  } catch (err) {
+    console.error("❌ Errore salvataggio settings:", err);
+    res.status(500).json({
+      success: false,
+      error: "Errore salvataggio settings",
+      message: err.message,
+      code: "SETTINGS_SAVE_ERROR"
+    });
+  }
+});
+
+// ===============================
+// DEBUG & SYSTEM ENDPOINTS
+// ===============================
+app.get("/api/debug/system-info", async (req, res) => {
+  try {
+    const spotCount = isMongoConnected ? await db.collection('spots').countDocuments() : 0;
+    const settings = await getSettings();
     
     res.json({
       success: true,
       data: {
-        jsonFile: {
-          path: jsonPath,
-          exists: jsonExists,
-          size: jsonStats ? jsonStats.size : 0,
-          spotCount: Array.isArray(jsonContent) ? jsonContent.length : 0,
-          lastModified: jsonStats ? jsonStats.mtime : null
+        system: {
+          nodeVersion: process.version,
+          platform: process.platform,
+          uptime: process.uptime(),
+          database: isMongoConnected ? "mongodb-connected" : "offline",
+          mongodbUri: MONGODB_URI.replace(/ltunit420/, '******')
         },
-        csvFile: {
-          path: csvPath,
-          exists: csvExists,
-          size: csvStats ? csvStats.size : 0,
-          lines: csvContent ? csvContent.split('\n').length : 0,
-          lastModified: csvStats ? csvStats.mtime : null
+        stats: {
+          spotsCount: spotCount,
+          settings: settings
+        },
+        env: {
+          NODE_ENV: process.env.NODE_ENV || 'development',
+          APP_USERNAME: USERNAME,
+          hasMongoDB: !!process.env.MONGODB_URI
         }
       },
       timestamp: new Date().toISOString()
     });
+    
   } catch (error) {
-    console.error("Errore debug file info:", error);
+    console.error("❌ Errore system info:", error);
     res.status(500).json({
       success: false,
-      error: "Errore recupero informazioni file",
+      error: "Errore recupero informazioni",
       message: error.message
     });
   }
 });
 
-// ===============================
-// ENDPOINT SINCRONIZZAZIONE CSV
-// ===============================
-app.post("/api/sync-csv", authMiddleware, async (req, res) => {
-  try {
-    console.log(`[CSV SYNC] Richiesta sincronizzazione manuale`);
-    
-    await syncSpotsToCSV();
-    
-    res.json({
-      success: true,
-      message: "CSV sincronizzato con successo",
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error("Errore sincronizzazione CSV:", error);
-    res.status(500).json({
-      success: false,
-      error: "Errore sincronizzazione CSV",
-      message: error.message
-    });
-  }
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    status: isMongoConnected ? "healthy" : "degraded",
+    database: isMongoConnected ? "connected" : "disconnected",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // ===============================
-// ENDPOINT PER LEGGERE CSV
-// ===============================
-app.get("/api/csv-content", async (req, res) => {
-  try {
-    const csvData = await readCSV();
-    
-    res.json({
-      success: true,
-      data: csvData,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error("Errore lettura CSV:", error);
-    res.status(500).json({
-      success: false,
-      error: "Errore lettura CSV",
-      message: error.message
-    });
-  }
-});
-
-// ===============================
-// ALTRI ENDPOINT
+// ALTRI ENDPOINTS (compatibilità)
 // ===============================
 app.post("/api/decode-gmaps-url", async (req, res) => {
   try {
@@ -1249,17 +1026,13 @@ app.post("/api/decode-gmaps-url", async (req, res) => {
       });
     }
     
-    console.log(`Decodifica URL: ${url.substring(0, 100)}...`);
-    
     let finalUrl = url;
     
-    // Risolvi short URL se necessario
     if (url.includes("goo.gl") || url.includes("maps.app.goo.gl")) {
       try {
         finalUrl = await resolveShortUrl(url);
-        console.log(`URL risolto: ${finalUrl.substring(0, 100)}...`);
       } catch (e) {
-        console.warn("Impossibile risolvere short URL, uso originale:", e.message);
+        console.warn("⚠️  Impossibile risolvere short URL:", e.message);
       }
     }
     
@@ -1280,7 +1053,7 @@ app.post("/api/decode-gmaps-url", async (req, res) => {
     });
     
   } catch (err) {
-    console.error("Errore decodifica URL:", err);
+    console.error("❌ Errore decodifica URL:", err);
     res.status(500).json({
       success: false,
       error: "Errore decodifica URL",
@@ -1290,136 +1063,28 @@ app.post("/api/decode-gmaps-url", async (req, res) => {
   }
 });
 
-app.get("/api/settings", async (req, res) => {
-  try {
-    const data = await withLock('settings', async () => {
-      return await safeReadJson(SETTINGS_FILE, DEFAULT_SETTINGS);
-    });
-    
-    res.json({
-      success: true,
-      data: data,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error("Errore lettura settings:", err);
-    res.status(500).json({
-      success: false,
-      error: "Errore lettura settings",
-      message: err.message,
-      code: "SETTINGS_READ_ERROR"
-    });
-  }
-});
-
-app.post("/api/settings", authMiddleware, async (req, res) => {
-  try {
-    const { baseLayer, mapStyle, randomIncludeLowRated } = req.body || {};
-    
-    const settings = await withLock('settings', async () => {
-      let current = await safeReadJson(SETTINGS_FILE, DEFAULT_SETTINGS);
-      
-      const updated = {
-        ...current,
-        baseLayer: baseLayer || current.baseLayer,
-        mapStyle: mapStyle || current.mapStyle,
-        randomIncludeLowRated: randomIncludeLowRated !== undefined ? randomIncludeLowRated : current.randomIncludeLowRated,
-        lastUpdated: new Date().toISOString()
-      };
-      
-      await safeWriteJson(SETTINGS_FILE, updated);
-      return updated;
-    });
-    
-    res.json({
-      success: true,
-      message: "Impostazioni salvate",
-      data: settings,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (err) {
-    console.error("Errore salvataggio settings:", err);
-    res.status(500).json({
-      success: false,
-      error: "Errore salvataggio settings",
-      message: err.message,
-      code: "SETTINGS_SAVE_ERROR"
-    });
-  }
-});
-
-app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    status: "healthy",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    env: process.env.NODE_ENV || "development"
-  });
-});
-
-app.get("/api/stats", async (req, res) => {
-  try {
-    const spots = await safeReadJson(EXTRA_FILE, []);
-    const csvData = await readCSV();
-    
-    res.json({
-      success: true,
-      data: {
-        jsonSpots: Array.isArray(spots) ? spots.length : 0,
-        csvSpots: csvData.spots.length,
-        totalUniqueSpots: Array.isArray(spots) ? spots.length + csvData.spots.length : csvData.spots.length,
-        serverUptime: process.uptime(),
-        timestamp: new Date().toISOString()
-      }
-    });
-  } catch (err) {
-    console.error("Errore stats:", err);
-    res.status(500).json({
-      success: false,
-      error: "Errore recupero statistiche",
-      message: err.message
-    });
-  }
-});
-
-// ===============================
-// FUNZIONI PER DECODIFICA URL
-// ===============================
 function extractCoordsFromUrl(url) {
   try {
     if (!url || typeof url !== 'string') return null;
     
     const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (atMatch) {
-      return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
-    }
+    if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
     
     const placeMatch = url.match(/place\/(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (placeMatch) {
-      return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
-    }
+    if (placeMatch) return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
     
     const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (qMatch) {
-      return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
-    }
+    if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
     
     const dataMatch = url.match(/data=!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-    if (dataMatch) {
-      return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) };
-    }
+    if (dataMatch) return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) };
     
     const detailedMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+),(\d+z)/);
-    if (detailedMatch) {
-      return { lat: parseFloat(detailedMatch[1]), lng: parseFloat(detailedMatch[2]) };
-    }
+    if (detailedMatch) return { lat: parseFloat(detailedMatch[1]), lng: parseFloat(detailedMatch[2]) };
     
     return null;
   } catch (e) {
-    console.error("Error extracting coords from URL:", e);
+    console.error("❌ Error extracting coords from URL:", e);
     return null;
   }
 }
@@ -1452,7 +1117,7 @@ app.get("/", (req, res) => {
 });
 
 // ===============================
-// GESTIONE ERRORI GLOBALE
+// GESTIONE ERRORI
 // ===============================
 app.use((req, res, next) => {
   res.status(404).json({
@@ -1464,13 +1129,11 @@ app.use((req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error('Errore non gestito:', {
+  console.error('❌ Errore non gestito:', {
     error: err.message,
     stack: err.stack,
     url: req.originalUrl,
-    method: req.method,
-    body: req.body,
-    user: req.user
+    method: req.method
   });
   
   res.status(500).json({
@@ -1483,120 +1146,85 @@ app.use((err, req, res, next) => {
 });
 
 // ===============================
-// AVVIO SERVER CON INIZIALIZZAZIONE
+// AVVIO SERVER
 // ===============================
 const port = process.env.PORT || 3000;
 
 async function initializeServer() {
   try {
-    console.log('🚀 Initializing Lost Trace Unit Server...');
+    console.log('🚀 ===== INIZIALIZZAZIONE SERVER LTU =====');
+    console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔐 Autenticazione: ${USERNAME}:${PASSWORD}`);
     
-    // Crea tutte le directory necessarie
-    await ensureDirectories();
+    // 1. Connetti a MongoDB
+    const mongoConnected = await connectToMongoDB();
     
-    // Verifica o crea file spots-extra.json
-    try {
-      await fs.access(EXTRA_FILE);
-      console.log('✅ spots-extra.json exists');
+    if (mongoConnected) {
+      // 2. Importa CSV iniziale
+      console.log('📥 Import iniziale da CSV...');
+      const importResult = await importInitialCSV();
+      console.log(`✅ Import completato: ${importResult.imported} importati, ${importResult.skipped} saltati`);
       
-      // Verifica validità del file
-      const spotsData = await safeReadJson(EXTRA_FILE, []);
-      if (!Array.isArray(spotsData)) {
-        console.warn('⚠️  spots-extra.json contains invalid data, resetting...');
-        await safeWriteJson(EXTRA_FILE, []);
-      } else {
-        console.log(`📊 Loaded ${spotsData.length} spots from JSON file`);
-        
-        // Verifica che ogni spot abbia un ID
-        const spotsWithoutId = spotsData.filter(spot => !spot.id);
-        if (spotsWithoutId.length > 0) {
-          console.log(`⚠️  ${spotsWithoutId.length} spots without ID, fixing...`);
-          const fixedSpots = spotsData.map(spot => ({
-            ...spot,
-            id: spot.id || uuidv4(),
-            updatedAt: spot.updatedAt || spot.createdAt || new Date().toISOString()
-          }));
-          await safeWriteJson(EXTRA_FILE, fixedSpots);
-          console.log(`✅ Fixed ${spotsWithoutId.length} spots`);
-        }
-      }
-    } catch {
-      console.log('📝 Creating spots-extra.json...');
-      await safeWriteJson(EXTRA_FILE, []);
+      // 3. Inizializza settings
+      const spotCount = await db.collection('spots').countDocuments();
+      const settings = await getSettings();
+      
+      console.log('📊 Stato iniziale:');
+      console.log(`   • Spot nel database: ${spotCount}`);
+      console.log(`   • Database: MongoDB Atlas`);
+      console.log(`   • Cluster: cluster0.bqs9ecb.mongodb.net`);
+      
+      await saveSettings({
+        ...settings,
+        database: "mongodb",
+        lastUpdated: new Date().toISOString()
+      });
+    } else {
+      console.log('⚠️  Modalità offline: MongoDB non disponibile');
+      console.log('💡 Verifica:');
+      console.log('   1. Network Access su Atlas (0.0.0.0/0)');
+      console.log('   2. Credenziali corrette');
+      console.log('   3. Cluster attivo');
     }
     
-    // Verifica o crea file CSV
-    try {
-      await fs.access(CSV_FILE);
-      console.log('✅ spots.csv exists');
-      
-      // Sincronizza JSON con CSV all'avvio
-      console.log('🔄 Sincronizzazione iniziale JSON -> CSV...');
-      await syncSpotsToCSV();
-      
-    } catch {
-      console.log('📝 Creating spots.csv...');
-      await fs.writeFile(CSV_FILE, "Name,Description,Latitude,Longitude\n", 'utf8');
-      console.log('✅ spots.csv created with header');
-    }
-    
-    // Verifica o crea file settings.json
-    try {
-      await fs.access(SETTINGS_FILE);
-      console.log('✅ settings.json exists');
-    } catch {
-      console.log('📝 Creating settings.json...');
-      await safeWriteJson(SETTINGS_FILE, DEFAULT_SETTINGS);
-    }
-    
-    // Verifica o crea file unsaved-spots.json
-    try {
-      await fs.access(UNSAVED_SPOTS_FILE);
-      console.log('✅ unsaved-spots.json exists');
-      
-      const unsavedData = await safeReadJson(UNSAVED_SPOTS_FILE, []);
-      if (!Array.isArray(unsavedData)) {
-        console.warn('⚠️  unsaved-spots.json contains invalid data, resetting...');
-        await safeWriteJson(UNSAVED_SPOTS_FILE, []);
-      } else {
-        console.log(`📊 Loaded ${unsavedData.length} unsaved spots`);
-      }
-    } catch {
-      console.log('📝 Creating unsaved-spots.json...');
-      await safeWriteJson(UNSAVED_SPOTS_FILE, []);
-    }
-    
-    console.log('✅ Server initialization complete');
-    console.log(`🔐 Admin login: user="${USERNAME}" password="${PASSWORD}"`);
-    console.log(`📁 JSON file: ${EXTRA_FILE}`);
-    console.log(`📁 CSV file: ${CSV_FILE}`);
-    console.log(`📁 Backup directory: ${BACKUP_DIR}`);
+    console.log('✅ ===== INIZIALIZZAZIONE COMPLETATA =====');
+    console.log(`🌍 Server pronto su porta ${port}`);
+    console.log(`📁 Endpoint principali:`);
+    console.log(`   • GET  /api/spots-extra - Lista spot`);
+    console.log(`   • POST /api/spots-extra - Aggiungi spot (auth)`);
+    console.log(`   • GET  /api/debug/system-info - Info sistema`);
+    console.log(`   • GET  /api/health - Health check`);
     
   } catch (error) {
-    console.error('❌ Server initialization failed:', error);
-    process.exit(1);
+    console.error('❌ ===== INIZIALIZZAZIONE FALLITA =====');
+    console.error('Errore:', error.message);
+    console.error('Stack:', error.stack);
   }
 }
 
 // Avvia server dopo inizializzazione
 initializeServer().then(() => {
   const server = app.listen(port, () => {
-    console.log(`🚀 Server attivo su http://localhost:${port}`);
-    console.log(`⏰ Server started at: ${new Date().toISOString()}`);
-    console.log(`💾 Tutti i salvataggi verranno sincronizzati con JSON e CSV`);
-    console.log(`📊 Usa /api/debug/file-info per verificare lo stato dei file`);
+    console.log(`🚀 Server LTU attivo su http://localhost:${port}`);
+    console.log(`⏰ Avviato: ${new Date().toISOString()}`);
+    console.log(`💾 Database: MongoDB Atlas`);
+    console.log(`📊 Usa /api/debug/system-info per verificare connessione`);
   });
   
   // Graceful shutdown
   process.on('SIGTERM', () => {
-    console.log('🛑 SIGTERM received, shutting down gracefully...');
+    console.log('🛑 SIGTERM ricevuto, spegnimento graceful...');
     server.close(() => {
-      console.log('👋 Server closed');
+      console.log('👋 Server chiuso');
+      if (mongoClient) {
+        mongoClient.close();
+        console.log('🔌 Connessione MongoDB chiusa');
+      }
       process.exit(0);
     });
     
     setTimeout(() => {
-      console.error('⏰ Could not close connections in time, forcefully shutting down');
+      console.error('⏰ Timeout shutdown, spegnimento forzato');
       process.exit(1);
     }, 10000);
   });
