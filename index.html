@@ -11,9 +11,16 @@ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
 crossorigin="anonymous"
 />
-<!-- Leaflet MarkerCluster CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<!-- Leaflet Marker Cluster -->
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+/>
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+/>
+<!-- Leaflet Rotate CSS (hosted locally to avoid CORS) -->
 <style>
 /* Leaflet Rotate CSS embedded locally */
 .leaflet-control-rotate {
@@ -187,6 +194,56 @@ box-shadow: none;
 .dock-btn.active {
 border-color: rgba(59, 130, 246, 0.9);
 box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 0 0 2px rgba(37, 99, 235, 0.7);
+}
+/* MAP NAVIGATION TOGGLE AND CONTROLS */
+#mapNavigation {
+position: fixed;
+bottom: 20px;
+left: 50%;
+transform: translateX(-50%);
+z-index: 30;
+display: none;
+flex-direction: column;
+align-items: center;
+gap: 8px;
+}
+#mapNavigation.show {
+display: flex;
+}
+#mapNavInfo {
+background: rgba(15, 23, 42, 0.9);
+border: 1px solid var(--border-soft);
+border-radius: 999px;
+padding: 6px 12px;
+font-size: 12px;
+color: var(--text-main);
+display: flex;
+align-items: center;
+gap: 8px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+#mapNavControls {
+display: flex;
+gap: 10px;
+}
+.nav-btn {
+width: 40px;
+height: 40px;
+border-radius: 50%;
+background: rgba(15, 23, 42, 0.9);
+border: 1px solid var(--border-soft);
+color: var(--text-main);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 20px;
+cursor: pointer;
+box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+transition: all 0.2s ease;
+}
+.nav-btn:hover {
+background: rgba(37, 99, 235, 0.8);
+transform: scale(1.1);
 }
 /* OVERLAY PANELS */
 .overlay {
@@ -734,6 +791,9 @@ max-height: calc(100% - 24px);
 #rightDock {
 right: 6px;
 }
+#mapNavigation {
+bottom: 15px;
+}
 #streetviewIframe {
 width: 100%;
 height: 80%;
@@ -892,6 +952,24 @@ background: rgba(37, 99, 235, 0.1);
 .city-result-item:last-child {
 border-bottom: none;
 }
+/* POSIZIONE UTENTE */
+#userLocationBtn.active {
+border-color: #10b981;
+box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 0 0 2px rgba(16, 185, 129, 0.7);
+}
+.user-location-marker {
+background: #10b981;
+border-radius: 50%;
+border: 3px solid white;
+box-shadow: 0 0 10px rgba(0,0,0,0.5);
+width: 20px;
+height: 20px;
+}
+.user-location-accuracy {
+fill: rgba(16, 185, 129, 0.2);
+stroke: #10b981;
+stroke-width: 1;
+}
 /* CHECKBOX ESPLORATO */
 .checkbox-row {
 display: flex;
@@ -961,8 +1039,25 @@ color: var(--text-dim);
 margin-left: 4px;
 min-width: 8px;
 }
-
-/* Performance optimizations */
+/* Clustering styles */
+.marker-cluster-small {
+background-color: rgba(181, 226, 140, 0.6);
+}
+.marker-cluster-small div {
+background-color: rgba(110, 204, 57, 0.6);
+}
+.marker-cluster-medium {
+background-color: rgba(241, 211, 87, 0.6);
+}
+.marker-cluster-medium div {
+background-color: rgba(240, 194, 12, 0.6);
+}
+.marker-cluster-large {
+background-color: rgba(253, 156, 115, 0.6);
+}
+.marker-cluster-large div {
+background-color: rgba(241, 128, 23, 0.6);
+}
 .marker-cluster {
 background-clip: padding-box;
 border-radius: 20px;
@@ -978,21 +1073,6 @@ font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
 .marker-cluster span {
 line-height: 30px;
-}
-
-.leaflet-marker-icon {
-transition: transform 0.1s ease;
-}
-
-.leaflet-marker-icon.performance {
-transform: scale(0.9);
-filter: brightness(0.9);
-}
-
-/* Smooth transitions */
-#map, .leaflet-container {
-transform: translateZ(0);
-backface-visibility: hidden;
 }
 </style>
 </head>
@@ -1014,6 +1094,8 @@ backface-visibility: hidden;
   
 <!-- DOCK DESTRO CON TOGGLE E LEGENDA -->
 <div id="rightDock">
+<button id="userLocationBtn" class="dock-btn" title="Posizione attuale">📍</button>
+<button id="mapNavToggle" class="dock-btn" title="Navigazione rapida mappe">🗺️</button>
 <button id="streetviewBtn" class="dock-btn" title="StreetView">🌍</button>
 <button id="importLinkBtn" class="dock-btn" title="Importa link">📎</button>
 <button id="settingsBtn" class="dock-btn" title="Impostazioni">⚙️</button>
@@ -1021,8 +1103,7 @@ backface-visibility: hidden;
 <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
 <button id="btnRandom" class="dock-btn" title="Random spot">🎲</button>
 <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
-<button id="userLocationBtn" class="dock-btn" title="Posizione attuale">📍</button>
-<button id="mapNavToggle" class="dock-btn" title="Navigazione rapida mappe">🗺️</button>
+<button id="mapStyleBtn" class="dock-btn" title="Selezione rapida mappa">🗺️</button>
 <div id="legendContainer">
 <div class="legend-row"><div class="legend-dot" style="background:#b91c1c"></div><span class="legend-number">1</span></div>
 <div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span class="legend-number">2</span></div>
@@ -1417,8 +1498,11 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
 crossorigin="anonymous"
 ></script>
-<!-- Leaflet MarkerCluster -->
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<!-- Leaflet Marker Cluster JS -->
+<script
+src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+crossorigin="anonymous"
+></script>
 <!-- Custom Leaflet Rotate (embedded to avoid CORS) -->
 <script>
 // Simple Leaflet Rotate implementation
@@ -1747,7 +1831,7 @@ document.addEventListener('keydown', handleEscape);
 // =========================
 let map;
 let markersLayer;
-let markerCluster;
+let markersCluster;
 let baseLayers = {};
 let appSettings = {
 baseLayer: "osm",
@@ -1772,7 +1856,8 @@ let userLocationMarker = null; // Marker posizione utente
 let userLocationCircle = null; // Cerchio accuratezza posizione
 let userLocationWatchId = null; // ID del watcher per posizione
 let isUserLocationActive = false; // Stato posizione utente
-let currentView = null; // Memorizza la vista corrente per mantenere zoom dopo modifica
+let currentViewCenter = null; // Per mantenere la vista dopo modifiche
+let currentViewZoom = null; // Per mantenere lo zoom dopo modifiche
 
 function loadMissions() {
 try {
@@ -1843,12 +1928,10 @@ appSettings.mapStyle = data.mapStyle || appSettings.mapStyle;
 appSettings.randomIncludeLowRated = data.randomIncludeLowRated || appSettings.randomIncludeLowRated;
         
 updateSyncStatus("Impostazioni salvate", "success");
-return true;
 } catch (e) {
 console.warn("Errore salvataggio settings", e);
 updateSyncStatus("Errore salvataggio settings", "error");
 showToast(`Errore salvataggio settings: ${e.message}`, "error");
-return false;
 }
 }
 
@@ -1862,6 +1945,8 @@ mapNavigationActive: mapNavigationActive
 console.warn("Errore salvataggio settings locali", e);
 }
 }
+
+// RIMOSSO: loadBaseSpots() - non carichiamo più dal CSV
 
 async function loadExtraSpots() {
 try {
@@ -1907,10 +1992,16 @@ return [];
 }
 }
 
-async function reloadAllSpots() {
+async function reloadAllSpots(keepView = false) {
 try {
 pendingOperations++;
 updateSyncStatus("Aggiornamento spot...", "syncing");
+        
+// Salva la vista corrente se richiesto
+if (keepView && map) {
+currentViewCenter = map.getCenter();
+currentViewZoom = map.getZoom();
+}
         
 // Carica solo dal database
 const spots = await loadExtraSpots();
@@ -1918,6 +2009,11 @@ const spots = await loadExtraSpots();
 allSpots = spots;
 renderMarkers();
 renderList();
+        
+// Ripristina la vista se richiesto
+if (keepView && currentViewCenter && currentViewZoom) {
+map.setView(currentViewCenter, currentViewZoom);
+}
         
 updateSyncStatus(`${allSpots.length} spot caricati`, "success");
 } catch (e) {
@@ -2062,38 +2158,24 @@ let chosen = baseLayers[appSettings.baseLayer] || osm;
 chosen.addTo(map);
 currentMapIndex = mapLayersOrder.indexOf(appSettings.baseLayer) || 0;
 
-// Inizializza marker cluster invece di layer group
-markerCluster = L.markerClusterGroup({
-maxClusterRadius: 50,
-iconCreateFunction: function(cluster) {
-var childCount = cluster.getChildCount();
-var c = ' marker-cluster-';
-if (childCount < 10) {
-c += 'small';
-} else if (childCount < 100) {
-c += 'medium';
-} else {
-c += 'large';
-}
-
-return new L.DivIcon({
-html: '<div><span>' + childCount + '</span></div>',
-className: 'marker-cluster' + c,
-iconSize: new L.Point(40, 40)
+// Crea cluster di marker per performance
+markersCluster = L.markerClusterGroup({
+maxClusterRadius: 80,
+spiderfyOnMaxZoom: true,
+showCoverageOnHover: false,
+zoomToBoundsOnClick: true,
+disableClusteringAtZoom: 16
 });
-}
-});
+markersCluster.addTo(map);
 
-markerCluster.addTo(map);
+// Layer separato per i marker (ora gestito dal cluster)
+markersLayer = markersCluster;
 
 // Aggiungi controllo rotazione personalizzato
 L.control.rotate().addTo(map);
 
 // Inizializza con vista Italia
 map.setView([44.5, 8.9], 7);
-
-// Memorizza la vista corrente
-currentView = map.getView();
 
 // Gestione click sulla mappa per PC e mobile
 map.on("click", function (e) {
@@ -2196,9 +2278,6 @@ updateMapNavigationUI();
       
 // Inizializza crosshair in base alle impostazioni
 updateCrosshairVisibility();
-
-// Performance: ottimizza il rendering dei tile
-map.options.preferCanvas = true;
 }
 
 function showTemporaryPin(lat, lng) {
@@ -2337,11 +2416,11 @@ const navElement = document.getElementById('mapNavigation');
 const toggleBtn = document.getElementById('mapNavToggle');
 
 if (mapNavigationActive) {
-navElement.style.display = 'flex';
+navElement.classList.add('show');
 toggleBtn.classList.add('active');
 showToast("Navigazione mappe attiva (A/D per scorrere)", "info");
 } else {
-navElement.style.display = 'none';
+navElement.classList.remove('show');
 toggleBtn.classList.remove('active');
 showToast("Navigazione mappe disattivata", "info");
 }
@@ -2408,8 +2487,8 @@ ${spotId ? `
 }
 
 function renderMarkers() {
-if (!markerCluster) return;
-markerCluster.clearLayers();
+if (!markersCluster) return;
+markersCluster.clearLayers();
 
 allSpots.forEach(p => {
 let color = getRatingColor(p.voto || 0);
@@ -2419,30 +2498,24 @@ color = "#10b981";
 }
 const emoji = getEmojiByTipo(p.tipo);
 
-// Performance: usa marker più semplici
 const iconHtml = `
-<div style="
-  width: 24px;
-  height: 36px;
-  position: relative;
-  filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.5));
-">
-  <svg width="24" height="36" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12,0 C5.373,0 0,5.373 0,12 C0,18.627 12,36 12,36 C12,36 24,18.627 24,12 C24,5.373 18.627,0 12,0 Z"
-          fill="${color}"
-          stroke="none"/>
-    <circle cx="12" cy="10" r="7" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
-    <text x="12" y="14" font-size="11" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
-    ${p.explorato ? '<text x="12" y="26" font-size="7" text-anchor="middle" fill="#10b981" font-weight="bold">✓</text>' : ''}
-  </svg>
+<div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
+<svg width="26" height="36" viewBox="0 0 26 36" xmlns="http://www.w3.org/2000/svg">
+<path d="M13,0 C5.373,0 0,5.373 0,13 C0,21.938 13,36 13,36 C13,36 26,21.938 26,13 C26,5.373 20.627,0 13,0 Z"
+fill="${color}"
+stroke="none"/>
+<circle cx="13" cy="12.5" r="8" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
+<text x="13" y="16" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
+${p.explorato ? '<text x="13" y="30" font-size="8" text-anchor="middle" fill="#10b981" font-weight="bold">✓</text>' : ''}
+</svg>
 </div>
 `;
 
 const icon = L.divIcon({
 html: iconHtml,
-className: "ltu-custom-pin performance",
-iconSize: [24, 36],
-iconAnchor: [12, 36],
+className: "ltu-custom-pin",
+iconSize: [26, 36],
+iconAnchor: [13, 36],
 popupAnchor: [0, -32]
 });
 
@@ -2450,12 +2523,11 @@ const marker = L.marker([p.lat, p.lng], { icon });
 marker.bindPopup(buildPopupHtml(p));
 
 p._marker = marker;
+markersCluster.addLayer(marker);
+
 marker.on("click", () => {
 currentSpot = p;
-currentView = map.getView(); // Memorizza la vista quando si clicca su un marker
 });
-
-markerCluster.addLayer(marker);
 });
 
 // Se c'è uno spot appena aggiunto, centra su di esso
@@ -2463,17 +2535,9 @@ if (lastAddedSpotId) {
 const newSpot = allSpots.find(s => s.id === lastAddedSpotId);
 if (newSpot && newSpot._marker) {
 map.setView([newSpot.lat, newSpot.lng], 16);
+newSpot._marker.openPopup();
 lastAddedSpotId = null;
 }
-} else if (allSpots.length > 0 && !currentView) {
-// Solo se non c'è una vista memorizzata, fai il fitBounds
-const bounds = L.latLngBounds(allSpots.map(p => [p.lat, p.lng]));
-map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
-} else if (currentView) {
-// Mantieni la vista corrente
-map.setView(currentView.center, currentView.zoom);
-} else {
-map.setView([44.5, 8.9], 7);
 }
 }
 
@@ -2573,8 +2637,10 @@ row.appendChild(mainDiv);
         
 row.addEventListener("click", () => {
 currentSpot = p;
-currentView = map.getView(); // Memorizza la vista corrente
 map.setView([p.lat, p.lng], 16);
+if (p._marker) {
+p._marker.openPopup();
+}
 document.getElementById("listPanel").classList.add("hidden");
 });
         
@@ -2710,6 +2776,9 @@ if (!chosen) return;
       
 currentSpot = chosen;
 map.setView([chosen.lat, chosen.lng], 16);
+if (chosen._marker) {
+chosen._marker.openPopup();
+}
 showToast("Random LTU: " + (chosen.name || "spot"), "info");
 }
 
@@ -3116,24 +3185,8 @@ const btn = document.getElementById('userLocationBtn');
 btn.classList.add('active');
 btn.title = "Disattiva posizione";
 
-updateSyncStatus("Richiesta autorizzazione posizione...", "syncing");
+updateSyncStatus("Richiesta permesso posizione...", "syncing");
 
-// Prima verifica se abbiamo già il permesso
-navigator.permissions.query({name: 'geolocation'}).then(function(result) {
-if (result.state === 'granted') {
-// Permesso già concesso, procedi
-requestLocation();
-} else if (result.state === 'prompt') {
-// Chiedi il permesso
-requestLocation();
-} else {
-// Permesso negato
-showToast("Permesso di geolocalizzazione negato. Abilitalo nelle impostazioni del browser.", "error");
-btn.classList.remove('active');
-}
-});
-
-function requestLocation() {
 // Opzioni per alta precisione
 const options = {
 enableHighAccuracy: true,
@@ -3141,12 +3194,17 @@ timeout: 10000,
 maximumAge: 0
 };
 
+// Prima richiedi il permesso mostrando un toast
+showToast("Richiesta permesso posizione in corso...", "info");
+
+navigator.geolocation.getCurrentPosition(
+(position) => {
+// Permesso concesso, avvia il watch
 userLocationWatchId = navigator.geolocation.watchPosition(
 (position) => {
 const lat = position.coords.latitude;
 const lng = position.coords.longitude;
 const accuracy = position.coords.accuracy;
-
 handleUserLocationSuccess(lat, lng, accuracy);
 },
 (error) => {
@@ -3156,8 +3214,14 @@ options
 );
 
 isUserLocationActive = true;
-showToast("Posizione attiva", "success");
+updateSyncStatus("Posizione attivata", "success");
+showToast("Posizione attivata con successo", "success");
+},
+(error) => {
+handleUserLocationError(error);
+btn.classList.remove('active');
 }
+);
 }
 
 function stopUserLocation() {
@@ -3197,7 +3261,6 @@ map.removeLayer(userLocationCircle);
 userLocationMarker = L.marker([lat, lng], {
 icon: L.divIcon({
 className: 'user-location-marker',
-html: '<div style="background:#10b981; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>',
 iconSize: [20, 20],
 iconAnchor: [10, 10]
 })
@@ -3212,8 +3275,10 @@ weight: 1,
 color: '#10b981'
 }).addTo(map);
 
-// Centra mappa sulla posizione
+// Centra mappa sulla posizione (solo zoom 16 se non siamo già più zoomati)
+if (map.getZoom() < 16) {
 map.setView([lat, lng], 16);
+}
 
 updateSyncStatus("Posizione aggiornata", "success");
 showToast(`Posizione aggiornata (accuratezza: ${Math.round(accuracy)}m)`, "success");
@@ -3223,13 +3288,13 @@ function handleUserLocationError(error) {
 let message = "Errore geolocalizzazione: ";
 switch(error.code) {
 case error.PERMISSION_DENIED:
-message += "Permesso negato";
+message += "Permesso negato. Abilita la geolocalizzazione nelle impostazioni del browser.";
 break;
 case error.POSITION_UNAVAILABLE:
 message += "Posizione non disponibile";
 break;
 case error.TIMEOUT:
-message += "Timeout";
+message += "Timeout nella richiesta";
 break;
 default:
 message += "Errore sconosciuto";
@@ -3331,20 +3396,16 @@ showToast("Impostazione random aggiornata", "success");
 btnImportJson.addEventListener("click", handleImportJson);
 btnExportCsv.addEventListener("click", handleExportCsv);
 
-btnSaveAllSettings.addEventListener("click", async () => {
-const saved = await saveSettings({
+btnSaveAllSettings.addEventListener("click", () => {
+saveSettings({
 baseLayer: mapStyleSelect.value,
 randomIncludeLowRated: randomLowRatedCheckbox.checked
 });
-if (saved) {
 saveLocalSettings();
 showToast("Tutte le impostazioni salvate!", "success");
 // Chiudi il pannello settings dopo il salvataggio
-setTimeout(() => {
-settingsPanel.classList.add("hidden");
+document.getElementById("settingsPanel").classList.add("hidden");
 settingsBtn.classList.remove("active");
-}, 500);
-}
 });
 
 // RANDOM
@@ -3383,18 +3444,11 @@ document.getElementById("linkResult").style.display = "none";
 btnDecodeLink.addEventListener("click", decodeGoogleMapsLink);
 btnAddFromLink.addEventListener("click", addSpotFromLink);
 
-// USER LOCATION
-const userLocationBtn = document.getElementById("userLocationBtn");
-userLocationBtn.addEventListener("click", toggleUserLocation);
-
-// MAP NAVIGATION
-const mapNavToggle = document.getElementById("mapNavToggle");
-const prevMapBtn = document.getElementById("prevMapBtn");
-const nextMapBtn = document.getElementById("nextMapBtn");
-
-mapNavToggle.addEventListener("click", toggleMapNavigation);
-prevMapBtn.addEventListener("click", prevMap);
-nextMapBtn.addEventListener("click", nextMap);
+// MAP STYLE BUTTON (nuovo)
+const mapStyleBtn = document.getElementById("mapStyleBtn");
+mapStyleBtn.addEventListener("click", () => {
+toggleMapNavigation();
+});
 
 // DOCK TOGGLE
 const dockToggleBtn = document.getElementById("dockToggleBtn");
@@ -3406,6 +3460,19 @@ const isCollapsed = rightDock.classList.contains("collapsed");
 dockToggleBtn.innerHTML = isCollapsed ? "⬇️" : "⬆️";
 dockToggleBtn.title = isCollapsed ? "Espandi pulsanti" : "Comprimi pulsanti";
 });
+
+// MAP NAVIGATION
+const mapNavToggle = document.getElementById("mapNavToggle");
+const prevMapBtn = document.getElementById("prevMapBtn");
+const nextMapBtn = document.getElementById("nextMapBtn");
+
+mapNavToggle.addEventListener("click", toggleMapNavigation);
+prevMapBtn.addEventListener("click", prevMap);
+nextMapBtn.addEventListener("click", nextMap);
+
+// POSIZIONE UTENTE
+const userLocationBtn = document.getElementById("userLocationBtn");
+userLocationBtn.addEventListener("click", toggleUserLocation);
 
 // CERCA CITTA'
 initCitySearch();
@@ -3486,9 +3553,6 @@ if (!spot) {
 showToast('Spot non trovato', 'error');
 return;
 }
-          
-// Memorizza la vista corrente prima di aprire il pannello
-currentView = map.getView();
           
 // Apri pannello edit con dati precompilati
 document.getElementById('editSpotId').value = spotId;
@@ -3577,15 +3641,10 @@ updatedAt: updatedSpot.updatedAt || new Date().toISOString()
 };
 }
           
-renderMarkers();
-renderList();
+// Aggiorna i marker mantenendo la vista corrente
+await reloadAllSpots(true);
 editPanel.classList.add('hidden');
 editForm.reset();
-          
-// Mantieni la vista corrente invece di zoomare
-if (currentView) {
-map.setView(currentView.center, currentView.zoom);
-}
           
 updateSyncStatus("Spot aggiornato", "success");
 showToast('Spot modificato', 'success');
@@ -3634,30 +3693,11 @@ nextMap();
 }
 });
       
-// Performance: ottimizza il rendering durante lo zoom e il pan
-let zoomTimeout;
-map.on('zoomstart', () => {
-// Riduci la qualità durante lo zoom
-document.querySelectorAll('.leaflet-marker-icon').forEach(marker => {
-marker.classList.add('performance');
-});
-});
-
-map.on('zoomend', () => {
-// Ripristina la qualità dopo lo zoom
-clearTimeout(zoomTimeout);
-zoomTimeout = setTimeout(() => {
-document.querySelectorAll('.leaflet-marker-icon').forEach(marker => {
-marker.classList.remove('performance');
-});
-}, 300);
-});
-
 // Auto-refresh ogni 30 secondi se ci sono operazioni pendenti
 setInterval(() => {
 if (pendingOperations > 0) {
 console.log("Auto-refresh per operazioni pendenti");
-reloadAllSpots();
+reloadAllSpots(true);
 }
 }, 30000);
 }
@@ -3674,12 +3714,9 @@ initUI();
 await reloadAllSpots();
         
 if (mapNavigationActive) {
-document.getElementById('mapNavigation').style.display = 'flex';
+document.getElementById('mapNavigation').classList.add('show');
 document.getElementById('mapNavToggle').classList.add('active');
 }
-        
-// Nascondi la navigazione mappe all'inizio
-document.getElementById('mapNavigation').style.display = 'none';
         
 // Mostra notifica di caricamento completato
 setTimeout(() => {
@@ -3695,7 +3732,7 @@ showToast("Errore inizializzazione applicazione", "error");
 // Gestione offline/online
 window.addEventListener('online', () => {
 showToast("Connessione ripristinata", "success");
-reloadAllSpots();
+reloadAllSpots(true);
 });
     
 window.addEventListener('offline', () => {
