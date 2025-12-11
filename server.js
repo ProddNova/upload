@@ -14,7 +14,7 @@ const app = express();
 const USERNAME = process.env.APP_USERNAME || "unit";
 const PASSWORD = process.env.APP_PASSWORD || "ltunit";
 
-// MongoDB Configuration - USA LA TUA STRINGA
+// MongoDB Configuration
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://ltunit:ltunit420@cluster0.bqs9ecb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "ltu-database";
 
@@ -23,42 +23,8 @@ let mongoClient = null;
 let isMongoConnected = false;
 
 // ===============================
-// FUNZIONI CSV PER IMPORT INIZIALE
+// FUNZIONI DI UTILITÀ
 // ===============================
-function parseCSVRow(line) {
-  const result = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  result.push(current);
-  return result;
-}
-
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const rows = [];
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    rows.push(parseCSVRow(line));
-  }
-  return rows;
-}
-
 function extractVoto(desc) {
   if (!desc) return null;
   const match = desc.match(/Voto:\s*([0-9]+)\s*\/\s*6/i);
@@ -93,7 +59,6 @@ function getTipo(name, desc) {
 async function connectToMongoDB() {
   try {
     console.log(`🔌 Tentativo connessione MongoDB...`);
-    console.log(`📡 URI: ${MONGODB_URI.replace(/ltunit420/, '******')}`);
     
     mongoClient = new MongoClient(MONGODB_URI, {
       useNewUrlParser: true,
@@ -125,6 +90,7 @@ async function connectToMongoDB() {
     try {
       await db.collection('spots').createIndex({ lat: 1, lng: 1 });
       await db.collection('spots').createIndex({ id: 1 }, { unique: true });
+      await db.collection('spots').createIndex({ explorato: 1 }); // Nuovo indice per esplorati
       console.log(`📊 Indici creati per spots`);
     } catch (e) {
       console.log(`ℹ️  Indici già esistenti`);
@@ -135,17 +101,13 @@ async function connectToMongoDB() {
     
   } catch (error) {
     console.error(`❌ ERRORE connessione MongoDB:`, error.message);
-    console.log(`⚠️  Verifica:`);
-    console.log(`   1. Network Access su Atlas (aggiungi 0.0.0.0/0)`);
-    console.log(`   2. Username/password corretti`);
-    console.log(`   3. Cluster attivo`);
     isMongoConnected = false;
     return false;
   }
 }
 
 // ===============================
-// IMPORT INIZIALE DA CSV
+// IMPORT INIZIALE DA CSV (OPZIONALE, PER BACKWARD COMPATIBILITÀ)
 // ===============================
 async function importInitialCSV() {
   try {
@@ -167,14 +129,14 @@ async function importInitialCSV() {
     }
     
     const csvContent = await fs.readFile(csvPath, 'utf8');
-    const rows = parseCSV(csvContent);
+    const rows = csvContent.trim().split(/\r?\n/);
     
     if (rows.length <= 1) {
       console.log(`📁 CSV vuoto o solo header`);
       return { imported: 0, skipped: 0 };
     }
     
-    const header = rows[0];
+    const header = rows[0].split(',');
     const dataRows = rows.slice(1);
     
     console.log(`📖 Letti ${dataRows.length} spot da CSV`);
@@ -183,17 +145,21 @@ async function importInitialCSV() {
     let importedCount = 0;
     
     for (const row of dataRows) {
-      if (row.length < 4) continue;
+      if (!row.trim()) continue;
       
-      const name = row[0] || "";
-      const desc = row[1] || "";
-      const lat = parseFloat(row[2]);
-      const lng = parseFloat(row[3]);
+      const cols = row.split(',').map(col => col.trim().replace(/^"(.*)"$/, '$1'));
+      if (cols.length < 4) continue;
+      
+      const name = cols[0] || "";
+      const desc = cols[1] || "";
+      const lat = parseFloat(cols[2]);
+      const lng = parseFloat(cols[3]);
       
       if (isNaN(lat) || isNaN(lng)) continue;
       
       const voto = extractVoto(desc);
       const tipo = getTipo(name, desc);
+      const explorato = false; // Default per importazione da CSV
       
       const spot = {
         id: uuidv4(),
@@ -203,6 +169,7 @@ async function importInitialCSV() {
         lng,
         voto,
         tipo,
+        explorato,
         source: "csv-import",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -352,7 +319,7 @@ async function checkForDuplicates(lat, lng, excludeId = null) {
 // SETTINGS
 // ===============================
 const DEFAULT_SETTINGS = {
-  version: 3,
+  version: 4,
   baseLayer: "osm",
   mapStyle: "default",
   randomIncludeLowRated: false,
@@ -506,9 +473,9 @@ app.get("/api/spots-extra", async (req, res) => {
 
 app.post("/api/spots-extra", authMiddleware, async (req, res) => {
   try {
-    const { name, desc, lat, lng, voto, tipo } = req.body || {};
+    const { name, desc, lat, lng, voto, tipo, explorato } = req.body || {};
     
-    console.log(`[POST] Nuovo spot: ${name} (${lat}, ${lng})`);
+    console.log(`[POST] Nuovo spot: ${name} (${lat}, ${lng}) - Explorato: ${explorato || false}`);
     
     // Validazione
     if (!name || name.trim().length === 0) {
@@ -571,6 +538,7 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
       lng: lngNum,
       voto: votoNum,
       tipo: tipo ? String(tipo) : getTipo(name, desc),
+      explorato: explorato === true || explorato === 'true',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: req.user ? req.user.name : "anonymous",
@@ -659,9 +627,9 @@ app.delete("/api/spots-extra/:id", authMiddleware, async (req, res) => {
 app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
   try {
     const spotId = req.params.id;
-    const { name, desc, lat, lng, voto, tipo } = req.body || {};
+    const { name, desc, lat, lng, voto, tipo, explorato } = req.body || {};
     
-    console.log(`[PUT] Aggiornamento spot ${spotId}: ${name}`);
+    console.log(`[PUT] Aggiornamento spot ${spotId}: ${name} - Explorato: ${explorato}`);
     
     if (!spotId || spotId.length < 10) {
       return res.status(400).json({
@@ -732,6 +700,7 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
       lng: lngNum,
       voto: votoNum,
       tipo: tipo ? String(tipo) : getTipo(name, desc || existingSpot.desc),
+      explorato: explorato !== undefined ? (explorato === true || explorato === 'true') : existingSpot.explorato,
       updatedAt: new Date().toISOString(),
       updatedBy: req.user ? req.user.name : "anonymous"
     };
@@ -767,7 +736,7 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
 });
 
 // ===============================
-// FORCE SAVE ENDPOINT
+// FORCE SAVE ENDPOINT (aggiornato per includere explorato)
 // ===============================
 app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
   try {
@@ -792,7 +761,7 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
     
     for (const spotData of spots) {
       try {
-        const { name, desc, lat, lng, voto, tipo, id } = spotData || {};
+        const { name, desc, lat, lng, voto, tipo, explorato, id } = spotData || {};
         
         if (!name || lat == null || lng == null) {
           results.errors.push({
@@ -822,6 +791,7 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
         }
         
         const tipoFinal = tipo ? String(tipo) : getTipo(name, desc);
+        const exploratoFinal = explorato === true || explorato === 'true';
         
         const spot = {
           name: String(name).trim(),
@@ -830,6 +800,7 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
           lng: lngNum,
           voto: votoNum,
           tipo: tipoFinal,
+          explorato: exploratoFinal,
           updatedAt: new Date().toISOString(),
           updatedBy: req.user ? req.user.name : "force_save",
           version: 1,
@@ -966,6 +937,7 @@ app.post("/api/settings", authMiddleware, async (req, res) => {
 app.get("/api/debug/system-info", async (req, res) => {
   try {
     const spotCount = isMongoConnected ? await db.collection('spots').countDocuments() : 0;
+    const exploratiCount = isMongoConnected ? await db.collection('spots').countDocuments({ explorato: true }) : 0;
     const settings = await getSettings();
     
     res.json({
@@ -980,6 +952,8 @@ app.get("/api/debug/system-info", async (req, res) => {
         },
         stats: {
           spotsCount: spotCount,
+          exploratiCount: exploratiCount,
+          nonExploratiCount: spotCount - exploratiCount,
           settings: settings
         },
         env: {
@@ -1012,7 +986,51 @@ app.get("/api/health", (req, res) => {
 });
 
 // ===============================
-// ALTRI ENDPOINTS (compatibilità)
+// ENDPOINT PER RICERCA CITTA' (nominatim proxy)
+// ===============================
+app.get("/api/search-city", async (req, res) => {
+  try {
+    const query = req.query.q;
+    
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        error: "Query di ricerca richiesta",
+        code: "MISSING_QUERY"
+      });
+    }
+    
+    // Usa Nominatim di OpenStreetMap
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=it`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    res.json({
+      success: true,
+      data: data.map(place => ({
+        display_name: place.display_name,
+        lat: parseFloat(place.lat),
+        lon: parseFloat(place.lon),
+        importance: place.importance,
+        type: place.type
+      })),
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (err) {
+    console.error("❌ Errore ricerca città:", err);
+    res.status(500).json({
+      success: false,
+      error: "Errore ricerca città",
+      message: err.message,
+      code: "CITY_SEARCH_ERROR"
+    });
+  }
+});
+
+// ===============================
+// DECODE GOOGLE MAPS URL
 // ===============================
 app.post("/api/decode-gmaps-url", async (req, res) => {
   try {
@@ -1160,31 +1178,29 @@ async function initializeServer() {
     const mongoConnected = await connectToMongoDB();
     
     if (mongoConnected) {
-      // 2. Importa CSV iniziale
-      console.log('📥 Import iniziale da CSV...');
+      // 2. Importa CSV iniziale (opzionale)
+      console.log('📥 Verifica import iniziale da CSV...');
       const importResult = await importInitialCSV();
-      console.log(`✅ Import completato: ${importResult.imported} importati, ${importResult.skipped} saltati`);
+      console.log(`✅ Import: ${importResult.imported} importati, ${importResult.skipped} saltati`);
       
       // 3. Inizializza settings
       const spotCount = await db.collection('spots').countDocuments();
+      const exploratiCount = await db.collection('spots').countDocuments({ explorato: true });
       const settings = await getSettings();
       
       console.log('📊 Stato iniziale:');
-      console.log(`   • Spot nel database: ${spotCount}`);
+      console.log(`   • Spot totali: ${spotCount}`);
+      console.log(`   • Spot esplorati: ${exploratiCount}`);
       console.log(`   • Database: MongoDB Atlas`);
-      console.log(`   • Cluster: cluster0.bqs9ecb.mongodb.net`);
       
       await saveSettings({
         ...settings,
         database: "mongodb",
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        version: 4
       });
     } else {
       console.log('⚠️  Modalità offline: MongoDB non disponibile');
-      console.log('💡 Verifica:');
-      console.log('   1. Network Access su Atlas (0.0.0.0/0)');
-      console.log('   2. Credenziali corrette');
-      console.log('   3. Cluster attivo');
     }
     
     console.log('✅ ===== INIZIALIZZAZIONE COMPLETATA =====');
@@ -1192,6 +1208,7 @@ async function initializeServer() {
     console.log(`📁 Endpoint principali:`);
     console.log(`   • GET  /api/spots-extra - Lista spot`);
     console.log(`   • POST /api/spots-extra - Aggiungi spot (auth)`);
+    console.log(`   • GET  /api/search-city - Ricerca città`);
     console.log(`   • GET  /api/debug/system-info - Info sistema`);
     console.log(`   • GET  /api/health - Health check`);
     
@@ -1208,7 +1225,7 @@ initializeServer().then(() => {
     console.log(`🚀 Server LTU attivo su http://localhost:${port}`);
     console.log(`⏰ Avviato: ${new Date().toISOString()}`);
     console.log(`💾 Database: MongoDB Atlas`);
-    console.log(`📊 Usa /api/debug/system-info per verificare connessione`);
+    console.log(`🆕 Funzionalità: Campo "explorato" supportato`);
   });
   
   // Graceful shutdown
