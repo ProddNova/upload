@@ -307,40 +307,6 @@ transition: all 0.2s ease;
 background: rgba(37, 99, 235, 0.8);
 transform: scale(1.1);
 }
-/* LEGENDA STILE BOTTONE */
-#legendContainer {
-width: 34px;
-height: auto;
-border-radius: 999px;
-border: 1px solid rgba(148, 163, 184, 0.7);
-background: rgba(15, 23, 42, 0.9);
-box-shadow: 0 12px 25px rgba(15, 23, 42, 0.9);
-padding: 8px 0;
-display: flex;
-flex-direction: column;
-align-items: center;
-gap: 4px;
-}
-.legend-row {
-display: flex;
-align-items: center;
-justify-content: center;
-width: 100%;
-}
-.legend-dot {
-width: 12px;
-height: 12px;
-border-radius: 999px;
-display: inline-block;
-border: 1px solid #020617;
-margin: 0;
-}
-.legend-number {
-font-size: 9px;
-color: var(--text-dim);
-margin-left: 4px;
-min-width: 8px;
-}
 /* OVERLAY PANELS */
 .overlay {
 position: fixed;
@@ -894,9 +860,6 @@ right: 6px;
 #mapNavigation {
 bottom: 15px;
 }
-.legend-number {
-font-size: 8px;
-}
 #streetviewIframe {
 width: 100%;
 height: 80%;
@@ -987,6 +950,167 @@ color: var(--text-main);
 background: #ef4444;
 color: white;
 }
+/* CERCA CITTA' */
+#citySearchContainer {
+position: fixed;
+top: 10px;
+left: 60px;
+z-index: 30;
+display: flex;
+align-items: center;
+gap: 6px;
+background: rgba(15, 23, 42, 0.95);
+border: 1px solid rgba(148, 163, 184, 0.4);
+border-radius: 999px;
+padding: 4px 12px 4px 16px;
+box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+max-width: 300px;
+}
+#citySearchInput {
+background: transparent;
+border: none;
+color: var(--text-main);
+font-size: 12px;
+padding: 6px 0;
+width: 180px;
+outline: none;
+}
+#citySearchInput::placeholder {
+color: rgba(148, 163, 184, 0.7);
+}
+#citySearchBtn {
+background: transparent;
+border: none;
+color: var(--text-dim);
+font-size: 14px;
+cursor: pointer;
+padding: 4px;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+#citySearchBtn:hover {
+color: var(--text-main);
+}
+#citySearchResults {
+position: absolute;
+top: 100%;
+left: 0;
+right: 0;
+background: var(--bg-panel);
+border: 1px solid var(--border-soft);
+border-radius: 12px;
+margin-top: 4px;
+max-height: 200px;
+overflow-y: auto;
+display: none;
+z-index: 100;
+}
+.city-result-item {
+padding: 8px 12px;
+font-size: 12px;
+cursor: pointer;
+border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+}
+.city-result-item:hover {
+background: rgba(37, 99, 235, 0.1);
+}
+.city-result-item:last-child {
+border-bottom: none;
+}
+/* POSIZIONE UTENTE */
+#userLocationBtn {
+position: fixed;
+bottom: 110px;
+right: 10px;
+z-index: 30;
+}
+#userLocationBtn.active {
+border-color: #10b981;
+box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 0 0 2px rgba(16, 185, 129, 0.7);
+}
+.user-location-marker {
+background: #10b981;
+border-radius: 50%;
+border: 3px solid white;
+box-shadow: 0 0 10px rgba(0,0,0,0.5);
+width: 20px;
+height: 20px;
+}
+.user-location-accuracy {
+fill: rgba(16, 185, 129, 0.2);
+stroke: #10b981;
+stroke-width: 1;
+}
+/* CHECKBOX ESPLORATO */
+.checkbox-row {
+display: flex;
+align-items: center;
+gap: 8px;
+margin-top: 4px;
+}
+.checkbox-row input[type="checkbox"] {
+width: 16px;
+height: 16px;
+border-radius: 4px;
+border: 1px solid rgba(148, 163, 184, 0.4);
+background: rgba(15, 23, 42, 0.95);
+cursor: pointer;
+}
+.checkbox-row label {
+font-size: 11px;
+color: var(--text-dim);
+cursor: pointer;
+}
+/* LEGENDA ESPLORATI */
+#legendContainer {
+width: 34px;
+height: auto;
+border-radius: 999px;
+border: 1px solid rgba(148, 163, 184, 0.7);
+background: rgba(15, 23, 42, 0.9);
+box-shadow: 0 12px 25px rgba(15, 23, 42, 0.9);
+padding: 8px 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 4px;
+}
+.legend-row {
+display: flex;
+align-items: center;
+justify-content: center;
+width: 100%;
+}
+.legend-dot {
+width: 12px;
+height: 12px;
+border-radius: 999px;
+display: inline-block;
+border: 1px solid #020617;
+margin: 0;
+}
+.legend-number {
+font-size: 9px;
+color: var(--text-dim);
+margin-left: 4px;
+min-width: 8px;
+}
+.legend-explorato {
+width: 12px;
+height: 12px;
+border-radius: 999px;
+display: inline-block;
+border: 1px solid #020617;
+margin: 0;
+background: #10b981;
+}
+.legend-label {
+font-size: 9px;
+color: var(--text-dim);
+margin-left: 4px;
+min-width: 8px;
+}
 </style>
 </head>
 <body>
@@ -998,6 +1122,13 @@ color: white;
 <!-- FORCE SAVE BUTTON -->
 <button id="forceSaveBtn" class="dock-btn" title="Forza salvataggio spot">💾</button>
 
+<!-- CERCA CITTA' -->
+<div id="citySearchContainer">
+<input id="citySearchInput" type="text" placeholder="Cerca città o luogo..." />
+<button id="citySearchBtn" title="Cerca">🔍</button>
+<div id="citySearchResults"></div>
+</div>
+
 <!-- SYNC STATUS -->
 <div id="syncStatus"></div>
   
@@ -1006,11 +1137,11 @@ color: white;
 <button id="streetviewBtn" class="dock-btn" title="StreetView">🌍</button>
 <button id="importLinkBtn" class="dock-btn" title="Importa link">📎</button>
 <button id="settingsBtn" class="dock-btn" title="Impostazioni">⚙️</button>
-<button id="crosshairToggleBtn" class="dock-btn" title="Mostra/Nascondi mirino">🎯</button>
 <button id="btnList" class="dock-btn" title="Lista spot">📋</button>
 <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
 <button id="btnRandom" class="dock-btn" title="Random spot">🎲</button>
 <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
+<button id="mapStyleBtn" class="dock-btn" title="Selezione rapida mappa">🗺️</button>
 <div id="legendContainer">
 <div class="legend-row"><div class="legend-dot" style="background:#b91c1c"></div><span class="legend-number">1</span></div>
 <div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span class="legend-number">2</span></div>
@@ -1018,9 +1149,13 @@ color: white;
 <div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><span class="legend-number">4</span></div>
 <div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-number">5</span></div>
 <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span class="legend-number">6</span></div>
+<div class="legend-row"><div class="legend-explorato"></div><span class="legend-label">✓</span></div>
 </div>
 <button id="dockToggleBtn" class="dock-btn" title="Mostra/Nascondi pulsanti">⬆️</button>
 </div>
+
+<!-- POSIZIONE UTENTE -->
+<button id="userLocationBtn" class="dock-btn" title="Posizione attuale">📍</button>
 
 <!-- MAP NAVIGATION CONTROLS -->
 <button id="mapNavToggle" class="dock-btn" title="Navigazione rapida mappe">🗺️</button>
@@ -1121,6 +1256,10 @@ color: white;
 <input id="fieldLng" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
 </div>
 </div>
+<div class="checkbox-row">
+<input type="checkbox" id="fieldExplorato" />
+<label for="fieldExplorato">Segna come esplorato</label>
+</div>
 <div class="actions-row">
 <button type="button" id="btnUseCurrentPin" class="btn btn-secondary">Usa pin corrente</button>
 <button type="submit" class="btn btn-primary">Salva spot</button>
@@ -1196,6 +1335,10 @@ color: white;
 <input id="editFieldLng" class="input" type="text" placeholder="Clicca sulla mappa per posizionare il pin" required />
 </div>
 </div>
+<div class="checkbox-row">
+<input type="checkbox" id="editFieldExplorato" />
+<label for="editFieldExplorato">Segna come esplorato</label>
+</div>
 <div class="actions-row">
 <button type="button" id="btnUseCurrentPinEdit" class="btn btn-secondary">Usa pin corrente</button>
 <button type="submit" class="btn btn-primary">Salva modifiche</button>
@@ -1239,10 +1382,6 @@ Cambia la base map condivisa tra tutti gli utenti.
 <option value="esriGray">Esri Gray</option>
 </select>
 </div>
-<div class="settings-row">
-<label for="crosshairEnabled">Abilita mirino (mobile)</label>
-<input id="crosshairEnabled" type="checkbox" />
-</div>
 </section>
 <section class="settings-section">
 <div class="settings-section-title">Random & missioni</div>
@@ -1267,7 +1406,7 @@ Puoi esportare tutti gli spot in CSV per GMaps o importare un JSON semplice.
 <button id="btnExportCsv" class="btn btn-secondary">📤 Export GMaps CSV</button>
 </div>
 <div style="margin-top:6px;font-size:11px;color:var(--text-dim);">
-JSON atteso: array di oggetti con <code>name, desc, lat, lng, voto</code> oppure
+JSON atteso: array di oggetti con <code>name, desc, lat, lng, voto, explorato</code> oppure
 oggetto con <code>places</code>.
 </div>
 <textarea id="exportTextarea" placeholder="Qui apparirà il CSV generato..." readonly></textarea>
@@ -1326,6 +1465,7 @@ per estrarre automaticamente le coordinate.
 <label>Coordinate trovate:</label>
 <div style="font-size: 12px; color: #10b981;" id="coordsFound"></div>
 </div>
+<form id="linkForm">
 <div class="form-row">
 <label for="linkSpotName">Nome spot</label>
 <input type="text" id="linkSpotName" class="input" placeholder="Nome dello spot..." />
@@ -1334,9 +1474,58 @@ per estrarre automaticamente le coordinate.
 <label for="linkSpotDesc">Descrizione</label>
 <textarea id="linkSpotDesc" class="textarea" placeholder="Descrizione..."></textarea>
 </div>
+<div class="cols">
+<div class="form-row">
+<label for="linkSpotVoto">Voto (1–6)</label>
+<select id="linkSpotVoto" class="select voto-select">
+<option value="">Nessun voto</option>
+<option value="1" style="color:#b91c1c">● 1</option>
+<option value="2" style="color:#f97316">● 2</option>
+<option value="3" style="color:#eab308">● 3</option>
+<option value="4" style="color:#2563eb">● 4</option>
+<option value="5" style="color:#16a34a">● 5</option>
+<option value="6" style="color:#a855f7">● 6</option>
+</select>
+</div>
+<div class="form-row">
+<label for="linkSpotTipo">Tipologia</label>
+<select id="linkSpotTipo" class="select">
+<option value="">Auto-rileva</option>
+<option value="hotel">🏨 Hotel</option>
+<option value="villa">🏡 Villa</option>
+<option value="casa">🏠 Casa</option>
+<option value="industria">🏭 Industria</option>
+<option value="scuola">🏫 Scuola</option>
+<option value="chiesa">⛪ Chiesa</option>
+<option value="colonia">🏚️ Colonia</option>
+<option value="istituzione">🏥 Istituzione</option>
+<option value="svago">🎭 Svago</option>
+<option value="castello">🏰 Castello</option>
+<option value="nave">🚢 Nave</option>
+<option value="diga">💧 Diga</option>
+<option value="militare">🪖 Militare</option>
+<option value="altro">📍 Altro</option>
+</select>
+</div>
+</div>
+<div class="cols">
+<div class="form-row">
+<label for="linkSpotLat">Latitudine</label>
+<input type="text" id="linkSpotLat" class="input" readonly />
+</div>
+<div class="form-row">
+<label for="linkSpotLng">Longitudine</label>
+<input type="text" id="linkSpotLng" class="input" readonly />
+</div>
+</div>
+<div class="checkbox-row">
+<input type="checkbox" id="linkSpotExplorato" />
+<label for="linkSpotExplorato">Segna come esplorato</label>
+</div>
 <div class="actions-row">
 <button type="button" id="btnAddFromLink" class="btn btn-primary">Aggiungi spot</button>
 </div>
+</form>
 </div>
 </div>
 </div>
@@ -1703,7 +1892,7 @@ mapStyle: "default",
 randomIncludeLowRated: false,
 crosshairEnabled: false
 };
-let allSpots = []; // tutti (csv + extra)
+let allSpots = []; // tutti (solo dal DB)
 let currentSpot = null; // ultimo spot cliccato (per missioni / random)
 let missions = {}; // localStorage
 let lastAddedSpotId = null; // per centrare spot appena aggiunto
@@ -1716,6 +1905,10 @@ let mapNavigationActive = false; // Stato navigazione mappe
 let mapLayersOrder = []; // Ordine delle mappe per navigazione
 let currentMapIndex = 0; // Indice mappa corrente
 let pendingOperations = 0; // Contatore operazioni in corso
+let userLocationMarker = null; // Marker posizione utente
+let userLocationCircle = null; // Cerchio accuratezza posizione
+let userLocationWatchId = null; // ID del watcher per posizione
+let isUserLocationActive = false; // Stato posizione utente
 
 function loadMissions() {
 try {
@@ -1804,45 +1997,11 @@ console.warn("Errore salvataggio settings locali", e);
 }
 }
 
-async function loadBaseSpots() {
-try {
-const res = await fetch("/spots.csv");
-if (!res.ok) throw new Error("Impossibile caricare spots.csv");
-const text = await res.text();
-const rows = parseCSV(text);
-const dataRows = rows.slice(1);
-const points = [];
-dataRows.forEach(cols => {
-if (cols.length < 4) return;
-const name = cols[0] || "";
-const desc = cols[1] || "";
-const lat = parseFloat(cols[2]);
-const lng = parseFloat(cols[3]);
-if (Number.isNaN(lat) || Number.isNaN(lng)) return;
-const voto = extractVoto(desc);
-const tipo = getTipo(name, desc);
-points.push({ 
-id: `csv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-name, 
-desc, 
-lat, 
-lng, 
-voto, 
-tipo, 
-source: "csv" 
-});
-});
-return points;
-} catch (error) {
-console.error("Errore caricamento base spots:", error);
-showToast("Errore caricamento spots base", "error");
-return [];
-}
-}
+// RIMOSSO: loadBaseSpots() - non carichiamo più dal CSV
 
 async function loadExtraSpots() {
 try {
-updateSyncStatus("Caricamento spot extra...", "syncing");
+updateSyncStatus("Caricamento spot...", "syncing");
 const result = await fetchWithRetry("/api/spots-extra");
 const arr = result.data;
 if (!Array.isArray(arr)) {
@@ -1858,6 +2017,7 @@ const name = raw.name || "";
 const desc = raw.desc || "";
 const voto = raw.voto != null ? parseInt(raw.voto, 10) : extractVoto(desc);
 const tipo = raw.tipo || getTipo(name, desc);
+const explorato = raw.explorato || false;
 return {
 id: raw.id,
 name,
@@ -1866,18 +2026,19 @@ lat,
 lng,
 voto: (voto >= 1 && voto <= 6) ? voto : null,
 tipo,
+explorato,
 source: "extra",
 createdAt: raw.createdAt || null,
 updatedAt: raw.updatedAt || null
 };
 }).filter(Boolean);
         
-updateSyncStatus(`${spots.length} spot extra caricati`, "success");
+updateSyncStatus(`${spots.length} spot caricati`, "success");
 return spots;
 } catch (e) {
 console.warn("Errore caricando spots-extra", e);
 updateSyncStatus("Errore caricamento spot", "error");
-showToast("Errore caricamento spot extra", "error");
+showToast("Errore caricamento spot", "error");
 return [];
 }
 }
@@ -1887,12 +2048,10 @@ try {
 pendingOperations++;
 updateSyncStatus("Aggiornamento spot...", "syncing");
         
-const [base, extra] = await Promise.all([
-loadBaseSpots(),
-loadExtraSpots()
-]);
+// Carica solo dal database
+const spots = await loadExtraSpots();
         
-allSpots = base.concat(extra);
+allSpots = spots;
 renderMarkers();
 renderList();
         
@@ -2034,22 +2193,6 @@ esriGray
 // Ordine per navigazione
 mapLayersOrder = ["osm", "osmHot", "satellite", "satellite2", "satellite3", "topo", "dark", "cartoLight", "stamenToner", "esriTopo", "esriOcean", "esriGray"];
 
-// Nomi delle mappe per display
-const mapNames = {
-osm: "OSM Standard",
-osmHot: "OSM Humanitarian",
-satellite: "Satellite Esri",
-satellite2: "Satellite Google",
-satellite3: "Satellite NASA",
-topo: "OpenTopoMap",
-dark: "Carto Dark",
-cartoLight: "Carto Light",
-stamenToner: "Stamen Toner",
-esriTopo: "Esri Topo",
-esriOcean: "Esri Ocean",
-esriGray: "Esri Gray"
-};
-      
 // Applica baseLayer da settings
 let chosen = baseLayers[appSettings.baseLayer] || osm;
 chosen.addTo(map);
@@ -2227,6 +2370,8 @@ const latInput = document.getElementById("fieldLat");
 const lngInput = document.getElementById("fieldLng");
 const editLatInput = document.getElementById("editFieldLat");
 const editLngInput = document.getElementById("editFieldLng");
+const linkLatInput = document.getElementById("linkSpotLat");
+const linkLngInput = document.getElementById("linkSpotLng");
 
 if (latInput && lngInput) {
 latInput.value = lat.toFixed(6);
@@ -2236,6 +2381,11 @@ lngInput.value = lng.toFixed(6);
 if (editLatInput && editLngInput) {
 editLatInput.value = lat.toFixed(6);
 editLngInput.value = lng.toFixed(6);
+}
+
+if (linkLatInput && linkLngInput) {
+linkLatInput.value = lat.toFixed(6);
+linkLngInput.value = lng.toFixed(6);
 }
 }
 
@@ -2331,13 +2481,14 @@ const emoji = getEmojiByTipo(p.tipo);
 const spotId = p.id || '';
 const updatedInfo = p.updatedAt ? 
 `<br><small>Aggiornato: ${new Date(p.updatedAt).toLocaleDateString('it-IT')}</small>` : '';
+const exploratoBadge = p.explorato ? '<span style="background:#10b981; color:#fff; padding:2px 6px; border-radius:999px; font-size:10px; margin-left:4px;">✓ Esplorato</span>' : '';
       
 return `
 <div class="ltu-popup">
 <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
 <div style="font-size:36px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${emoji}</div>
 <div style="flex:1;">
-<div class="popup-title" style="font-size:15px; font-weight:700; margin-bottom:4px; color:#ffffff !important;">${title}</div>
+<div class="popup-title" style="font-size:15px; font-weight:700; margin-bottom:4px; color:#ffffff !important;">${title} ${exploratoBadge}</div>
 ${p.voto ? `<span style="background:${color}; color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">${votoText} ★</span>` : ''}
 </div>
 </div>
@@ -2370,7 +2521,11 @@ markersLayer.clearLayers();
 let bounds = [];
 
 allSpots.forEach(p => {
-const color = getRatingColor(p.voto || 0);
+let color = getRatingColor(p.voto || 0);
+// Se esplorato, usa colore verde
+if (p.explorato) {
+color = "#10b981";
+}
 const emoji = getEmojiByTipo(p.tipo);
 
 const iconHtml = `
@@ -2381,6 +2536,7 @@ fill="${color}"
 stroke="none"/>
 <circle cx="13" cy="12.5" r="8" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
 <text x="13" y="16" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
+${p.explorato ? '<text x="13" y="30" font-size="8" text-anchor="middle" fill="#10b981" font-weight="bold">✓</text>' : ''}
 </svg>
 </div>
 `;
@@ -2438,6 +2594,7 @@ return txt.includes(q);
 }
       
 filtered.sort((a, b) => {
+// Prima gli esplorati o meno?
 const va = a.voto || 0;
 const vb = b.voto || 0;
 if (va !== vb) return vb - va;
@@ -2460,6 +2617,10 @@ row.classList.add("highlighted");
 const emojiDiv = document.createElement("div");
 emojiDiv.className = "spot-emoji";
 emojiDiv.textContent = getEmojiByTipo(p.tipo);
+if (p.explorato) {
+emojiDiv.style.borderColor = "#10b981";
+emojiDiv.style.boxShadow = "0 0 0 1px #10b981";
+}
         
 const mainDiv = document.createElement("div");
 mainDiv.className = "spot-main";
@@ -2469,10 +2630,17 @@ titleRow.className = "spot-main-title";
         
 const title = document.createElement("strong");
 title.textContent = p.name || "(senza nome)";
+if (p.explorato) {
+title.innerHTML += ' <span style="color:#10b981; font-size:10px;">✓</span>';
+}
         
 const vote = document.createElement("div");
 vote.className = "spot-vote-pill";
 vote.textContent = p.voto ? `${p.voto}` : "-";
+if (p.explorato) {
+vote.style.borderColor = "#10b981";
+vote.style.color = "#10b981";
+}
         
 titleRow.appendChild(title);
 titleRow.appendChild(vote);
@@ -2532,6 +2700,7 @@ const votoSelect = document.getElementById("fieldVoto");
 const votoStr = votoSelect.value;
 const tipoSelect = document.getElementById("fieldTipo");
 const tipo = tipoSelect.value || getTipo(name, desc);
+const explorato = document.getElementById("fieldExplorato").checked;
 
 if (!name || !latStr || !lngStr) {
 showToast("Nome, latitudine e longitudine sono obbligatori", "error");
@@ -2552,7 +2721,7 @@ const v = parseInt(votoStr, 10);
 if (v >= 1 && v <= 6) voto = v;
 }
       
-const payload = { name, desc, lat, lng, voto, tipo };
+const payload = { name, desc, lat, lng, voto, tipo, explorato };
       
 try {
 pendingOperations++;
@@ -2576,6 +2745,7 @@ lat: saved.lat,
 lng: saved.lng,
 voto: saved.voto != null ? saved.voto : voto,
 tipo: saved.tipo || tipo,
+explorato: saved.explorato || explorato,
 source: "extra",
 createdAt: saved.createdAt || new Date().toISOString(),
 updatedAt: saved.updatedAt || new Date().toISOString()
@@ -2590,6 +2760,7 @@ document.getElementById("addPanel").classList.add("hidden");
 document.getElementById("addForm").reset();
 document.getElementById("fieldTipo").value = "";
 document.getElementById("fieldVoto").value = "";
+document.getElementById("fieldExplorato").checked = false;
         
 updateSyncStatus("Spot aggiunto con successo", "success");
 showToast("Spot aggiunto!", "success");
@@ -2731,6 +2902,13 @@ document.getElementById("linkResult").style.display = "block";
 // Popola i campi lat/lng automaticamente
 updateFormCoordinates(data.lat, data.lng);
 
+// Imposta altri campi vuoti
+document.getElementById("linkSpotName").value = "";
+document.getElementById("linkSpotDesc").value = "";
+document.getElementById("linkSpotVoto").value = "";
+document.getElementById("linkSpotTipo").value = "";
+document.getElementById("linkSpotExplorato").checked = false;
+
 updateSyncStatus("Coordinate estratte", "success");
 showToast("Coordinate estratte con successo!", "success");
         
@@ -2744,17 +2922,25 @@ showToast("Impossibile decodificare il link. Assicurati che sia un link Google M
 async function addSpotFromLink() {
 const name = document.getElementById("linkSpotName").value.trim();
 const desc = document.getElementById("linkSpotDesc").value.trim();
-const lat = parseFloat(document.getElementById("fieldLat").value);
-const lng = parseFloat(document.getElementById("fieldLng").value);
+const lat = parseFloat(document.getElementById("linkSpotLat").value);
+const lng = parseFloat(document.getElementById("linkSpotLng").value);
+const votoStr = document.getElementById("linkSpotVoto").value;
+const tipo = document.getElementById("linkSpotTipo").value;
+const explorato = document.getElementById("linkSpotExplorato").checked;
 
 if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
 showToast("Nome e coordinate valide sono obbligatori", "error");
 return;
 }
 
-const voto = null;
-const tipo = getTipo(name, desc);
-const payload = { name, desc, lat, lng, voto, tipo };
+let voto = null;
+if (votoStr) {
+const v = parseInt(votoStr, 10);
+if (v >= 1 && v <= 6) voto = v;
+}
+
+const tipoFinal = tipo ? String(tipo) : getTipo(name, desc);
+const payload = { name, desc, lat, lng, voto, tipo: tipoFinal, explorato };
 
 try {
 pendingOperations++;
@@ -2777,7 +2963,8 @@ desc: saved.desc || desc,
 lat: saved.lat,
 lng: saved.lng,
 voto: saved.voto,
-tipo: saved.tipo || tipo,
+tipo: saved.tipo || tipoFinal,
+explorato: saved.explorato || explorato,
 source: "extra",
 createdAt: saved.createdAt || new Date().toISOString(),
 updatedAt: saved.updatedAt || new Date().toISOString()
@@ -2790,8 +2977,6 @@ renderList();
         
 document.getElementById("importLinkPanel").classList.add("hidden");
 document.getElementById("linkInput").value = "";
-document.getElementById("linkSpotName").value = "";
-document.getElementById("linkSpotDesc").value = "";
 document.getElementById("linkResult").style.display = "none";
         
 updateSyncStatus("Spot aggiunto dal link", "success");
@@ -2854,6 +3039,7 @@ const name = place.name || place.title || "";
 const desc = place.desc || place.description || "";
 const lat = parseFloat(place.lat ?? place.latitude);
 const lng = parseFloat(place.lng ?? place.longitude);
+const explorato = place.explorato || false;
           
 if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
 errors.push(`Spot ${i + 1}: Dati mancanti o invalidi`);
@@ -2862,7 +3048,7 @@ continue;
           
 const voto = place.voto != null ? parseInt(place.voto, 10) : extractVoto(desc);
 const tipo = place.tipo || getTipo(name, desc);
-const payload = { name, desc, lat, lng, voto, tipo };
+const payload = { name, desc, lat, lng, voto, tipo, explorato };
           
 try {
 const result = await fetchWithRetry("/api/spots-extra", {
@@ -2884,6 +3070,7 @@ lat: saved.lat,
 lng: saved.lng,
 voto: saved.voto != null ? saved.voto : voto,
 tipo: saved.tipo || tipo,
+explorato: saved.explorato || explorato,
 source: "extra",
 createdAt: saved.createdAt || new Date().toISOString(),
 updatedAt: saved.updatedAt || new Date().toISOString()
@@ -2927,16 +3114,17 @@ if (!allSpots.length) {
 showToast("Nessuno spot da esportare", "warning");
 return;
 }
-let csv = "Name,Description,Latitude,Longitude,Voto,Tipo,CreatedAt,UpdatedAt,Source\n";
+let csv = "Name,Description,Latitude,Longitude,Voto,Tipo,Explorato,CreatedAt,UpdatedAt,Source\n";
 allSpots.forEach(p => {
 const name = (p.name || "").replace(/"/g, '""');
 const desc = (p.desc || "").replace(/"/g, '""');
 const voto = p.voto || "";
 const tipo = p.tipo || "";
+const explorato = p.explorato ? "true" : "false";
 const createdAt = p.createdAt || "";
 const updatedAt = p.updatedAt || "";
 const source = p.source || "";
-csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo},${createdAt},${updatedAt},${source}\n`;
+csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo},${explorato},${createdAt},${updatedAt},${source}\n`;
 });
       
 document.getElementById("exportTextarea").value = csv;
@@ -2985,6 +3173,7 @@ lat: spot.lat,
 lng: spot.lng,
 voto: spot.voto,
 tipo: spot.tipo,
+explorato: spot.explorato,
 createdAt: spot.createdAt,
 updatedAt: spot.updatedAt
 }))
@@ -3162,6 +3351,219 @@ document.getElementById('forceSaveResultPanel').classList.add('hidden');
 }
 
 // =========================
+// CERCA CITTA'
+// =========================
+function searchCity() {
+const query = document.getElementById('citySearchInput').value.trim();
+if (!query) {
+showToast("Inserisci una città da cercare", "warning");
+return;
+}
+
+const resultsContainer = document.getElementById('citySearchResults');
+resultsContainer.innerHTML = '<div class="city-result-item">Ricerca in corso...</div>';
+resultsContainer.style.display = 'block';
+
+// Usa Nominatim di OpenStreetMap
+const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=it`;
+
+fetch(url)
+.then(response => response.json())
+.then(data => {
+if (data.length === 0) {
+resultsContainer.innerHTML = '<div class="city-result-item">Nessun risultato trovato</div>';
+return;
+}
+
+resultsContainer.innerHTML = '';
+data.forEach(place => {
+const item = document.createElement('div');
+item.className = 'city-result-item';
+item.innerHTML = `<strong>${place.display_name}</strong><br><small>${place.lat}, ${place.lon}</small>`;
+item.addEventListener('click', () => {
+map.setView([parseFloat(place.lat), parseFloat(place.lon)], 13);
+resultsContainer.style.display = 'none';
+document.getElementById('citySearchInput').value = place.display_name.split(',')[0];
+showToast(`Centrato su ${place.display_name.split(',')[0]}`, "success");
+});
+resultsContainer.appendChild(item);
+});
+})
+.catch(error => {
+console.error('Errore ricerca città:', error);
+resultsContainer.innerHTML = '<div class="city-result-item">Errore nella ricerca</div>';
+});
+}
+
+function initCitySearch() {
+const searchBtn = document.getElementById('citySearchBtn');
+const searchInput = document.getElementById('citySearchInput');
+const resultsContainer = document.getElementById('citySearchResults');
+
+searchBtn.addEventListener('click', searchCity);
+
+searchInput.addEventListener('keypress', (e) => {
+if (e.key === 'Enter') {
+searchCity();
+}
+});
+
+// Chiudi risultati quando si clicca fuori
+document.addEventListener('click', (e) => {
+if (!e.target.closest('#citySearchContainer')) {
+resultsContainer.style.display = 'none';
+}
+});
+}
+
+// =========================
+// POSIZIONE UTENTE
+// =========================
+function toggleUserLocation() {
+if (!isUserLocationActive) {
+startUserLocation();
+} else {
+stopUserLocation();
+}
+}
+
+function startUserLocation() {
+if (!navigator.geolocation) {
+showToast("Geolocalizzazione non supportata dal browser", "error");
+return;
+}
+
+const btn = document.getElementById('userLocationBtn');
+btn.classList.add('active');
+btn.title = "Disattiva posizione";
+
+updateSyncStatus("Ricerca posizione...", "syncing");
+
+// Opzioni per alta precisione (specialmente su iOS)
+const options = {
+enableHighAccuracy: true,
+timeout: 10000,
+maximumAge: 0
+};
+
+userLocationWatchId = navigator.geolocation.watchPosition(
+(position) => {
+const lat = position.coords.latitude;
+const lng = position.coords.longitude;
+const accuracy = position.coords.accuracy;
+
+handleUserLocationSuccess(lat, lng, accuracy);
+},
+(error) => {
+handleUserLocationError(error);
+},
+options
+);
+
+isUserLocationActive = true;
+}
+
+function stopUserLocation() {
+if (userLocationWatchId) {
+navigator.geolocation.clearWatch(userLocationWatchId);
+userLocationWatchId = null;
+}
+
+if (userLocationMarker) {
+map.removeLayer(userLocationMarker);
+userLocationMarker = null;
+}
+
+if (userLocationCircle) {
+map.removeLayer(userLocationCircle);
+userLocationCircle = null;
+}
+
+const btn = document.getElementById('userLocationBtn');
+btn.classList.remove('active');
+btn.title = "Posizione attuale";
+
+isUserLocationActive = false;
+showToast("Posizione disattivata", "info");
+}
+
+function handleUserLocationSuccess(lat, lng, accuracy) {
+// Rimuovi marcatori precedenti
+if (userLocationMarker) {
+map.removeLayer(userLocationMarker);
+}
+if (userLocationCircle) {
+map.removeLayer(userLocationCircle);
+}
+
+// Crea marker posizione utente
+userLocationMarker = L.marker([lat, lng], {
+icon: L.divIcon({
+className: 'user-location-marker',
+iconSize: [20, 20],
+iconAnchor: [10, 10]
+})
+}).addTo(map);
+
+// Crea cerchio di accuratezza
+userLocationCircle = L.circle([lat, lng], {
+radius: accuracy,
+className: 'user-location-accuracy',
+fillOpacity: 0.2,
+weight: 1,
+color: '#10b981'
+}).addTo(map);
+
+// Centra mappa sulla posizione
+map.setView([lat, lng], 16);
+
+updateSyncStatus("Posizione aggiornata", "success");
+showToast(`Posizione aggiornata (accuratezza: ${Math.round(accuracy)}m)`, "success");
+
+// Rotazione automatica se supportata
+if (window.DeviceOrientationEvent && 'ontouchstart' in window) {
+window.addEventListener('deviceorientation', handleDeviceOrientation);
+}
+}
+
+function handleUserLocationError(error) {
+let message = "Errore geolocalizzazione: ";
+switch(error.code) {
+case error.PERMISSION_DENIED:
+message += "Permesso negato";
+break;
+case error.POSITION_UNAVAILABLE:
+message += "Posizione non disponibile";
+break;
+case error.TIMEOUT:
+message += "Timeout";
+break;
+default:
+message += "Errore sconosciuto";
+break;
+}
+
+updateSyncStatus(message, "error");
+showToast(message, "error");
+stopUserLocation();
+}
+
+function handleDeviceOrientation(event) {
+if (!userLocationMarker || !map) return;
+
+// Ottieni bussola (su iOS)
+if (event.webkitCompassHeading !== undefined) {
+const heading = event.webkitCompassHeading;
+// Ruota il marker in base alla direzione
+userLocationMarker.setRotationAngle(heading);
+} else if (event.alpha !== undefined) {
+// Android/altri browser
+const heading = event.alpha;
+userLocationMarker.setRotationAngle(heading);
+}
+}
+
+// =========================
 // UI INIT
 // =========================
 function initUI() {
@@ -3219,7 +3621,6 @@ const settingsPanel = document.getElementById("settingsPanel");
 const btnCloseSettings = document.getElementById("btnCloseSettings");
 const mapStyleSelect = document.getElementById("mapStyleSelect");
 const randomLowRatedCheckbox = document.getElementById("randomLowRatedCheckbox");
-const crosshairEnabledCheckbox = document.getElementById("crosshairEnabled");
 const btnImportJson = document.getElementById("btnImportJson");
 const btnExportCsv = document.getElementById("btnExportCsv");
 const btnSaveAllSettings = document.getElementById("btnSaveAllSettings");
@@ -3228,7 +3629,6 @@ settingsBtn.addEventListener("click", () => {
 // sync UI con settings correnti
 mapStyleSelect.value = appSettings.baseLayer || "osm";
 randomLowRatedCheckbox.checked = !!appSettings.randomIncludeLowRated;
-crosshairEnabledCheckbox.checked = !!appSettings.crosshairEnabled;
 settingsPanel.classList.remove("hidden");
 settingsBtn.classList.add("active");
 });
@@ -3250,13 +3650,6 @@ appSettings.randomIncludeLowRated = checked;
 showToast("Impostazione random aggiornata", "success");
 });
 
-crosshairEnabledCheckbox.addEventListener("change", (e) => {
-const checked = e.target.checked;
-appSettings.crosshairEnabled = checked;
-updateCrosshairVisibility();
-showToast("Impostazione mirino aggiornata", "success");
-});
-
 btnImportJson.addEventListener("click", handleImportJson);
 btnExportCsv.addEventListener("click", handleExportCsv);
 
@@ -3272,15 +3665,6 @@ showToast("Tutte le impostazioni salvate!", "success");
 // RANDOM
 const btnRandom = document.getElementById("btnRandom");
 btnRandom.addEventListener("click", pickRandomSpot);
-
-// CROSSHAIR TOGGLE
-const crosshairToggleBtn = document.getElementById("crosshairToggleBtn");
-crosshairToggleBtn.addEventListener("click", () => {
-appSettings.crosshairEnabled = !appSettings.crosshairEnabled;
-updateCrosshairVisibility();
-crosshairEnabledCheckbox.checked = appSettings.crosshairEnabled;
-showToast(appSettings.crosshairEnabled ? "Mirino attivo" : "Mirino disattivato", "info");
-});
 
 // MISSIONI
 const missionBtn = document.getElementById("missionBtn");
@@ -3313,6 +3697,12 @@ document.getElementById("linkResult").style.display = "none";
 });
 btnDecodeLink.addEventListener("click", decodeGoogleMapsLink);
 btnAddFromLink.addEventListener("click", addSpotFromLink);
+
+// MAP STYLE BUTTON (nuovo)
+const mapStyleBtn = document.getElementById("mapStyleBtn");
+mapStyleBtn.addEventListener("click", () => {
+toggleMapNavigation();
+});
 
 // FORCE SAVE
 const forceSaveBtn = document.getElementById('forceSaveBtn');
@@ -3354,6 +3744,13 @@ const nextMapBtn = document.getElementById("nextMapBtn");
 mapNavToggle.addEventListener("click", toggleMapNavigation);
 prevMapBtn.addEventListener("click", prevMap);
 nextMapBtn.addEventListener("click", nextMap);
+
+// POSIZIONE UTENTE
+const userLocationBtn = document.getElementById("userLocationBtn");
+userLocationBtn.addEventListener("click", toggleUserLocation);
+
+// CERCA CITTA'
+initCitySearch();
 
 // EVENTI PER POPUP DINAMICI
 document.addEventListener('click', async (e) => {
@@ -3440,6 +3837,7 @@ document.getElementById('editFieldVoto').value = spot.voto || '';
 document.getElementById('editFieldLat').value = spot.lat.toFixed(6);
 document.getElementById('editFieldLng').value = spot.lng.toFixed(6);
 document.getElementById('editFieldTipo').value = spot.tipo || '';
+document.getElementById('editFieldExplorato').checked = spot.explorato || false;
 
 document.getElementById('editPanel').classList.remove('hidden');
 currentSpot = spot;
@@ -3470,6 +3868,7 @@ const votoSelect = document.getElementById('editFieldVoto');
 const votoStr = votoSelect.value;
 const tipoSelect = document.getElementById('editFieldTipo');
 const tipo = tipoSelect.value || getTipo(name, desc);
+const explorato = document.getElementById('editFieldExplorato').checked;
 
 if (!name || !latStr || !lngStr) {
 showToast('Nome, latitudine e longitudine sono obbligatori', 'error');
@@ -3490,7 +3889,7 @@ const v = parseInt(votoStr, 10);
 if (v >= 1 && v <= 6) voto = v;
 }
         
-const payload = { name, desc, lat, lng, voto, tipo };
+const payload = { name, desc, lat, lng, voto, tipo, explorato };
         
 try {
 pendingOperations++;
