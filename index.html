@@ -11,15 +11,6 @@ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
 crossorigin="anonymous"
 />
-<!-- Leaflet Marker Cluster -->
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-/>
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-/>
 <!-- Leaflet Rotate CSS (hosted locally to avoid CORS) -->
 <style>
 /* Leaflet Rotate CSS embedded locally */
@@ -1039,41 +1030,6 @@ color: var(--text-dim);
 margin-left: 4px;
 min-width: 8px;
 }
-/* Clustering styles */
-.marker-cluster-small {
-background-color: rgba(181, 226, 140, 0.6);
-}
-.marker-cluster-small div {
-background-color: rgba(110, 204, 57, 0.6);
-}
-.marker-cluster-medium {
-background-color: rgba(241, 211, 87, 0.6);
-}
-.marker-cluster-medium div {
-background-color: rgba(240, 194, 12, 0.6);
-}
-.marker-cluster-large {
-background-color: rgba(253, 156, 115, 0.6);
-}
-.marker-cluster-large div {
-background-color: rgba(241, 128, 23, 0.6);
-}
-.marker-cluster {
-background-clip: padding-box;
-border-radius: 20px;
-}
-.marker-cluster div {
-width: 30px;
-height: 30px;
-margin-left: 5px;
-margin-top: 5px;
-text-align: center;
-border-radius: 15px;
-font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
-}
-.marker-cluster span {
-line-height: 30px;
-}
 </style>
 </head>
 <body>
@@ -1498,11 +1454,6 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
 crossorigin="anonymous"
 ></script>
-<!-- Leaflet Marker Cluster JS -->
-<script
-src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
-crossorigin="anonymous"
-></script>
 <!-- Custom Leaflet Rotate (embedded to avoid CORS) -->
 <script>
 // Simple Leaflet Rotate implementation
@@ -1831,7 +1782,6 @@ document.addEventListener('keydown', handleEscape);
 // =========================
 let map;
 let markersLayer;
-let markersCluster;
 let baseLayers = {};
 let appSettings = {
 baseLayer: "osm",
@@ -1858,6 +1808,8 @@ let userLocationWatchId = null; // ID del watcher per posizione
 let isUserLocationActive = false; // Stato posizione utente
 let currentViewCenter = null; // Per mantenere la vista dopo modifiche
 let currentViewZoom = null; // Per mantenere lo zoom dopo modifiche
+let hasLocationPermission = false; // Permesso posizione già concesso
+let isFirstLocationUpdate = true; // Prima volta che aggiorniamo la posizione
 
 function loadMissions() {
 try {
@@ -2158,18 +2110,8 @@ let chosen = baseLayers[appSettings.baseLayer] || osm;
 chosen.addTo(map);
 currentMapIndex = mapLayersOrder.indexOf(appSettings.baseLayer) || 0;
 
-// Crea cluster di marker per performance
-markersCluster = L.markerClusterGroup({
-maxClusterRadius: 80,
-spiderfyOnMaxZoom: true,
-showCoverageOnHover: false,
-zoomToBoundsOnClick: true,
-disableClusteringAtZoom: 16
-});
-markersCluster.addTo(map);
-
-// Layer separato per i marker (ora gestito dal cluster)
-markersLayer = markersCluster;
+// Torna alla visualizzazione originale senza clustering
+markersLayer = L.layerGroup().addTo(map);
 
 // Aggiungi controllo rotazione personalizzato
 L.control.rotate().addTo(map);
@@ -2487,8 +2429,9 @@ ${spotId ? `
 }
 
 function renderMarkers() {
-if (!markersCluster) return;
-markersCluster.clearLayers();
+if (!markersLayer) return;
+markersLayer.clearLayers();
+let bounds = [];
 
 allSpots.forEach(p => {
 let color = getRatingColor(p.voto || 0);
@@ -2519,15 +2462,14 @@ iconAnchor: [13, 36],
 popupAnchor: [0, -32]
 });
 
-const marker = L.marker([p.lat, p.lng], { icon });
+const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
 marker.bindPopup(buildPopupHtml(p));
 
 p._marker = marker;
-markersCluster.addLayer(marker);
-
 marker.on("click", () => {
 currentSpot = p;
 });
+bounds.push([p.lat, p.lng]);
 });
 
 // Se c'è uno spot appena aggiunto, centra su di esso
@@ -2538,6 +2480,10 @@ map.setView([newSpot.lat, newSpot.lng], 16);
 newSpot._marker.openPopup();
 lastAddedSpotId = null;
 }
+} else if (bounds.length > 0) {
+map.fitBounds(bounds, { padding: [40, 40] });
+} else {
+map.setView([44.5, 8.9], 7);
 }
 }
 
@@ -3181,25 +3127,51 @@ showToast("Geolocalizzazione non supportata dal browser", "error");
 return;
 }
 
+// Se già abbiamo il permesso, avvia direttamente
+if (hasLocationPermission) {
+startLocationWatch();
+return;
+}
+
 const btn = document.getElementById('userLocationBtn');
 btn.classList.add('active');
 btn.title = "Disattiva posizione";
 
-updateSyncStatus("Richiesta permesso posizione...", "syncing");
-
-// Opzioni per alta precisione
+// Richiedi il permesso una sola volta
 const options = {
 enableHighAccuracy: true,
 timeout: 10000,
 maximumAge: 0
 };
 
-// Prima richiedi il permesso mostrando un toast
-showToast("Richiesta permesso posizione in corso...", "info");
-
 navigator.geolocation.getCurrentPosition(
 (position) => {
-// Permesso concesso, avvia il watch
+// Permesso concesso
+hasLocationPermission = true;
+isFirstLocationUpdate = true;
+startLocationWatch();
+showToast("Posizione attivata", "success");
+},
+(error) => {
+handleUserLocationError(error);
+btn.classList.remove('active');
+},
+options
+);
+}
+
+function startLocationWatch() {
+if (userLocationWatchId) {
+// Già in ascolto
+return;
+}
+
+const options = {
+enableHighAccuracy: true,
+timeout: 10000,
+maximumAge: 0
+};
+
 userLocationWatchId = navigator.geolocation.watchPosition(
 (position) => {
 const lat = position.coords.latitude;
@@ -3207,21 +3179,11 @@ const lng = position.coords.longitude;
 const accuracy = position.coords.accuracy;
 handleUserLocationSuccess(lat, lng, accuracy);
 },
-(error) => {
-handleUserLocationError(error);
-},
+handleUserLocationError,
 options
 );
 
 isUserLocationActive = true;
-updateSyncStatus("Posizione attivata", "success");
-showToast("Posizione attivata con successo", "success");
-},
-(error) => {
-handleUserLocationError(error);
-btn.classList.remove('active');
-}
-);
 }
 
 function stopUserLocation() {
@@ -3245,7 +3207,6 @@ btn.classList.remove('active');
 btn.title = "Posizione attuale";
 
 isUserLocationActive = false;
-showToast("Posizione disattivata", "info");
 }
 
 function handleUserLocationSuccess(lat, lng, accuracy) {
@@ -3275,13 +3236,11 @@ weight: 1,
 color: '#10b981'
 }).addTo(map);
 
-// Centra mappa sulla posizione (solo zoom 16 se non siamo già più zoomati)
-if (map.getZoom() < 16) {
+// Centra la mappa solo la prima volta
+if (isFirstLocationUpdate) {
 map.setView([lat, lng], 16);
+isFirstLocationUpdate = false;
 }
-
-updateSyncStatus("Posizione aggiornata", "success");
-showToast(`Posizione aggiornata (accuratezza: ${Math.round(accuracy)}m)`, "success");
 }
 
 function handleUserLocationError(error) {
@@ -3289,6 +3248,7 @@ let message = "Errore geolocalizzazione: ";
 switch(error.code) {
 case error.PERMISSION_DENIED:
 message += "Permesso negato. Abilita la geolocalizzazione nelle impostazioni del browser.";
+hasLocationPermission = false;
 break;
 case error.POSITION_UNAVAILABLE:
 message += "Posizione non disponibile";
@@ -3301,7 +3261,6 @@ message += "Errore sconosciuto";
 break;
 }
 
-updateSyncStatus(message, "error");
 showToast(message, "error");
 stopUserLocation();
 }
