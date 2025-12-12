@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Ping my Render site
         run: |
-          curl -s -o /dev/null https://TUO-SITO.onrender.com || true
+          curl -s -o /dev/null https://mappa-abbandonati.onrender.com/ || true
           echo "Ping inviato a $(date)"
