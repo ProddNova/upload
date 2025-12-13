@@ -11,15 +11,6 @@ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
 crossorigin="anonymous"
 />
-<!-- Leaflet Marker Cluster CSS -->
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-/>
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-/>
 <!-- Leaflet Rotate CSS (hosted locally to avoid CORS) -->
 <style>
 /* Leaflet Rotate CSS embedded locally */
@@ -1559,11 +1550,6 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
 crossorigin="anonymous"
 ></script>
-<!-- Leaflet Marker Cluster JS -->
-<script
-src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
-crossorigin="anonymous"
-></script>
 <!-- Custom Leaflet Rotate (embedded to avoid CORS) -->
 <script>
 // Simple Leaflet Rotate implementation
@@ -1891,7 +1877,6 @@ document.addEventListener('keydown', handleEscape);
 // =========================
 let map;
 let markersLayer;
-let markerCluster;
 let baseLayers = {};
 let appSettings = {
 baseLayer: "osm",
@@ -2420,36 +2405,11 @@ esriGray
 let chosen = baseLayers[appSettings.baseLayer] || osm;
 chosen.addTo(map);
 
-// Crea marker cluster group per performance ottimizzata
-markerCluster = L.markerClusterGroup({
-chunkedLoading: true,
-chunkInterval: 100,
-disableClusteringAtZoom: 16,
-maxClusterRadius: 60,
-iconCreateFunction: function(cluster) {
-const childCount = cluster.getChildCount();
-let size = 'large';
-if (childCount < 10) {
-size = 'small';
-} else if (childCount < 100) {
-size = 'medium';
-}
-return new L.DivIcon({
-html: '<div style="background: rgba(37, 99, 235, 0.9); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white;">' + childCount + '</div>',
-className: 'marker-cluster marker-cluster-' + size,
-iconSize: new L.Point(40, 40)
-});
-}
-});
-
-// Layer group per marker singoli
+// Crea layer group per marker
 markersLayer = L.layerGroup().addTo(map);
 
 // Aggiungi controllo rotazione personalizzato
 L.control.rotate().addTo(map);
-
-// Aggiungi controllo zoom standard
-L.control.zoom({ position: 'topright' }).addTo(map);
 
 // Inizializza con vista Italia
 map.setView([44.5, 8.9], 7);
@@ -2691,26 +2651,10 @@ ${spotId ? `
 }
 
 function renderMarkers() {
-// Rimuovi tutti i marker esistenti
-if (markerCluster) {
-map.removeLayer(markerCluster);
-markerCluster.clearLayers();
-}
-  
-if (markersLayer) {
-map.removeLayer(markersLayer);
+if (!markersLayer) return;
 markersLayer.clearLayers();
-}
   
 const spotsToRender = filteredSpots.length > 0 ? filteredSpots : allSpots;
-  
-// Se ci sono molti spot, usa il cluster
-if (spotsToRender.length > 50) {
-markerCluster.addTo(map);
-} else {
-markersLayer.addTo(map);
-}
-  
 let bounds = [];
 
 // Ottimizzazione: usa batch rendering per molti marker
@@ -2761,14 +2705,7 @@ icon,
 // Ottimizzazione: disabilita l'animazione per performance
 riseOnHover: false,
 riseOffset: 250
-});
-
-if (spotsToRender.length > 50) {
-markerCluster.addLayer(marker);
-} else {
-marker.addTo(markersLayer);
-}
-
+}).addTo(markersLayer);
 marker.bindPopup(buildPopupHtml(p));
 
 p._marker = marker;
@@ -3081,10 +3018,6 @@ saveMissions();
 showToast("Missione salvata", "success");
 document.getElementById("missionPanel").classList.add("hidden");
 }
-
-// =========================
-// STREETVIEW (RIMOSSO)
-// =========================
 
 // =========================
 // IMPORT LINK
