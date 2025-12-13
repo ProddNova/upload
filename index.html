@@ -11,6 +11,15 @@ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
 crossorigin="anonymous"
 />
+<!-- Leaflet Marker Cluster CSS -->
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+/>
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+/>
 <!-- Leaflet Rotate CSS (hosted locally to avoid CORS) -->
 <style>
 /* Leaflet Rotate CSS embedded locally */
@@ -186,44 +195,48 @@ box-shadow: none;
 border-color: rgba(59, 130, 246, 0.9);
 box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 0 0 2px rgba(37, 99, 235, 0.7);
 }
-/* FILTER PANEL STYLES */
+/* FILTER PANEL STYLES - MODIFICATO: CENTRATO E PIU' GRANDE */
 #filterPanel {
 position: fixed;
-left: 10px;
-top: 10px;
-z-index: 30;
-background: rgba(15, 23, 42, 0.95);
+left: 50%;
+top: 50%;
+transform: translate(-50%, -50%);
+z-index: 50;
+background: rgba(15, 23, 42, 0.98);
 border: 1px solid rgba(148, 163, 184, 0.4);
-border-radius: 12px;
-padding: 10px;
-box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-max-width: 260px;
+border-radius: 16px;
+padding: 20px;
+box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+width: 90%;
+max-width: 400px;
+max-height: 80vh;
+overflow-y: auto;
 display: none;
 }
 #filterPanel.show {
 display: block;
 }
 .filter-section {
-margin-bottom: 10px;
+margin-bottom: 15px;
 }
 .filter-section-title {
-font-size: 12px;
+font-size: 14px;
 font-weight: 600;
-margin-bottom: 4px;
+margin-bottom: 8px;
 color: var(--text-main);
 }
 .filter-options {
 display: flex;
 flex-wrap: wrap;
-gap: 4px;
-margin-bottom: 6px;
+gap: 6px;
+margin-bottom: 10px;
 }
 .filter-btn {
 background: rgba(15, 23, 42, 0.95);
 border: 1px solid rgba(55, 65, 81, 1);
 border-radius: 999px;
-padding: 4px 8px;
-font-size: 11px;
+padding: 6px 12px;
+font-size: 12px;
 color: var(--text-dim);
 cursor: pointer;
 transition: all 0.2s ease;
@@ -254,40 +267,30 @@ cursor: pointer;
 }
 .filter-actions {
 display: flex;
-gap: 6px;
-margin-top: 8px;
+gap: 8px;
+margin-top: 15px;
 }
 .filter-actions button {
 flex: 1;
-padding: 6px;
+padding: 8px;
 border-radius: 8px;
 border: 1px solid rgba(55, 65, 81, 1);
 background: rgba(15, 23, 42, 0.95);
 color: var(--text-dim);
-font-size: 11px;
+font-size: 12px;
 cursor: pointer;
 }
 .filter-actions button:hover {
 background: rgba(55, 65, 81, 0.3);
 }
-/* MAP NAVIGATION TOGGLE AND CONTROLS */
-#mapNavigation {
+/* FILTER COUNTER - IN ALTO A SINISTRA */
+#filterCounter {
 position: fixed;
-bottom: 20px;
-left: 50%;
-transform: translateX(-50%);
+top: 10px;
+left: 10px;
 z-index: 30;
-display: none;
-flex-direction: column;
-align-items: center;
-gap: 8px;
-}
-#mapNavigation.show {
-display: flex;
-}
-#mapNavInfo {
 background: rgba(15, 23, 42, 0.9);
-border: 1px solid var(--border-soft);
+border: 1px solid rgba(148, 163, 184, 0.4);
 border-radius: 999px;
 padding: 6px 12px;
 font-size: 12px;
@@ -296,29 +299,10 @@ display: flex;
 align-items: center;
 gap: 8px;
 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+display: none;
 }
-#mapNavControls {
+#filterCounter.show {
 display: flex;
-gap: 10px;
-}
-.nav-btn {
-width: 40px;
-height: 40px;
-border-radius: 50%;
-background: rgba(15, 23, 42, 0.9);
-border: 1px solid var(--border-soft);
-color: var(--text-main);
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 20px;
-cursor: pointer;
-box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-transition: all 0.2s ease;
-}
-.nav-btn:hover {
-background: rgba(37, 99, 235, 0.8);
-transform: scale(1.1);
 }
 /* OVERLAY PANELS */
 .overlay {
@@ -867,18 +851,14 @@ max-height: calc(100% - 24px);
 #rightDock {
 right: 6px;
 }
-#mapNavigation {
-bottom: 15px;
-}
 #streetviewIframe {
 width: 100%;
 height: 80%;
 border-radius: 0;
 }
 #filterPanel {
-max-width: calc(100% - 20px);
-left: 50%;
-transform: translateX(-50%);
+width: 95%;
+max-width: 350px;
 }
 }
 /* SYNC STATUS INDICATOR */
@@ -1131,26 +1111,35 @@ min-width: 8px;
 <!-- FILTRI SPOT -->
 <div id="filterPanel">
 <div class="filter-section">
-<div class="filter-section-title">Filtra per Voto</div>
+<div class="filter-section-title">Filtra per Voto (multiselezione)</div>
 <div class="filter-options">
-<button class="filter-btn" data-voto="all">Tutti</button>
-<button class="filter-btn" data-voto="1">1</button>
-<button class="filter-btn" data-voto="2">2</button>
-<button class="filter-btn" data-voto="3">3</button>
-<button class="filter-btn" data-voto="4">4</button>
-<button class="filter-btn" data-voto="5">5</button>
-<button class="filter-btn" data-voto="6">6</button>
+<button class="filter-btn voto-btn" data-voto="all">Tutti</button>
+<button class="filter-btn voto-btn" data-voto="1">1</button>
+<button class="filter-btn voto-btn" data-voto="2">2</button>
+<button class="filter-btn voto-btn" data-voto="3">3</button>
+<button class="filter-btn voto-btn" data-voto="4">4</button>
+<button class="filter-btn voto-btn" data-voto="5">5</button>
+<button class="filter-btn voto-btn" data-voto="6">6</button>
 </div>
 </div>
 <div class="filter-section">
-<div class="filter-section-title">Filtra per Tipo</div>
+<div class="filter-section-title">Filtra per Tipo (multiselezione)</div>
 <div class="filter-options">
-<button class="filter-btn" data-tipo="all">Tutti</button>
-<button class="filter-btn" data-tipo="hotel">🏨</button>
-<button class="filter-btn" data-tipo="villa">🏡</button>
-<button class="filter-btn" data-tipo="casa">🏠</button>
-<button class="filter-btn" data-tipo="industria">🏭</button>
-<button class="filter-btn" data-tipo="altro">📍</button>
+<button class="filter-btn tipo-btn" data-tipo="all">Tutti</button>
+<button class="filter-btn tipo-btn" data-tipo="hotel">🏨 Hotel</button>
+<button class="filter-btn tipo-btn" data-tipo="villa">🏡 Villa</button>
+<button class="filter-btn tipo-btn" data-tipo="casa">🏠 Casa</button>
+<button class="filter-btn tipo-btn" data-tipo="industria">🏭 Industria</button>
+<button class="filter-btn tipo-btn" data-tipo="scuola">🏫 Scuola</button>
+<button class="filter-btn tipo-btn" data-tipo="chiesa">⛪ Chiesa</button>
+<button class="filter-btn tipo-btn" data-tipo="colonia">🏚️ Colonia</button>
+<button class="filter-btn tipo-btn" data-tipo="istituzione">🏥 Istituzione</button>
+<button class="filter-btn tipo-btn" data-tipo="svago">🎭 Svago</button>
+<button class="filter-btn tipo-btn" data-tipo="castello">🏰 Castello</button>
+<button class="filter-btn tipo-btn" data-tipo="nave">🚢 Nave</button>
+<button class="filter-btn tipo-btn" data-tipo="diga">💧 Diga</button>
+<button class="filter-btn tipo-btn" data-tipo="militare">🪖 Militare</button>
+<button class="filter-btn tipo-btn" data-tipo="altro">📍 Altro</button>
 </div>
 </div>
 <div class="checkbox-row">
@@ -1163,6 +1152,11 @@ min-width: 8px;
 </div>
 </div>
 
+<!-- FILTER COUNTER - NUOVO: IN ALTO A SINISTRA -->
+<div id="filterCounter">
+<span id="filterCounterText">0/0</span>
+</div>
+
 <!-- CERCA CITTA' -->
 <div id="citySearchContainer">
 <input id="citySearchInput" type="text" placeholder="Cerca città o luogo..." />
@@ -1173,19 +1167,16 @@ min-width: 8px;
 <!-- SYNC STATUS -->
 <div id="syncStatus"></div>
   
-<!-- DOCK DESTRO CON TOGGLE E LEGENDA -->
+<!-- DOCK DESTRO CON TOGGLE E LEGENDA - RIMOSSI PULSANTI NAVIGAZIONE MAPPE E STREETVIEW -->
 <div id="rightDock">
 <button id="filterBtn" class="dock-btn" title="Filtra spot">🔍</button>
 <button id="userLocationBtn" class="dock-btn" title="Posizione attuale">📍</button>
-<button id="mapNavToggle" class="dock-btn" title="Navigazione rapida mappe">🗺️</button>
-<button id="streetviewBtn" class="dock-btn" title="StreetView">🌍</button>
 <button id="importLinkBtn" class="dock-btn" title="Importa link">📎</button>
 <button id="settingsBtn" class="dock-btn" title="Impostazioni">⚙️</button>
 <button id="btnList" class="dock-btn" title="Lista spot">📋</button>
 <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
 <button id="btnRandom" class="dock-btn" title="Random spot">🎲</button>
 <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
-<button id="mapStyleBtn" class="dock-btn" title="Selezione rapida mappa">🗺️</button>
 <div id="legendContainer">
 <div class="legend-row"><div class="legend-dot" style="background:#b91c1c"></div><span class="legend-number">1</span></div>
 <div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span class="legend-number">2</span></div>
@@ -1196,18 +1187,6 @@ min-width: 8px;
 <div class="legend-row"><div class="legend-explorato"></div><span class="legend-label">✓</span></div>
 </div>
 <button id="dockToggleBtn" class="dock-btn" title="Mostra/Nascondi pulsanti">⬆️</button>
-</div>
-
-<!-- MAP NAVIGATION CONTROLS -->
-<div id="mapNavigation">
-<div id="mapNavInfo">
-<span id="currentMapName">OSM Standard</span>
-<span id="mapCounter">1/12</span>
-</div>
-<div id="mapNavControls">
-<button id="prevMapBtn" class="nav-btn">◀</button>
-<button id="nextMapBtn" class="nav-btn">▶</button>
-</div>
 </div>
 
 <!-- LIST PANEL -->
@@ -1580,6 +1559,11 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
 crossorigin="anonymous"
 ></script>
+<!-- Leaflet Marker Cluster JS -->
+<script
+src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+crossorigin="anonymous"
+></script>
 <!-- Custom Leaflet Rotate (embedded to avoid CORS) -->
 <script>
 // Simple Leaflet Rotate implementation
@@ -1907,6 +1891,7 @@ document.addEventListener('keydown', handleEscape);
 // =========================
 let map;
 let markersLayer;
+let markerCluster;
 let baseLayers = {};
 let appSettings = {
 baseLayer: "osm",
@@ -1924,9 +1909,6 @@ let temporaryPin = { lat: null, lng: null, element: null }; // Pin temporaneo pe
 let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 let ctrlPressed = false; // Stato del tasto Ctrl
 let isRotating = false; // Stato rotazione
-let mapNavigationActive = false; // Stato navigazione mappe
-let mapLayersOrder = []; // Ordine delle mappe per navigazione
-let currentMapIndex = 0; // Indice mappa corrente
 let pendingOperations = 0; // Contatore operazioni in corso
 let userLocationMarker = null; // Marker posizione utente
 let userLocationCircle = null; // Cerchio accuratezza posizione
@@ -1937,10 +1919,10 @@ let currentViewZoom = null; // Per mantenere lo zoom dopo modifiche
 let hasLocationPermission = false; // Permesso posizione già concesso
 let isFirstLocationUpdate = true; // Prima volta che aggiorniamo la posizione
 
-// FILTER STATE
+// FILTER STATE MODIFICATO: ora supporta array per selezioni multiple
 let filterState = {
-voto: null, // null = tutti, altrimenti 1-6
-tipo: null, // null = tutti, altrimenti tipo string
+voti: [], // array di voti selezionati (es: [5, 6])
+tipi: [], // array di tipi selezionati (es: ["villa", "hotel"])
 hideExplorati: false
 };
 
@@ -1979,7 +1961,6 @@ const localSettings = localStorage.getItem("ltu_local_settings");
 if (localSettings) {
 const local = JSON.parse(localSettings);
 appSettings.crosshairEnabled = local.crosshairEnabled || false;
-mapNavigationActive = local.mapNavigationActive || false;
 }
         
 updateSyncStatus("Impostazioni caricate", "success");
@@ -2023,8 +2004,7 @@ showToast(`Errore salvataggio settings: ${e.message}`, "error");
 function saveLocalSettings() {
 try {
 localStorage.setItem("ltu_local_settings", JSON.stringify({
-crosshairEnabled: appSettings.crosshairEnabled,
-mapNavigationActive: mapNavigationActive
+crosshairEnabled: appSettings.crosshairEnabled
 }));
 } catch (e) {
 console.warn("Errore salvataggio settings locali", e);
@@ -2111,19 +2091,28 @@ pendingOperations--;
 }
 
 // =========================
-// FILTER FUNCTIONS
+// FILTER FUNCTIONS MODIFICATE PER MULTISELETTIONE
 // =========================
 function applyFilters() {
 filteredSpots = allSpots.filter(spot => {
-// Filtro voto
-if (filterState.voto !== null && filterState.voto !== 'all') {
-const votoNum = parseInt(filterState.voto);
-if (spot.voto !== votoNum) return false;
+// Filtro voti (multiselezione)
+if (filterState.voti.length > 0) {
+// Se l'array contiene "all", salta il filtro
+if (!filterState.voti.includes("all")) {
+if (!spot.voto || !filterState.voti.includes(spot.voto.toString())) {
+return false;
+}
+}
 }
   
-// Filtro tipo
-if (filterState.tipo !== null && filterState.tipo !== 'all') {
-if (spot.tipo !== filterState.tipo) return false;
+// Filtro tipi (multiselezione)
+if (filterState.tipi.length > 0) {
+// Se l'array contiene "all", salta il filtro
+if (!filterState.tipi.includes("all")) {
+if (!spot.tipo || !filterState.tipi.includes(spot.tipo)) {
+return false;
+}
+}
 }
   
 // Filtro esplorati
@@ -2138,11 +2127,22 @@ return true;
 renderMarkers();
 renderList();
   
-// Aggiorna contatore
-const filterBtn = document.getElementById('filterBtn');
-if (filterBtn) {
+// Aggiorna contatore in alto a sinistra
 const total = allSpots.length;
 const filtered = filteredSpots.length;
+const filterCounter = document.getElementById('filterCounter');
+const filterCounterText = document.getElementById('filterCounterText');
+  
+if (filtered < total) {
+filterCounterText.textContent = `${filtered}/${total}`;
+filterCounter.classList.add('show');
+} else {
+filterCounter.classList.remove('show');
+}
+  
+// Aggiorna pulsante filtro
+const filterBtn = document.getElementById('filterBtn');
+if (filterBtn) {
 if (filtered < total) {
 filterBtn.innerHTML = `${filtered}/${total}`;
 filterBtn.title = `Filtri attivi: ${filtered}/${total} spot`;
@@ -2157,8 +2157,8 @@ filterBtn.classList.remove('active');
 
 function resetFilters() {
 filterState = {
-voto: null,
-tipo: null,
+voti: [],
+tipi: [],
 hideExplorati: false
 };
   
@@ -2166,8 +2166,8 @@ hideExplorati: false
 document.querySelectorAll('.filter-btn').forEach(btn => {
 btn.classList.remove('active');
 });
-document.querySelector('[data-voto="all"]').classList.add('active');
-document.querySelector('[data-tipo="all"]').classList.add('active');
+document.querySelector('.voto-btn[data-voto="all"]').classList.add('active');
+document.querySelector('.tipo-btn[data-tipo="all"]').classList.add('active');
 document.getElementById('hideExplorati').checked = false;
   
 applyFilters();
@@ -2193,21 +2193,79 @@ filterPanel.classList.remove('show');
 }
 });
   
-// Filtri voto
-document.querySelectorAll('[data-voto]').forEach(btn => {
+// Filtri voto (multiselezione)
+document.querySelectorAll('.voto-btn').forEach(btn => {
 btn.addEventListener('click', () => {
-document.querySelectorAll('[data-voto]').forEach(b => b.classList.remove('active'));
+const voto = btn.dataset.voto;
+const index = filterState.voti.indexOf(voto);
+  
+if (voto === "all") {
+// Se clicco "Tutti", deseleziono tutto e attivo solo "all"
+document.querySelectorAll('.voto-btn').forEach(b => b.classList.remove('active'));
 btn.classList.add('active');
-filterState.voto = btn.dataset.voto === 'all' ? null : btn.dataset.voto;
+filterState.voti = ["all"];
+} else {
+// Rimuovo "all" se presente
+const allIndex = filterState.voti.indexOf("all");
+if (allIndex !== -1) {
+filterState.voti.splice(allIndex, 1);
+document.querySelector('.voto-btn[data-voto="all"]').classList.remove('active');
+}
+  
+if (index === -1) {
+// Aggiungo il voto
+btn.classList.add('active');
+filterState.voti.push(voto);
+} else {
+// Rimuovo il voto
+btn.classList.remove('active');
+filterState.voti.splice(index, 1);
+}
+  
+// Se non ci sono voti selezionati, seleziono "all"
+if (filterState.voti.length === 0) {
+document.querySelector('.voto-btn[data-voto="all"]').classList.add('active');
+filterState.voti = ["all"];
+}
+}
 });
 });
   
-// Filtri tipo
-document.querySelectorAll('[data-tipo]').forEach(btn => {
+// Filtri tipo (multiselezione)
+document.querySelectorAll('.tipo-btn').forEach(btn => {
 btn.addEventListener('click', () => {
-document.querySelectorAll('[data-tipo]').forEach(b => b.classList.remove('active'));
+const tipo = btn.dataset.tipo;
+const index = filterState.tipi.indexOf(tipo);
+  
+if (tipo === "all") {
+// Se clicco "Tutti", deseleziono tutto e attivo solo "all"
+document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
 btn.classList.add('active');
-filterState.tipo = btn.dataset.tipo === 'all' ? null : btn.dataset.tipo;
+filterState.tipi = ["all"];
+} else {
+// Rimuovo "all" se presente
+const allIndex = filterState.tipi.indexOf("all");
+if (allIndex !== -1) {
+filterState.tipi.splice(allIndex, 1);
+document.querySelector('.tipo-btn[data-tipo="all"]').classList.remove('active');
+}
+  
+if (index === -1) {
+// Aggiungo il tipo
+btn.classList.add('active');
+filterState.tipi.push(tipo);
+} else {
+// Rimuovo il tipo
+btn.classList.remove('active');
+filterState.tipi.splice(index, 1);
+}
+  
+// Se non ci sono tipi selezionati, seleziono "all"
+if (filterState.tipi.length === 0) {
+document.querySelector('.tipo-btn[data-tipo="all"]').classList.add('active');
+filterState.tipi = ["all"];
+}
+}
 });
 });
   
@@ -2224,6 +2282,12 @@ showToast("Filtri applicati", "success");
 });
   
 resetBtn.addEventListener('click', resetFilters);
+  
+// Inizializza con "all" selezionato
+document.querySelector('.voto-btn[data-voto="all"]').classList.add('active');
+document.querySelector('.tipo-btn[data-tipo="all"]').classList.add('active');
+filterState.voti = ["all"];
+filterState.tipi = ["all"];
 }
 
 // =========================
@@ -2352,19 +2416,40 @@ esriOcean,
 esriGray
 };
 
-// Ordine per navigazione
-mapLayersOrder = ["osm", "osmHot", "satellite", "satellite2", "satellite3", "topo", "dark", "cartoLight", "stamenToner", "esriTopo", "esriOcean", "esriGray"];
-
 // Applica baseLayer da settings
 let chosen = baseLayers[appSettings.baseLayer] || osm;
 chosen.addTo(map);
-currentMapIndex = mapLayersOrder.indexOf(appSettings.baseLayer) || 0;
 
-// Crea layer group con performance ottimizzata
+// Crea marker cluster group per performance ottimizzata
+markerCluster = L.markerClusterGroup({
+chunkedLoading: true,
+chunkInterval: 100,
+disableClusteringAtZoom: 16,
+maxClusterRadius: 60,
+iconCreateFunction: function(cluster) {
+const childCount = cluster.getChildCount();
+let size = 'large';
+if (childCount < 10) {
+size = 'small';
+} else if (childCount < 100) {
+size = 'medium';
+}
+return new L.DivIcon({
+html: '<div style="background: rgba(37, 99, 235, 0.9); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white;">' + childCount + '</div>',
+className: 'marker-cluster marker-cluster-' + size,
+iconSize: new L.Point(40, 40)
+});
+}
+});
+
+// Layer group per marker singoli
 markersLayer = L.layerGroup().addTo(map);
 
 // Aggiungi controllo rotazione personalizzato
 L.control.rotate().addTo(map);
+
+// Aggiungi controllo zoom standard
+L.control.zoom({ position: 'topright' }).addTo(map);
 
 // Inizializza con vista Italia
 map.setView([44.5, 8.9], 7);
@@ -2412,15 +2497,6 @@ ctrlPressed = true;
 map.dragging.disable();
 document.getElementById('map').style.cursor = 'grab';
 }
-// Navigazione mappe con A e D
-if (mapNavigationActive && (e.key === 'a' || e.key === 'A')) {
-e.preventDefault();
-prevMap();
-}
-if (mapNavigationActive && (e.key === 'd' || e.key === 'D')) {
-e.preventDefault();
-nextMap();
-}
 });
 
 document.addEventListener('keyup', function(e) {
@@ -2465,9 +2541,6 @@ document.getElementById('map').style.cursor = ctrlPressed ? 'grab' : 'crosshair'
 });
 }
 
-// Aggiorna UI navigazione mappe
-updateMapNavigationUI();
-      
 // Inizializza crosshair in base alle impostazioni
 updateCrosshairVisibility();
 }
@@ -2570,68 +2643,7 @@ if (map.hasLayer(layer)) map.removeLayer(layer);
 });
 baseLayers[key].addTo(map);
 appSettings.baseLayer = key;
-currentMapIndex = mapLayersOrder.indexOf(key);
-updateMapNavigationUI();
 saveSettings({ baseLayer: key });
-}
-
-function updateMapNavigationUI() {
-const currentKey = mapLayersOrder[currentMapIndex];
-const mapNames = {
-osm: "OSM Standard",
-osmHot: "OSM Humanitarian",
-satellite: "Satellite Esri",
-satellite2: "Satellite Google",
-satellite3: "Satellite NASA",
-topo: "OpenTopoMap",
-dark: "Carto Dark",
-cartoLight: "Carto Light",
-stamenToner: "Stamen Toner",
-esriTopo: "Esri Topo",
-esriOcean: "Esri Ocean",
-esriGray: "Esri Gray"
-};
-
-document.getElementById('currentMapName').textContent = mapNames[currentKey] || currentKey;
-document.getElementById('mapCounter').textContent = `${currentMapIndex + 1}/${mapLayersOrder.length}`;
-
-// Aggiorna select nel settings panel
-const mapStyleSelect = document.getElementById('mapStyleSelect');
-if (mapStyleSelect) {
-mapStyleSelect.value = currentKey;
-}
-}
-
-function toggleMapNavigation() {
-mapNavigationActive = !mapNavigationActive;
-const navElement = document.getElementById('mapNavigation');
-const toggleBtn = document.getElementById('mapNavToggle');
-
-if (mapNavigationActive) {
-navElement.classList.add('show');
-toggleBtn.classList.add('active');
-showToast("Navigazione mappe attiva (A/D per scorrere)", "info");
-} else {
-navElement.classList.remove('show');
-toggleBtn.classList.remove('active');
-showToast("Navigazione mappe disattivata", "info");
-}
-
-saveLocalSettings();
-}
-
-function nextMap() {
-currentMapIndex = (currentMapIndex + 1) % mapLayersOrder.length;
-const nextKey = mapLayersOrder[currentMapIndex];
-switchBaseLayer(nextKey);
-showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`, "info");
-}
-
-function prevMap() {
-currentMapIndex = (currentMapIndex - 1 + mapLayersOrder.length) % mapLayersOrder.length;
-const prevKey = mapLayersOrder[currentMapIndex];
-switchBaseLayer(prevKey);
-showToast(`Mappa: ${document.getElementById('currentMapName').textContent}`, "info");
 }
 
 function buildPopupHtml(p) {
@@ -2679,10 +2691,26 @@ ${spotId ? `
 }
 
 function renderMarkers() {
-if (!markersLayer) return;
+// Rimuovi tutti i marker esistenti
+if (markerCluster) {
+map.removeLayer(markerCluster);
+markerCluster.clearLayers();
+}
+  
+if (markersLayer) {
+map.removeLayer(markersLayer);
 markersLayer.clearLayers();
+}
   
 const spotsToRender = filteredSpots.length > 0 ? filteredSpots : allSpots;
+  
+// Se ci sono molti spot, usa il cluster
+if (spotsToRender.length > 50) {
+markerCluster.addTo(map);
+} else {
+markersLayer.addTo(map);
+}
+  
 let bounds = [];
 
 // Ottimizzazione: usa batch rendering per molti marker
@@ -2699,7 +2727,7 @@ color = "#10b981";
 }
 const emoji = getEmojiByTipo(p.tipo);
 
-// CREA PIN ROTONDO (SIMILE GOOGLE MAPS)
+// CREA PIN ROTONDO CON BORDO PIU' SOTTILE (MODIFICATO: border da 3px a 1px)
 const iconHtml = `
 <div style="
 position: relative;
@@ -2707,7 +2735,7 @@ width: 32px;
 height: 32px;
 border-radius: 50%;
 background: ${color};
-border: 3px solid white;
+border: 1px solid white; /* MODIFICATO: da 3px a 1px */
 box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
 display: flex;
 align-items: center;
@@ -2716,7 +2744,7 @@ font-size: 16px;
 color: white;
 ">
 ${emoji}
-${p.explorato ? '<div style="position:absolute; bottom:-8px; right:-8px; background:#10b981; color:white; width:16px; height:16px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;">✓</div>' : ''}
+${p.explorato ? '<div style="position:absolute; bottom:-6px; right:-6px; background:#10b981; color:white; width:14px; height:14px; border-radius:50%; border:1px solid white; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold;">✓</div>' : ''}
 </div>
 `;
 
@@ -2733,7 +2761,14 @@ icon,
 // Ottimizzazione: disabilita l'animazione per performance
 riseOnHover: false,
 riseOffset: 250
-}).addTo(markersLayer);
+});
+
+if (spotsToRender.length > 50) {
+markerCluster.addLayer(marker);
+} else {
+marker.addTo(markersLayer);
+}
+
 marker.bindPopup(buildPopupHtml(p));
 
 p._marker = marker;
@@ -2749,7 +2784,10 @@ setTimeout(() => renderBatch(end), 0);
 } else {
 // Tutti i marker renderizzati, fai fit bounds se necessario
 if (bounds.length > 0 && !lastAddedSpotId) {
-map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+const latlngBounds = L.latLngBounds(bounds);
+if (latlngBounds.isValid()) {
+map.fitBounds(latlngBounds, { padding: [40, 40], maxZoom: 10 });
+}
 }
 }
 };
@@ -3045,29 +3083,8 @@ document.getElementById("missionPanel").classList.add("hidden");
 }
 
 // =========================
-// STREETVIEW
+// STREETVIEW (RIMOSSO)
 // =========================
-function openStreetView() {
-let lat, lng;
-
-// Usa le coordinate del pin temporaneo se disponibili, altrimenti centro mappa
-if (temporaryPin.lat && temporaryPin.lng) {
-lat = temporaryPin.lat;
-lng = temporaryPin.lng;
-} else {
-const center = map.getCenter();
-lat = center.lat;
-lng = center.lng;
-}
-
-// URL Google StreetView funzionante (apre in nuova finestra)
-const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
-      
-// Apri in nuova finestra
-window.open(url, '_blank', 'noopener,noreferrer');
-      
-showToast("Street View aperto in nuova finestra", "info");
-}
 
 // =========================
 // IMPORT LINK
@@ -3669,10 +3686,6 @@ missionPanel.classList.add("hidden");
 });
 btnSaveMission.addEventListener("click", saveMissionForCurrent);
 
-// STREETVIEW
-const streetviewBtn = document.getElementById("streetviewBtn");
-streetviewBtn.addEventListener("click", openStreetView);
-
 // IMPORT LINK
 const importLinkBtn = document.getElementById("importLinkBtn");
 const importLinkPanel = document.getElementById("importLinkPanel");
@@ -3689,12 +3702,6 @@ document.getElementById("linkResult").style.display = "none";
 btnDecodeLink.addEventListener("click", decodeGoogleMapsLink);
 btnAddFromLink.addEventListener("click", addSpotFromLink);
 
-// MAP STYLE BUTTON (nuovo)
-const mapStyleBtn = document.getElementById("mapStyleBtn");
-mapStyleBtn.addEventListener("click", () => {
-toggleMapNavigation();
-});
-
 // DOCK TOGGLE
 const dockToggleBtn = document.getElementById("dockToggleBtn");
 const rightDock = document.getElementById("rightDock");
@@ -3705,15 +3712,6 @@ const isCollapsed = rightDock.classList.contains("collapsed");
 dockToggleBtn.innerHTML = isCollapsed ? "⬇️" : "⬆️";
 dockToggleBtn.title = isCollapsed ? "Espandi pulsanti" : "Comprimi pulsanti";
 });
-
-// MAP NAVIGATION
-const mapNavToggle = document.getElementById("mapNavToggle");
-const prevMapBtn = document.getElementById("prevMapBtn");
-const nextMapBtn = document.getElementById("nextMapBtn");
-
-mapNavToggle.addEventListener("click", toggleMapNavigation);
-prevMapBtn.addEventListener("click", prevMap);
-nextMapBtn.addEventListener("click", nextMap);
 
 // POSIZIONE UTENTE
 const userLocationBtn = document.getElementById("userLocationBtn");
@@ -3924,18 +3922,6 @@ removeTemporaryPin();
 }
 });
 });
-
-// Gestione tasti A e D per navigazione mappe
-document.addEventListener('keydown', (e) => {
-if (mapNavigationActive && (e.key === 'a' || e.key === 'A')) {
-e.preventDefault();
-prevMap();
-}
-if (mapNavigationActive && (e.key === 'd' || e.key === 'D')) {
-e.preventDefault();
-nextMap();
-}
-});
       
 // Auto-refresh ogni 30 secondi se ci sono operazioni pendenti
 setInterval(() => {
@@ -3956,11 +3942,6 @@ await loadSettings();
 initMap();
 initUI();
 await reloadAllSpots();
-        
-if (mapNavigationActive) {
-document.getElementById('mapNavigation').classList.add('show');
-document.getElementById('mapNavToggle').classList.add('active');
-}
         
 // Mostra notifica di caricamento completato
 setTimeout(() => {
