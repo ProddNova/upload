@@ -186,6 +186,90 @@ box-shadow: none;
 border-color: rgba(59, 130, 246, 0.9);
 box-shadow: 0 0 0 1px rgba(15, 23, 42, 1), 0 0 0 2px rgba(37, 99, 235, 0.7);
 }
+/* FILTER PANEL STYLES */
+#filterPanel {
+position: fixed;
+left: 10px;
+top: 10px;
+z-index: 30;
+background: rgba(15, 23, 42, 0.95);
+border: 1px solid rgba(148, 163, 184, 0.4);
+border-radius: 12px;
+padding: 10px;
+box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+max-width: 260px;
+display: none;
+}
+#filterPanel.show {
+display: block;
+}
+.filter-section {
+margin-bottom: 10px;
+}
+.filter-section-title {
+font-size: 12px;
+font-weight: 600;
+margin-bottom: 4px;
+color: var(--text-main);
+}
+.filter-options {
+display: flex;
+flex-wrap: wrap;
+gap: 4px;
+margin-bottom: 6px;
+}
+.filter-btn {
+background: rgba(15, 23, 42, 0.95);
+border: 1px solid rgba(55, 65, 81, 1);
+border-radius: 999px;
+padding: 4px 8px;
+font-size: 11px;
+color: var(--text-dim);
+cursor: pointer;
+transition: all 0.2s ease;
+}
+.filter-btn:hover {
+border-color: rgba(148, 163, 184, 0.6);
+}
+.filter-btn.active {
+background: rgba(37, 99, 235, 0.2);
+border-color: rgba(37, 99, 235, 0.8);
+color: #93c5fd;
+}
+.checkbox-row {
+display: flex;
+align-items: center;
+gap: 8px;
+margin-top: 6px;
+font-size: 12px;
+color: var(--text-dim);
+}
+.checkbox-row input[type="checkbox"] {
+width: 14px;
+height: 14px;
+border-radius: 3px;
+border: 1px solid rgba(148, 163, 184, 0.4);
+background: rgba(15, 23, 42, 0.95);
+cursor: pointer;
+}
+.filter-actions {
+display: flex;
+gap: 6px;
+margin-top: 8px;
+}
+.filter-actions button {
+flex: 1;
+padding: 6px;
+border-radius: 8px;
+border: 1px solid rgba(55, 65, 81, 1);
+background: rgba(15, 23, 42, 0.95);
+color: var(--text-dim);
+font-size: 11px;
+cursor: pointer;
+}
+.filter-actions button:hover {
+background: rgba(55, 65, 81, 0.3);
+}
 /* MAP NAVIGATION TOGGLE AND CONTROLS */
 #mapNavigation {
 position: fixed;
@@ -654,12 +738,13 @@ text-decoration: none;
 .ltu-popup a:hover {
 text-decoration: underline;
 }
-.ltu-custom-pin {
+/* OPTIMIZED ROUND MARKERS - SIMILI A GOOGLE MAPS */
+.ltu-round-marker {
 background: transparent !important;
 border: none !important;
 box-shadow: none !important;
-width: 26px !important;
-height: 36px !important;
+width: 32px !important;
+height: 32px !important;
 }
 
 /* Popup Leaflet in stile LTU dark premium */
@@ -789,6 +874,11 @@ bottom: 15px;
 width: 100%;
 height: 80%;
 border-radius: 0;
+}
+#filterPanel {
+max-width: calc(100% - 20px);
+left: 50%;
+transform: translateX(-50%);
 }
 }
 /* SYNC STATUS INDICATOR */
@@ -1038,6 +1128,41 @@ min-width: 8px;
 <div id="crosshair"></div>
 <div id="temporaryPin"></div>
 
+<!-- FILTRI SPOT -->
+<div id="filterPanel">
+<div class="filter-section">
+<div class="filter-section-title">Filtra per Voto</div>
+<div class="filter-options">
+<button class="filter-btn" data-voto="all">Tutti</button>
+<button class="filter-btn" data-voto="1">1</button>
+<button class="filter-btn" data-voto="2">2</button>
+<button class="filter-btn" data-voto="3">3</button>
+<button class="filter-btn" data-voto="4">4</button>
+<button class="filter-btn" data-voto="5">5</button>
+<button class="filter-btn" data-voto="6">6</button>
+</div>
+</div>
+<div class="filter-section">
+<div class="filter-section-title">Filtra per Tipo</div>
+<div class="filter-options">
+<button class="filter-btn" data-tipo="all">Tutti</button>
+<button class="filter-btn" data-tipo="hotel">🏨</button>
+<button class="filter-btn" data-tipo="villa">🏡</button>
+<button class="filter-btn" data-tipo="casa">🏠</button>
+<button class="filter-btn" data-tipo="industria">🏭</button>
+<button class="filter-btn" data-tipo="altro">📍</button>
+</div>
+</div>
+<div class="checkbox-row">
+<input type="checkbox" id="hideExplorati" />
+<label for="hideExplorati">Nascondi esplorati</label>
+</div>
+<div class="filter-actions">
+<button id="applyFilters">Applica</button>
+<button id="resetFilters">Reset</button>
+</div>
+</div>
+
 <!-- CERCA CITTA' -->
 <div id="citySearchContainer">
 <input id="citySearchInput" type="text" placeholder="Cerca città o luogo..." />
@@ -1050,6 +1175,7 @@ min-width: 8px;
   
 <!-- DOCK DESTRO CON TOGGLE E LEGENDA -->
 <div id="rightDock">
+<button id="filterBtn" class="dock-btn" title="Filtra spot">🔍</button>
 <button id="userLocationBtn" class="dock-btn" title="Posizione attuale">📍</button>
 <button id="mapNavToggle" class="dock-btn" title="Navigazione rapida mappe">🗺️</button>
 <button id="streetviewBtn" class="dock-btn" title="StreetView">🌍</button>
@@ -1479,7 +1605,6 @@ resetButton.style.textDecoration = 'none';
 resetButton.style.width = '34px';
 resetButton.style.height = '34px';
 resetButton.style.lineHeight = '34px';
-resetButton.style.fontSize = '18px';
 
 L.DomEvent.on(resetButton, 'click', function(e) {
 L.DomEvent.preventDefault(e);
@@ -1790,6 +1915,7 @@ randomIncludeLowRated: false,
 crosshairEnabled: false
 };
 let allSpots = []; // tutti (solo dal DB)
+let filteredSpots = []; // spot filtrati
 let currentSpot = null; // ultimo spot cliccato (per missioni / random)
 let missions = {}; // localStorage
 let lastAddedSpotId = null; // per centrare spot appena aggiunto
@@ -1810,6 +1936,13 @@ let currentViewCenter = null; // Per mantenere la vista dopo modifiche
 let currentViewZoom = null; // Per mantenere lo zoom dopo modifiche
 let hasLocationPermission = false; // Permesso posizione già concesso
 let isFirstLocationUpdate = true; // Prima volta che aggiorniamo la posizione
+
+// FILTER STATE
+let filterState = {
+voto: null, // null = tutti, altrimenti 1-6
+tipo: null, // null = tutti, altrimenti tipo string
+hideExplorati: false
+};
 
 function loadMissions() {
 try {
@@ -1959,8 +2092,8 @@ currentViewZoom = map.getZoom();
 const spots = await loadExtraSpots();
         
 allSpots = spots;
-renderMarkers();
-renderList();
+// Applica filtri correnti
+applyFilters();
         
 // Ripristina la vista se richiesto
 if (keepView && currentViewCenter && currentViewZoom) {
@@ -1978,6 +2111,122 @@ pendingOperations--;
 }
 
 // =========================
+// FILTER FUNCTIONS
+// =========================
+function applyFilters() {
+filteredSpots = allSpots.filter(spot => {
+// Filtro voto
+if (filterState.voto !== null && filterState.voto !== 'all') {
+const votoNum = parseInt(filterState.voto);
+if (spot.voto !== votoNum) return false;
+}
+  
+// Filtro tipo
+if (filterState.tipo !== null && filterState.tipo !== 'all') {
+if (spot.tipo !== filterState.tipo) return false;
+}
+  
+// Filtro esplorati
+if (filterState.hideExplorati && spot.explorato) {
+return false;
+}
+  
+return true;
+});
+  
+// Renderizza i marker filtrati
+renderMarkers();
+renderList();
+  
+// Aggiorna contatore
+const filterBtn = document.getElementById('filterBtn');
+if (filterBtn) {
+const total = allSpots.length;
+const filtered = filteredSpots.length;
+if (filtered < total) {
+filterBtn.innerHTML = `${filtered}/${total}`;
+filterBtn.title = `Filtri attivi: ${filtered}/${total} spot`;
+filterBtn.classList.add('active');
+} else {
+filterBtn.innerHTML = '🔍';
+filterBtn.title = 'Filtra spot';
+filterBtn.classList.remove('active');
+}
+}
+}
+
+function resetFilters() {
+filterState = {
+voto: null,
+tipo: null,
+hideExplorati: false
+};
+  
+// Reset UI
+document.querySelectorAll('.filter-btn').forEach(btn => {
+btn.classList.remove('active');
+});
+document.querySelector('[data-voto="all"]').classList.add('active');
+document.querySelector('[data-tipo="all"]').classList.add('active');
+document.getElementById('hideExplorati').checked = false;
+  
+applyFilters();
+showToast("Filtri resettati", "info");
+}
+
+function initFilters() {
+const filterPanel = document.getElementById('filterPanel');
+const filterBtn = document.getElementById('filterBtn');
+const applyBtn = document.getElementById('applyFilters');
+const resetBtn = document.getElementById('resetFilters');
+const hideExplorati = document.getElementById('hideExplorati');
+  
+// Toggle panel
+filterBtn.addEventListener('click', () => {
+filterPanel.classList.toggle('show');
+});
+  
+// Chiudi panel quando clicchi fuori
+document.addEventListener('click', (e) => {
+if (!e.target.closest('#filterPanel') && !e.target.closest('#filterBtn')) {
+filterPanel.classList.remove('show');
+}
+});
+  
+// Filtri voto
+document.querySelectorAll('[data-voto]').forEach(btn => {
+btn.addEventListener('click', () => {
+document.querySelectorAll('[data-voto]').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+filterState.voto = btn.dataset.voto === 'all' ? null : btn.dataset.voto;
+});
+});
+  
+// Filtri tipo
+document.querySelectorAll('[data-tipo]').forEach(btn => {
+btn.addEventListener('click', () => {
+document.querySelectorAll('[data-tipo]').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+filterState.tipo = btn.dataset.tipo === 'all' ? null : btn.dataset.tipo;
+});
+});
+  
+// Checkbox esplorati
+hideExplorati.addEventListener('change', (e) => {
+filterState.hideExplorati = e.target.checked;
+});
+  
+// Pulsanti azioni
+applyBtn.addEventListener('click', () => {
+applyFilters();
+filterPanel.classList.remove('show');
+showToast("Filtri applicati", "success");
+});
+  
+resetBtn.addEventListener('click', resetFilters);
+}
+
+// =========================
 // MAPPA
 // =========================
 function initMap() {
@@ -1986,7 +2235,8 @@ const mapOptions = {
 zoomControl: false,
 gestureHandling: true,
 maxZoom: 22,
-minZoom: 1
+minZoom: 1,
+preferCanvas: true // USARE CANVAS PER PERFORMANCE MIGLIORI
 };
 
 map = L.map("map", mapOptions);
@@ -2110,7 +2360,7 @@ let chosen = baseLayers[appSettings.baseLayer] || osm;
 chosen.addTo(map);
 currentMapIndex = mapLayersOrder.indexOf(appSettings.baseLayer) || 0;
 
-// Torna alla visualizzazione originale senza clustering
+// Crea layer group con performance ottimizzata
 markersLayer = L.layerGroup().addTo(map);
 
 // Aggiungi controllo rotazione personalizzato
@@ -2431,9 +2681,17 @@ ${spotId ? `
 function renderMarkers() {
 if (!markersLayer) return;
 markersLayer.clearLayers();
+  
+const spotsToRender = filteredSpots.length > 0 ? filteredSpots : allSpots;
 let bounds = [];
 
-allSpots.forEach(p => {
+// Ottimizzazione: usa batch rendering per molti marker
+const batchSize = 50;
+const renderBatch = (start) => {
+const end = Math.min(start + batchSize, spotsToRender.length);
+  
+for (let i = start; i < end; i++) {
+const p = spotsToRender[i];
 let color = getRatingColor(p.voto || 0);
 // Se esplorato, usa colore verde
 if (p.explorato) {
@@ -2441,28 +2699,41 @@ color = "#10b981";
 }
 const emoji = getEmojiByTipo(p.tipo);
 
+// CREA PIN ROTONDO (SIMILE GOOGLE MAPS)
 const iconHtml = `
-<div style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); margin-top: -6px;">
-<svg width="26" height="36" viewBox="0 0 26 36" xmlns="http://www.w3.org/2000/svg">
-<path d="M13,0 C5.373,0 0,5.373 0,13 C0,21.938 13,36 13,36 C13,36 26,21.938 26,13 C26,5.373 20.627,0 13,0 Z"
-fill="${color}"
-stroke="none"/>
-<circle cx="13" cy="12.5" r="8" fill="#ffffff" stroke="#00000011" stroke-width="0.5"/>
-<text x="13" y="16" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#000">${emoji}</text>
-${p.explorato ? '<text x="13" y="30" font-size="8" text-anchor="middle" fill="#10b981" font-weight="bold">✓</text>' : ''}
-</svg>
+<div style="
+position: relative;
+width: 32px;
+height: 32px;
+border-radius: 50%;
+background: ${color};
+border: 3px solid white;
+box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 16px;
+color: white;
+">
+${emoji}
+${p.explorato ? '<div style="position:absolute; bottom:-8px; right:-8px; background:#10b981; color:white; width:16px; height:16px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;">✓</div>' : ''}
 </div>
 `;
 
 const icon = L.divIcon({
 html: iconHtml,
-className: "ltu-custom-pin",
-iconSize: [26, 36],
-iconAnchor: [13, 36],
-popupAnchor: [0, -32]
+className: "ltu-round-marker",
+iconSize: [32, 32],
+iconAnchor: [16, 16],
+popupAnchor: [0, -16]
 });
 
-const marker = L.marker([p.lat, p.lng], { icon }).addTo(markersLayer);
+const marker = L.marker([p.lat, p.lng], { 
+icon,
+// Ottimizzazione: disabilita l'animazione per performance
+riseOnHover: false,
+riseOffset: 250
+}).addTo(markersLayer);
 marker.bindPopup(buildPopupHtml(p));
 
 p._marker = marker;
@@ -2470,20 +2741,32 @@ marker.on("click", () => {
 currentSpot = p;
 });
 bounds.push([p.lat, p.lng]);
-});
+}
+  
+// Renderizza il prossimo batch se necessario
+if (end < spotsToRender.length) {
+setTimeout(() => renderBatch(end), 0);
+} else {
+// Tutti i marker renderizzati, fai fit bounds se necessario
+if (bounds.length > 0 && !lastAddedSpotId) {
+map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+}
+}
+};
+  
+// Inizia il rendering batch
+renderBatch(0);
 
 // Se c'è uno spot appena aggiunto, centra su di esso
 if (lastAddedSpotId) {
-const newSpot = allSpots.find(s => s.id === lastAddedSpotId);
+const newSpot = spotsToRender.find(s => s.id === lastAddedSpotId);
 if (newSpot && newSpot._marker) {
 map.setView([newSpot.lat, newSpot.lng], 16);
-newSpot._marker.openPopup();
+setTimeout(() => {
+if (newSpot._marker) newSpot._marker.openPopup();
+}, 300);
 lastAddedSpotId = null;
 }
-} else if (bounds.length > 0) {
-map.fitBounds(bounds, { padding: [40, 40] });
-} else {
-map.setView([44.5, 8.9], 7);
 }
 }
 
@@ -2497,10 +2780,11 @@ const summaryEl = document.getElementById("listSummary");
 if (!listEl || !searchEl || !summaryEl) return;
       
 const q = (searchEl.value || "").toLowerCase().trim();
-let filtered = allSpots;
+const spotsToRender = filteredSpots.length > 0 ? filteredSpots : allSpots;
+let filtered = spotsToRender;
       
 if (q) {
-filtered = allSpots.filter(p => {
+filtered = spotsToRender.filter(p => {
 const txt = (p.name + " " + (p.desc || "")).toLowerCase();
 return txt.includes(q);
 });
@@ -2517,7 +2801,7 @@ return new Date(b.updatedAt) - new Date(a.updatedAt);
 return a.name.localeCompare(b.name);
 });
       
-summaryEl.textContent = `${filtered.length} spot su ${allSpots.length} totali`;
+summaryEl.textContent = `${filtered.length} spot su ${spotsToRender.length} totali (${allSpots.length} totali nel database)`;
 listEl.innerHTML = "";
       
 filtered.forEach(p => {
@@ -2666,8 +2950,7 @@ updatedAt: saved.updatedAt || new Date().toISOString()
         
 allSpots.push(spot);
 lastAddedSpotId = spot.id;
-renderMarkers();
-renderList();
+applyFilters(); // Applica filtri anche al nuovo spot
         
 document.getElementById("addPanel").classList.add("hidden");
 document.getElementById("addForm").reset();
@@ -2705,14 +2988,15 @@ updateFormCoordinates(center.lat, center.lng);
 // RANDOM SPOT
 // =========================
 function pickRandomSpot() {
-if (!allSpots.length) {
+const spotsToRender = filteredSpots.length > 0 ? filteredSpots : allSpots;
+if (!spotsToRender.length) {
 showToast("Nessuno spot disponibile", "warning");
 return;
 }
       
-let candidates = allSpots;
+let candidates = spotsToRender;
 if (!appSettings.randomIncludeLowRated) {
-const filtered = allSpots.filter(p => !p.voto || p.voto >= 3);
+const filtered = spotsToRender.filter(p => !p.voto || p.voto >= 3);
 if (filtered.length) candidates = filtered;
 }
       
@@ -2885,8 +3169,7 @@ updatedAt: saved.updatedAt || new Date().toISOString()
 
 allSpots.push(spot);
 lastAddedSpotId = spot.id;
-renderMarkers();
-renderList();
+applyFilters(); // Applica filtri anche al nuovo spot
         
 document.getElementById("importLinkPanel").classList.add("hidden");
 document.getElementById("linkInput").value = "";
@@ -2997,8 +3280,7 @@ errors.push(`Spot ${i + 1}: ${e.message}`);
 }
         
 if (importedCount > 0) {
-renderMarkers();
-renderList();
+applyFilters(); // Applica filtri a tutti gli spot
 }
         
 updateSyncStatus(`Importati ${importedCount} spot`, "success");
@@ -3023,12 +3305,13 @@ pendingOperations--;
 }
 
 function handleExportCsv() {
-if (!allSpots.length) {
+const spotsToExport = filteredSpots.length > 0 ? filteredSpots : allSpots;
+if (!spotsToExport.length) {
 showToast("Nessuno spot da esportare", "warning");
 return;
 }
 let csv = "Name,Description,Latitude,Longitude,Voto,Tipo,Explorato,CreatedAt,UpdatedAt,Source\n";
-allSpots.forEach(p => {
+spotsToExport.forEach(p => {
 const name = (p.name || "").replace(/"/g, '""');
 const desc = (p.desc || "").replace(/"/g, '""');
 const voto = p.voto || "";
@@ -3041,7 +3324,7 @@ csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo},${explorato},${cre
 });
       
 document.getElementById("exportTextarea").value = csv;
-showToast(`CSV generato: ${allSpots.length} spot`, "success");
+showToast(`CSV generato: ${spotsToExport.length} spot`, "success");
 }
 
 // =========================
@@ -3269,6 +3552,9 @@ stopUserLocation();
 // UI INIT
 // =========================
 function initUI() {
+// FILTRI
+initFilters();
+
 // LISTA
 const btnList = document.getElementById("btnList");
 const btnCloseList = document.getElementById("btnCloseList");
@@ -3488,8 +3774,7 @@ headers: {
            
 // Rimuovi dall'array e aggiorna
 allSpots = allSpots.filter(s => s.id !== spotId);
-renderMarkers();
-renderList();
+applyFilters(); // Aggiorna filtri dopo eliminazione
 map.closePopup();
             
 updateSyncStatus("Spot eliminato", "success");
@@ -3600,8 +3885,8 @@ updatedAt: updatedSpot.updatedAt || new Date().toISOString()
 };
 }
           
-// Aggiorna i marker mantenendo la vista corrente
-await reloadAllSpots(true);
+// Aggiorna i filtri mantenendo la vista corrente
+applyFilters();
 editPanel.classList.add('hidden');
 editForm.reset();
           
