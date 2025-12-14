@@ -508,16 +508,16 @@ background-position: right 8px center;
 background-size: 16px;
 padding-right: 32px;
 }
-/* NUOVI COLORI PER LE OPZIONI DEL SELECT */
+/* NUOVI COLORI PER LE OPZIONI DEL SELECT - MODIFICATI: VOTO 1 ROSSO, VOTO 2 GRIGIO */
 option[value="1"] {
-color: #6b7280; /* Grigio */
-font-weight: bold;
-background-color: rgba(107, 114, 128, 0.1);
-}
-option[value="2"] {
 color: #ef4444; /* Rosso */
 font-weight: bold;
 background-color: rgba(239, 68, 68, 0.1);
+}
+option[value="2"] {
+color: #6b7280; /* Grigio */
+font-weight: bold;
+background-color: rgba(107, 114, 128, 0.1);
 }
 option[value="3"] {
 color: #16a34a; /* Verde */
@@ -980,7 +980,7 @@ font-size: 11px;
 color: var(--text-dim);
 cursor: pointer;
 }
-/* LEGENDA ESPLORATI - MODIFICATO: COLORE FUCSIA */
+/* LEGENDA ESPLORATI - MODIFICATO: COLORE #ff00e6 */
 #legendContainer {
 width: 34px;
 height: auto;
@@ -1021,7 +1021,7 @@ border-radius: 999px;
 display: inline-block;
 border: 1px solid #020617;
 margin: 0;
-background: #ec4899; /* FUCSIA STILE BARBIE */
+background: #ff00e6; /* MODIFICATO: #ff00e6 */
 }
 .legend-label {
 font-size: 9px;
@@ -1029,7 +1029,7 @@ color: var(--text-dim);
 margin-left: 4px;
 min-width: 8px;
 }
-/* NOTE PANEL - RIVISTO COMPLETAMENTE */
+/* NOTE PANEL - RIVISTO COMPLETAMENTE CON SPAZIO MIGLIORATO */
 #notePanel {
 z-index: 2000;
 }
@@ -1072,6 +1072,7 @@ color: #93c5fd;
 display: none;
 flex: 1;
 overflow: hidden;
+min-height: 0; /* AGGIUNTO: Permette al flex item di ridursi */
 }
 .note-tab-content.active {
 display: flex;
@@ -1079,7 +1080,7 @@ flex-direction: column;
 }
 .note-textarea {
 width: 100%;
-flex: 1;
+height: 100%; /* MODIFICATO: Ora occupa tutto lo spazio disponibile */
 border-radius: 12px;
 border: 1px solid rgba(55, 65, 81, 1);
 background: rgba(15, 23, 42, 0.95);
@@ -1191,8 +1192,8 @@ cursor: pointer;
 <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
 <button id="noteBtn" class="dock-btn" title="Note">📝</button> <!-- NUOVO BOTTONE NOTE -->
 <div id="legendContainer">
-<div class="legend-row"><div class="legend-dot" style="background:#6b7280"></div><span class="legend-number">1</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div><span class="legend-number">2</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div><span class="legend-number">1</span></div> <!-- MODIFICATO: ROSSO -->
+<div class="legend-row"><div class="legend-dot" style="background:#6b7280"></div><span class="legend-number">2</span></div> <!-- MODIFICATO: GRIGIO -->
 <div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-number">3</span></div>
 <div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><span class="legend-number">4</span></div>
 <div class="legend-row"><div class="legend-dot" style="background:#9333ea"></div><span class="legend-number">5</span></div>
@@ -1249,8 +1250,8 @@ cursor: pointer;
 <label for="fieldVoto">Voto (1–6)</label>
 <select id="fieldVoto" class="select voto-select">
 <option value="">Nessun voto</option>
-<option value="1" style="color:#6b7280">● 1 - Grigio</option>
-<option value="2" style="color:#ef4444">● 2 - Rosso</option>
+<option value="1" style="color:#ef4444">● 1 - Rosso</option> <!-- MODIFICATO: ROSSO -->
+<option value="2" style="color:#6b7280">● 2 - Grigio</option> <!-- MODIFICATO: GRIGIO -->
 <option value="3" style="color:#16a34a">● 3 - Verde</option>
 <option value="4" style="color:#2563eb">● 4 - Blu</option>
 <option value="5" style="color:#9333ea">● 5 - Viola</option>
@@ -1328,8 +1329,8 @@ cursor: pointer;
 <label for="editFieldVoto">Voto (1–6)</label>
 <select id="editFieldVoto" class="select voto-select">
 <option value="">Nessun voto</option>
-<option value="1" style="color:#6b7280">● 1 - Grigio</option>
-<option value="2" style="color:#ef4444">● 2 - Rosso</option>
+<option value="1" style="color:#ef4444">● 1 - Rosso</option> <!-- MODIFICATO: ROSSO -->
+<option value="2" style="color:#6b7280">● 2 - Grigio</option> <!-- MODIFICATO: GRIGIO -->
 <option value="3" style="color:#16a34a">● 3 - Verde</option>
 <option value="4" style="color:#2563eb">● 4 - Blu</option>
 <option value="5" style="color:#9333ea">● 5 - Viola</option>
@@ -1566,8 +1567,8 @@ per estrarre automaticamente le coordinate.
 <label for="linkSpotVoto">Voto (1–6)</label>
 <select id="linkSpotVoto" class="select voto-select">
 <option value="">Nessun voto</option>
-<option value="1" style="color:#6b7280">● 1 - Grigio</option>
-<option value="2" style="color:#ef4444">● 2 - Rosso</option>
+<option value="1" style="color:#ef4444">● 1 - Rosso</option> <!-- MODIFICATO: ROSSO -->
+<option value="2" style="color:#6b7280">● 2 - Grigio</option> <!-- MODIFICATO: GRIGIO -->
 <option value="3" style="color:#16a34a">● 3 - Verde</option>
 <option value="4" style="color:#2563eb">● 4 - Blu</option>
 <option value="5" style="color:#9333ea">● 5 - Viola</option>
@@ -1687,11 +1688,11 @@ if (v >= 1 && v <= 6) return v;
 return null;
 }
 
-// NUOVI COLORI IN STILE LTU - MODIFICATI
+// NUOVI COLORI IN STILE LTU - MODIFICATI: VOTO 1 ROSSO, VOTO 2 GRIGIO
 function getRatingColor(r) {
 if (typeof r !== "number" || !isFinite(r)) return "#000000"; // Nero per nessun voto
-if (r === 1) return "#6b7280"; // Grigio
-if (r === 2) return "#ef4444"; // Rosso
+if (r === 1) return "#ef4444"; // Rosso - MODIFICATO
+if (r === 2) return "#6b7280"; // Grigio - MODIFICATO
 if (r === 3) return "#16a34a"; // Verde
 if (r === 4) return "#2563eb"; // Blu
 if (r === 5) return "#9333ea"; // Viola
@@ -1699,9 +1700,9 @@ if (r === 6) return "#fbbf24"; // Oro
 return "#000000";
 }
 
-// NUOVO: Colore per spot esplorati (fucsia Barbie)
+// MODIFICATO: Colore per spot esplorati #ff00e6
 function getExploratoColor() {
-return "#ec4899"; // Fucsia stile Barbie
+return "#ff00e6"; // MODIFICATO: #ff00e6
 }
 
 function getTipo(name, desc) {
@@ -2610,7 +2611,7 @@ const emoji = getEmojiByTipo(p.tipo);
 const spotId = p.id || '';
 const updatedInfo = p.updatedAt ? 
 `<br><small>Aggiornato: ${new Date(p.updatedAt).toLocaleDateString('it-IT')}</small>` : '';
-const exploratoBadge = p.explorato ? '<span style="background:#ec4899; color:#fff; padding:2px 6px; border-radius:999px; font-size:10px; margin-left:4px; font-weight:bold;">✓ Esplorato</span>' : '';
+const exploratoBadge = p.explorato ? '<span style="background:#ff00e6; color:#fff; padding:2px 6px; border-radius:999px; font-size:10px; margin-left:4px; font-weight:bold;">✓ Esplorato</span>' : '';
       
 // Icona punto di domanda per spot senza voto
 let votoDisplay = '';
@@ -2722,9 +2723,9 @@ continue;
 }
 
 // Per spot normali
-// Se esplorato, usa colore fucsia invece di arancione
+// Se esplorato, usa colore #ff00e6
 if (p.explorato) {
-color = getExploratoColor(); // Fucsia Barbie
+color = getExploratoColor(); // #ff00e6
 }
 
 // Se non ha voto, usa nero con punto di domanda
@@ -2752,7 +2753,7 @@ color: ${!p.voto ? '#ffffff' : 'white'};
 font-weight: ${!p.voto ? 'bold' : 'normal'};
 ">
 ${iconContent}
-${p.explorato ? '<div style="position:absolute; bottom:-6px; right:-6px; background:#ec4899; color:white; width:14px; height:14px; border-radius:50%; border:1px solid white; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold;">✓</div>' : ''}
+${p.explorato ? '<div style="position:absolute; bottom:-6px; right:-6px; background:#ff00e6; color:white; width:14px; height:14px; border-radius:50%; border:1px solid white; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold;">✓</div>' : ''}
 </div>
 `;
 
@@ -2853,8 +2854,8 @@ const emojiDiv = document.createElement("div");
 emojiDiv.className = "spot-emoji";
 emojiDiv.textContent = getEmojiByTipo(p.tipo);
 if (p.explorato) {
-emojiDiv.style.borderColor = "#ec4899"; // Fucsia
-emojiDiv.style.boxShadow = "0 0 0 1px #ec4899";
+emojiDiv.style.borderColor = "#ff00e6"; // MODIFICATO: #ff00e6
+emojiDiv.style.boxShadow = "0 0 0 1px #ff00e6";
 }
         
 const mainDiv = document.createElement("div");
@@ -2866,15 +2867,15 @@ titleRow.className = "spot-main-title";
 const title = document.createElement("strong");
 title.textContent = p.name || "(senza nome)";
 if (p.explorato) {
-title.innerHTML += ' <span style="color:#ec4899; font-size:10px; font-weight:bold;">✓</span>';
+title.innerHTML += ' <span style="color:#ff00e6; font-size:10px; font-weight:bold;">✓</span>'; // MODIFICATO
 }
         
 const vote = document.createElement("div");
 vote.className = "spot-vote-pill";
 vote.textContent = p.voto ? `${p.voto}` : "?";
 if (p.explorato) {
-vote.style.borderColor = "#ec4899";
-vote.style.color = "#ec4899";
+vote.style.borderColor = "#ff00e6"; // MODIFICATO
+vote.style.color = "#ff00e6"; // MODIFICATO
 }
         
 titleRow.appendChild(title);
