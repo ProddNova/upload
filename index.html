@@ -515,29 +515,29 @@ font-weight: bold;
 background-color: rgba(107, 114, 128, 0.1);
 }
 option[value="2"] {
+color: #ef4444; /* Rosso */
+font-weight: bold;
+background-color: rgba(239, 68, 68, 0.1);
+}
+option[value="3"] {
 color: #16a34a; /* Verde */
 font-weight: bold;
 background-color: rgba(22, 163, 74, 0.1);
 }
-option[value="3"] {
+option[value="4"] {
 color: #2563eb; /* Blu */
 font-weight: bold;
 background-color: rgba(37, 99, 235, 0.1);
 }
-option[value="4"] {
+option[value="5"] {
 color: #9333ea; /* Viola */
 font-weight: bold;
 background-color: rgba(147, 51, 234, 0.1);
 }
-option[value="5"] {
+option[value="6"] {
 color: #fbbf24; /* Oro */
 font-weight: bold;
 background-color: rgba(251, 191, 36, 0.1);
-}
-option[value="6"] {
-color: #06b6d4; /* Platino/Azzurro cangiante */
-font-weight: bold;
-background-color: rgba(6, 182, 212, 0.1);
 }
 /* SETTINGS */
 .settings-section {
@@ -778,6 +778,17 @@ border-radius: 0;
 width: 95%;
 max-width: 350px;
 }
+/* NOTE PANEL MOBILE */
+.note-tabs {
+padding: 4px;
+}
+.note-tab {
+padding: 6px 8px;
+font-size: 12px;
+}
+.note-textarea {
+font-size: 14px;
+}
 }
 /* SYNC STATUS INDICATOR */
 #syncStatus {
@@ -969,7 +980,7 @@ font-size: 11px;
 color: var(--text-dim);
 cursor: pointer;
 }
-/* LEGENDA ESPLORATI - MODIFICATO: COLORE ARANCIONE */
+/* LEGENDA ESPLORATI - MODIFICATO: COLORE FUCSIA */
 #legendContainer {
 width: 34px;
 height: auto;
@@ -1010,7 +1021,7 @@ border-radius: 999px;
 display: inline-block;
 border: 1px solid #020617;
 margin: 0;
-background: #f97316; /* ARANCIONE invece di verde */
+background: #ec4899; /* FUCSIA STILE BARBIE */
 }
 .legend-label {
 font-size: 9px;
@@ -1018,21 +1029,79 @@ color: var(--text-dim);
 margin-left: 4px;
 min-width: 8px;
 }
-/* NOTE PANEL */
-#notePanel .overlay-body {
-padding: 15px;
+/* NOTE PANEL - RIVISTO COMPLETAMENTE */
+#notePanel {
+z-index: 2000;
 }
-#noteText {
+#notePanel .overlay-card {
+width: 95%;
+height: 90%;
+max-width: 95%;
+max-height: 90%;
+}
+.note-tabs {
+display: flex;
+gap: 4px;
+padding: 8px 12px;
+border-bottom: 1px solid rgba(31, 41, 55, 1);
+background: rgba(15, 23, 42, 0.95);
+}
+.note-tab {
+flex: 1;
+padding: 8px 12px;
+text-align: center;
+border-radius: 8px;
+border: 1px solid rgba(55, 65, 81, 0.5);
+background: rgba(15, 23, 42, 0.7);
+color: var(--text-dim);
+font-size: 13px;
+cursor: pointer;
+transition: all 0.2s ease;
+font-weight: 500;
+}
+.note-tab:hover {
+border-color: rgba(148, 163, 184, 0.6);
+color: var(--text-main);
+}
+.note-tab.active {
+background: rgba(37, 99, 235, 0.2);
+border-color: rgba(37, 99, 235, 0.8);
+color: #93c5fd;
+}
+.note-tab-content {
+display: none;
+flex: 1;
+overflow: hidden;
+}
+.note-tab-content.active {
+display: flex;
+flex-direction: column;
+}
+.note-textarea {
 width: 100%;
+flex: 1;
 border-radius: 12px;
 border: 1px solid rgba(55, 65, 81, 1);
 background: rgba(15, 23, 42, 0.95);
-padding: 12px;
+padding: 16px;
 color: var(--text-main);
-font-size: 14px;
-min-height: 200px;
-resize: vertical;
-font-family: inherit;
+font-size: 16px;
+resize: none;
+font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+line-height: 1.6;
+outline: none;
+overflow-y: auto;
+}
+.note-textarea:focus {
+border-color: #3b82f6;
+box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+.note-stats {
+font-size: 11px;
+color: var(--text-dim);
+text-align: right;
+margin-top: 8px;
+padding: 0 4px;
 }
 /* FILE UPLOAD PER ALLINEAMENTO GMAPS */
 .file-upload-btn {
@@ -1123,11 +1192,11 @@ cursor: pointer;
 <button id="noteBtn" class="dock-btn" title="Note">📝</button> <!-- NUOVO BOTTONE NOTE -->
 <div id="legendContainer">
 <div class="legend-row"><div class="legend-dot" style="background:#6b7280"></div><span class="legend-number">1</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-number">2</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><span class="legend-number">3</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#9333ea"></div><span class="legend-number">4</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#fbbf24"></div><span class="legend-number">5</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#06b6d4"></div><span class="legend-number">6</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div><span class="legend-number">2</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-number">3</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><span class="legend-number">4</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#9333ea"></div><span class="legend-number">5</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#fbbf24"></div><span class="legend-number">6</span></div>
 <div class="legend-row"><div class="legend-explorato"></div><span class="legend-label">✓</span></div>
 </div>
 <button id="dockToggleBtn" class="dock-btn" title="Mostra/Nascondi pulsanti">⬆️</button>
@@ -1181,11 +1250,11 @@ cursor: pointer;
 <select id="fieldVoto" class="select voto-select">
 <option value="">Nessun voto</option>
 <option value="1" style="color:#6b7280">● 1 - Grigio</option>
-<option value="2" style="color:#16a34a">● 2 - Verde</option>
-<option value="3" style="color:#2563eb">● 3 - Blu</option>
-<option value="4" style="color:#9333ea">● 4 - Viola</option>
-<option value="5" style="color:#fbbf24">● 5 - Oro</option>
-<option value="6" style="color:#06b6d4">● 6 - Platino</option>
+<option value="2" style="color:#ef4444">● 2 - Rosso</option>
+<option value="3" style="color:#16a34a">● 3 - Verde</option>
+<option value="4" style="color:#2563eb">● 4 - Blu</option>
+<option value="5" style="color:#9333ea">● 5 - Viola</option>
+<option value="6" style="color:#fbbf24">● 6 - Oro</option>
 </select>
 </div>
 <div class="form-row">
@@ -1260,11 +1329,11 @@ cursor: pointer;
 <select id="editFieldVoto" class="select voto-select">
 <option value="">Nessun voto</option>
 <option value="1" style="color:#6b7280">● 1 - Grigio</option>
-<option value="2" style="color:#16a34a">● 2 - Verde</option>
-<option value="3" style="color:#2563eb">● 3 - Blu</option>
-<option value="4" style="color:#9333ea">● 4 - Viola</option>
-<option value="5" style="color:#fbbf24">● 5 - Oro</option>
-<option value="6" style="color:#06b6d4">● 6 - Platino</option>
+<option value="2" style="color:#ef4444">● 2 - Rosso</option>
+<option value="3" style="color:#16a34a">● 3 - Verde</option>
+<option value="4" style="color:#2563eb">● 4 - Blu</option>
+<option value="5" style="color:#9333ea">● 5 - Viola</option>
+<option value="6" style="color:#fbbf24">● 6 - Oro</option>
 </select>
 </div>
 <div class="form-row">
@@ -1422,21 +1491,37 @@ oggetto con <code>places</code>.
 </div>
 </div>
 
-<!-- NOTE PANEL - NUOVO -->
+<!-- NOTE PANEL - RIVISTO COMPLETAMENTE -->
 <div id="notePanel" class="overlay hidden">
 <div class="overlay-backdrop"></div>
 <div class="overlay-card">
 <div class="overlay-header">
 <div class="overlay-header-title">
 <strong>Note LTU</strong>
-<small>Scrivi note, idee, appunti per le tue esplorazioni</small>
+<small>Appunti, idee, piani per le tue esplorazioni</small>
 </div>
 <button id="btnCloseNote" class="icon-btn">✕</button>
 </div>
-<div class="overlay-body">
-<textarea id="noteText" placeholder="Scrivi qui le tue note..."></textarea>
-<div class="actions-row">
-<button id="btnSaveNote" class="btn btn-primary">💾 Salva note</button>
+<div class="overlay-body" style="padding: 0; display: flex; flex-direction: column;">
+<div class="note-tabs">
+<div class="note-tab active" data-tab="note1">📝 Note 1</div>
+<div class="note-tab" data-tab="note2">📝 Note 2</div>
+<div class="note-tab" data-tab="note3">📝 Note 3</div>
+</div>
+<div class="note-tab-content active" id="noteTab1">
+<textarea class="note-textarea" id="noteText1" placeholder="Scrivi qui le tue note, idee, appunti per le esplorazioni..."></textarea>
+<div class="note-stats" id="noteStats1">0 caratteri</div>
+</div>
+<div class="note-tab-content" id="noteTab2">
+<textarea class="note-textarea" id="noteText2" placeholder="Scrivi qui le tue note, idee, appunti per le esplorazioni..."></textarea>
+<div class="note-stats" id="noteStats2">0 caratteri</div>
+</div>
+<div class="note-tab-content" id="noteTab3">
+<textarea class="note-textarea" id="noteText3" placeholder="Scrivi qui le tue note, idee, appunti per le esplorazioni..."></textarea>
+<div class="note-stats" id="noteStats3">0 caratteri</div>
+</div>
+<div class="actions-row" style="padding: 12px; border-top: 1px solid rgba(31, 41, 55, 1);">
+<button id="btnSaveNote" class="btn btn-primary">💾 Salva tutte le note</button>
 </div>
 </div>
 </div>
@@ -1482,11 +1567,11 @@ per estrarre automaticamente le coordinate.
 <select id="linkSpotVoto" class="select voto-select">
 <option value="">Nessun voto</option>
 <option value="1" style="color:#6b7280">● 1 - Grigio</option>
-<option value="2" style="color:#16a34a">● 2 - Verde</option>
-<option value="3" style="color:#2563eb">● 3 - Blu</option>
-<option value="4" style="color:#9333ea">● 4 - Viola</option>
-<option value="5" style="color:#fbbf24">● 5 - Oro</option>
-<option value="6" style="color:#06b6d4">● 6 - Platino</option>
+<option value="2" style="color:#ef4444">● 2 - Rosso</option>
+<option value="3" style="color:#16a34a">● 3 - Verde</option>
+<option value="4" style="color:#2563eb">● 4 - Blu</option>
+<option value="5" style="color:#9333ea">● 5 - Viola</option>
+<option value="6" style="color:#fbbf24">● 6 - Oro</option>
 </select>
 </div>
 <div class="form-row">
@@ -1602,16 +1687,21 @@ if (v >= 1 && v <= 6) return v;
 return null;
 }
 
-// NUOVI COLORI IN STILE LTU
+// NUOVI COLORI IN STILE LTU - MODIFICATI
 function getRatingColor(r) {
 if (typeof r !== "number" || !isFinite(r)) return "#000000"; // Nero per nessun voto
 if (r === 1) return "#6b7280"; // Grigio
-if (r === 2) return "#16a34a"; // Verde
-if (r === 3) return "#2563eb"; // Blu
-if (r === 4) return "#9333ea"; // Viola
-if (r === 5) return "#fbbf24"; // Oro
-if (r === 6) return "#06b6d4"; // Platino/Azzurro cangiante
+if (r === 2) return "#ef4444"; // Rosso
+if (r === 3) return "#16a34a"; // Verde
+if (r === 4) return "#2563eb"; // Blu
+if (r === 5) return "#9333ea"; // Viola
+if (r === 6) return "#fbbf24"; // Oro
 return "#000000";
+}
+
+// NUOVO: Colore per spot esplorati (fucsia Barbie)
+function getExploratoColor() {
+return "#ec4899"; // Fucsia stile Barbie
 }
 
 function getTipo(name, desc) {
@@ -1839,7 +1929,7 @@ let allSpots = []; // tutti (solo dal DB)
 let filteredSpots = []; // spot filtrati
 let currentSpot = null; // ultimo spot cliccato (per missioni / random)
 let missions = {}; // localStorage
-let notes = {}; // localStorage per le note
+let notes = { note1: "", note2: "", note3: "" }; // localStorage per le note (ora 3 tab)
 let lastAddedSpotId = null; // per centrare spot appena aggiunto
 let spotToHighlight = null; // ID dello spot da evidenziare nella lista
 let temporaryPin = { lat: null, lng: null, element: null }; // Pin temporaneo per PC
@@ -1854,6 +1944,7 @@ let currentViewZoom = null; // Per mantenere lo zoom dopo modifiche
 let hasLocationPermission = false; // Permesso posizione già concesso
 let isFirstLocationUpdate = true; // Prima volta che aggiorniamo la posizione
 let gmapsMissingSpots = []; // Spot mancanti trovati in GMaps
+let currentNoteTab = "note1"; // Tab note attualmente attivo
 
 // FILTER STATE MODIFICATO: ora supporta array per selezioni multiple
 let filterState = {
@@ -1881,23 +1972,28 @@ localStorage.setItem("ltu_missions_v1", JSON.stringify(missions));
 } catch (e) {}
 }
 
-// NUOVA FUNZIONE PER NOTE
+// NUOVA FUNZIONE PER NOTE (3 tab)
 function loadNotes() {
 try {
-const raw = localStorage.getItem("ltu_notes_v1");
+const raw = localStorage.getItem("ltu_notes_v2");
 if (!raw) {
-notes = { general: "" };
+notes = { note1: "", note2: "", note3: "" };
 return;
 }
-notes = JSON.parse(raw) || { general: "" };
+const parsed = JSON.parse(raw);
+notes = {
+note1: parsed.note1 || "",
+note2: parsed.note2 || "",
+note3: parsed.note3 || ""
+};
 } catch (e) {
-notes = { general: "" };
+notes = { note1: "", note2: "", note3: "" };
 }
 }
 
 function saveNotes() {
 try {
-localStorage.setItem("ltu_notes_v1", JSON.stringify(notes));
+localStorage.setItem("ltu_notes_v2", JSON.stringify(notes));
 } catch (e) {}
 }
 
@@ -2514,7 +2610,7 @@ const emoji = getEmojiByTipo(p.tipo);
 const spotId = p.id || '';
 const updatedInfo = p.updatedAt ? 
 `<br><small>Aggiornato: ${new Date(p.updatedAt).toLocaleDateString('it-IT')}</small>` : '';
-const exploratoBadge = p.explorato ? '<span style="background:#f97316; color:#fff; padding:2px 6px; border-radius:999px; font-size:10px; margin-left:4px;">✓ Esplorato</span>' : '';
+const exploratoBadge = p.explorato ? '<span style="background:#ec4899; color:#fff; padding:2px 6px; border-radius:999px; font-size:10px; margin-left:4px; font-weight:bold;">✓ Esplorato</span>' : '';
       
 // Icona punto di domanda per spot senza voto
 let votoDisplay = '';
@@ -2626,9 +2722,9 @@ continue;
 }
 
 // Per spot normali
-// Se esplorato, usa colore arancione invece di verde
+// Se esplorato, usa colore fucsia invece di arancione
 if (p.explorato) {
-color = "#f97316"; // Arancione
+color = getExploratoColor(); // Fucsia Barbie
 }
 
 // Se non ha voto, usa nero con punto di domanda
@@ -2656,7 +2752,7 @@ color: ${!p.voto ? '#ffffff' : 'white'};
 font-weight: ${!p.voto ? 'bold' : 'normal'};
 ">
 ${iconContent}
-${p.explorato ? '<div style="position:absolute; bottom:-6px; right:-6px; background:#f97316; color:white; width:14px; height:14px; border-radius:50%; border:1px solid white; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold;">✓</div>' : ''}
+${p.explorato ? '<div style="position:absolute; bottom:-6px; right:-6px; background:#ec4899; color:white; width:14px; height:14px; border-radius:50%; border:1px solid white; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold;">✓</div>' : ''}
 </div>
 `;
 
@@ -2757,8 +2853,8 @@ const emojiDiv = document.createElement("div");
 emojiDiv.className = "spot-emoji";
 emojiDiv.textContent = getEmojiByTipo(p.tipo);
 if (p.explorato) {
-emojiDiv.style.borderColor = "#f97316"; // Arancione
-emojiDiv.style.boxShadow = "0 0 0 1px #f97316";
+emojiDiv.style.borderColor = "#ec4899"; // Fucsia
+emojiDiv.style.boxShadow = "0 0 0 1px #ec4899";
 }
         
 const mainDiv = document.createElement("div");
@@ -2770,15 +2866,15 @@ titleRow.className = "spot-main-title";
 const title = document.createElement("strong");
 title.textContent = p.name || "(senza nome)";
 if (p.explorato) {
-title.innerHTML += ' <span style="color:#f97316; font-size:10px;">✓</span>';
+title.innerHTML += ' <span style="color:#ec4899; font-size:10px; font-weight:bold;">✓</span>';
 }
         
 const vote = document.createElement("div");
 vote.className = "spot-vote-pill";
 vote.textContent = p.voto ? `${p.voto}` : "?";
 if (p.explorato) {
-vote.style.borderColor = "#f97316";
-vote.style.color = "#f97316";
+vote.style.borderColor = "#ec4899";
+vote.style.color = "#ec4899";
 }
         
 titleRow.appendChild(title);
@@ -2987,20 +3083,73 @@ document.getElementById("missionPanel").classList.add("hidden");
 }
 
 // =========================
-// NOTE FUNCTIONS
+// NOTE FUNCTIONS - RIVISTE PER 3 TAB
 // =========================
 function openNotePanel() {
 const panel = document.getElementById("notePanel");
-const textEl = document.getElementById("noteText");
       
 // Carica le note salvate
-textEl.value = notes.general || "";
+document.getElementById("noteText1").value = notes.note1 || "";
+document.getElementById("noteText2").value = notes.note2 || "";
+document.getElementById("noteText3").value = notes.note3 || "";
+      
+// Aggiorna statistiche
+updateNoteStats();
+      
+// Mostra il primo tab
+switchNoteTab("note1");
 panel.classList.remove("hidden");
 }
 
+function switchNoteTab(tabId) {
+currentNoteTab = tabId;
+      
+// Aggiorna tab attivi
+document.querySelectorAll('.note-tab').forEach(tab => {
+if (tab.dataset.tab === tabId) {
+tab.classList.add('active');
+} else {
+tab.classList.remove('active');
+}
+});
+      
+// Aggiorna contenuti tab
+document.querySelectorAll('.note-tab-content').forEach(content => {
+if (content.id === tabId + 'Tab') {
+content.classList.add('active');
+} else {
+content.classList.remove('active');
+}
+});
+      
+// Aggiorna statistiche per il tab corrente
+updateNoteStatsForTab(tabId);
+}
+
+function updateNoteStatsForTab(tabId) {
+const textarea = document.getElementById(tabId + 'Text');
+const statsEl = document.getElementById(tabId + 'Stats');
+if (!textarea || !statsEl) return;
+      
+const text = textarea.value;
+const chars = text.length;
+const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+const lines = text.split('\n').length;
+      
+statsEl.textContent = `${chars} caratteri, ${words} parole, ${lines} righe`;
+}
+
+function updateNoteStats() {
+updateNoteStatsForTab('note1');
+updateNoteStatsForTab('note2');
+updateNoteStatsForTab('note3');
+}
+
 function saveNote() {
-const text = document.getElementById("noteText").value;
-notes.general = text;
+// Salva tutte e tre le note
+notes.note1 = document.getElementById("noteText1").value;
+notes.note2 = document.getElementById("noteText2").value;
+notes.note3 = document.getElementById("noteText3").value;
 saveNotes();
 showToast("Note salvate", "success");
 document.getElementById("notePanel").classList.add("hidden");
@@ -3852,7 +4001,7 @@ missionPanel.classList.add("hidden");
 });
 btnSaveMission.addEventListener("click", saveMissionForCurrent);
 
-// NOTE - NUOVO
+// NOTE - RIVISTO PER 3 TAB
 const noteBtn = document.getElementById("noteBtn");
 const notePanel = document.getElementById("notePanel");
 const btnCloseNote = document.getElementById("btnCloseNote");
@@ -3863,6 +4012,19 @@ btnCloseNote.addEventListener("click", () => {
 notePanel.classList.add("hidden");
 });
 btnSaveNote.addEventListener("click", saveNote);
+
+// Gestione tab note
+document.querySelectorAll('.note-tab').forEach(tab => {
+tab.addEventListener('click', () => {
+const tabId = tab.dataset.tab;
+switchNoteTab(tabId);
+});
+});
+
+// Aggiorna statistiche note in tempo reale
+document.getElementById('noteText1').addEventListener('input', () => updateNoteStatsForTab('note1'));
+document.getElementById('noteText2').addEventListener('input', () => updateNoteStatsForTab('note2'));
+document.getElementById('noteText3').addEventListener('input', () => updateNoteStatsForTab('note3'));
 
 // IMPORT LINK
 const importLinkBtn = document.getElementById("importLinkBtn");
@@ -4140,7 +4302,7 @@ reloadAllSpots(true);
 document.addEventListener("DOMContentLoaded", async () => {
 try {
 loadMissions();
-loadNotes(); // Carica le note
+loadNotes(); // Carica le note (ora 3 tab)
 await loadSettings();
 initMap();
 initUI();
