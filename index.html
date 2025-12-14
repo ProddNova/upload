@@ -11,40 +11,6 @@ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
 crossorigin="anonymous"
 />
-<!-- Leaflet Rotate CSS (hosted locally to avoid CORS) -->
-<style>
-/* Leaflet Rotate CSS embedded locally */
-.leaflet-control-rotate {
-position: relative;
-background: white;
-border-radius: 4px;
-box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-}
-.leaflet-control-rotate a {
-display: block;
-text-align: center;
-text-decoration: none;
-color: black;
-width: 26px;
-height: 26px;
-line-height: 26px;
-font-size: 18px;
-}
-.leaflet-control-rotate a:hover {
-background-color: #f4f4f4;
-}
-.leaflet-touch .leaflet-control-rotate a {
-width: 30px;
-height: 30px;
-line-height: 30px;
-}
-.leaflet-control-rotate .leaflet-control-rotate-reset {
-font-size: 16px;
-}
-.leaflet-control-rotate .leaflet-control-rotate-compass {
-font-size: 20px;
-}
-</style>
 <style>
 :root {
 --bg-main: #020617;
@@ -273,27 +239,6 @@ cursor: pointer;
 }
 .filter-actions button:hover {
 background: rgba(55, 65, 81, 0.3);
-}
-/* FILTER COUNTER - IN ALTO A SINISTRA */
-#filterCounter {
-position: fixed;
-top: 10px;
-left: 10px;
-z-index: 30;
-background: rgba(15, 23, 42, 0.9);
-border: 1px solid rgba(148, 163, 184, 0.4);
-border-radius: 999px;
-padding: 6px 12px;
-font-size: 12px;
-color: var(--text-main);
-display: flex;
-align-items: center;
-gap: 8px;
-box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-display: none;
-}
-#filterCounter.show {
-display: flex;
 }
 /* OVERLAY PANELS */
 .overlay {
@@ -537,7 +482,7 @@ border: 1px solid rgba(55, 65, 81, 1);
 transform: translateY(1px) scale(0.99);
 box-shadow: none;
 }
-/* VOTO SELECT STYLING - MODIFICATO: PALLINI COLORATI */
+/* VOTO SELECT STYLING - MODIFICATO: NUOVI COLORI */
 .voto-option {
 display: flex;
 align-items: center;
@@ -563,36 +508,36 @@ background-position: right 8px center;
 background-size: 16px;
 padding-right: 32px;
 }
-/* PALLINI COLORATI PER LE OPZIONI DEL SELECT */
+/* NUOVI COLORI PER LE OPZIONI DEL SELECT */
 option[value="1"] {
-color: #b91c1c;
+color: #6b7280; /* Grigio */
 font-weight: bold;
-background-color: rgba(185, 28, 28, 0.1);
+background-color: rgba(107, 114, 128, 0.1);
 }
 option[value="2"] {
-color: #f97316;
-font-weight: bold;
-background-color: rgba(249, 115, 22, 0.1);
-}
-option[value="3"] {
-color: #eab308;
-font-weight: bold;
-background-color: rgba(234, 179, 8, 0.1);
-}
-option[value="4"] {
-color: #2563eb;
-font-weight: bold;
-background-color: rgba(37, 99, 235, 0.1);
-}
-option[value="5"] {
-color: #16a34a;
+color: #16a34a; /* Verde */
 font-weight: bold;
 background-color: rgba(22, 163, 74, 0.1);
 }
-option[value="6"] {
-color: #a855f7;
+option[value="3"] {
+color: #2563eb; /* Blu */
 font-weight: bold;
-background-color: rgba(168, 85, 247, 0.1);
+background-color: rgba(37, 99, 235, 0.1);
+}
+option[value="4"] {
+color: #9333ea; /* Viola */
+font-weight: bold;
+background-color: rgba(147, 51, 234, 0.1);
+}
+option[value="5"] {
+color: #fbbf24; /* Oro */
+font-weight: bold;
+background-color: rgba(251, 191, 36, 0.1);
+}
+option[value="6"] {
+color: #06b6d4; /* Platino/Azzurro cangiante */
+font-weight: bold;
+background-color: rgba(6, 182, 212, 0.1);
 }
 /* SETTINGS */
 .settings-section {
@@ -803,24 +748,6 @@ height: 85%;
 border: none;
 border-radius: 12px;
 box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-}
-/* ROTATE COMPASS STYLE */
-.leaflet-control-container .leaflet-control-rotate {
-background: rgba(15, 23, 42, 0.9);
-border-radius: 50%;
-border: 1px solid rgba(148, 163, 184, 0.5);
-box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-.leaflet-control-container .leaflet-control-rotate a {
-color: var(--text-main);
-background: transparent;
-font-size: 18px;
-width: 34px;
-height: 34px;
-line-height: 34px;
-text-align: center;
-display: block;
-text-decoration: none;
 }
 /* MOBILE ADJUSTMENTS */
 @media (max-width: 768px) {
@@ -1042,7 +969,7 @@ font-size: 11px;
 color: var(--text-dim);
 cursor: pointer;
 }
-/* LEGENDA ESPLORATI */
+/* LEGENDA ESPLORATI - MODIFICATO: COLORE ARANCIONE */
 #legendContainer {
 width: 34px;
 height: auto;
@@ -1083,13 +1010,43 @@ border-radius: 999px;
 display: inline-block;
 border: 1px solid #020617;
 margin: 0;
-background: #10b981;
+background: #f97316; /* ARANCIONE invece di verde */
 }
 .legend-label {
 font-size: 9px;
 color: var(--text-dim);
 margin-left: 4px;
 min-width: 8px;
+}
+/* NOTE PANEL */
+#notePanel .overlay-body {
+padding: 15px;
+}
+#noteText {
+width: 100%;
+border-radius: 12px;
+border: 1px solid rgba(55, 65, 81, 1);
+background: rgba(15, 23, 42, 0.95);
+padding: 12px;
+color: var(--text-main);
+font-size: 14px;
+min-height: 200px;
+resize: vertical;
+font-family: inherit;
+}
+/* FILE UPLOAD PER ALLINEAMENTO GMAPS */
+.file-upload-btn {
+position: relative;
+overflow: hidden;
+}
+.file-upload-btn input[type="file"] {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+opacity: 0;
+cursor: pointer;
 }
 </style>
 </head>
@@ -1143,11 +1100,6 @@ min-width: 8px;
 </div>
 </div>
 
-<!-- FILTER COUNTER - NUOVO: IN ALTO A SINISTRA -->
-<div id="filterCounter">
-<span id="filterCounterText">0/0</span>
-</div>
-
 <!-- CERCA CITTA' -->
 <div id="citySearchContainer">
 <input id="citySearchInput" type="text" placeholder="Cerca città o luogo..." />
@@ -1158,7 +1110,7 @@ min-width: 8px;
 <!-- SYNC STATUS -->
 <div id="syncStatus"></div>
   
-<!-- DOCK DESTRO CON TOGGLE E LEGENDA - RIMOSSI PULSANTI NAVIGAZIONE MAPPE E STREETVIEW -->
+<!-- DOCK DESTRO CON TOGGLE E LEGENDA - AGGIUNTO BOTTONE NOTE -->
 <div id="rightDock">
 <button id="filterBtn" class="dock-btn" title="Filtra spot">🔍</button>
 <button id="userLocationBtn" class="dock-btn" title="Posizione attuale">📍</button>
@@ -1168,13 +1120,14 @@ min-width: 8px;
 <button id="btnAdd" class="dock-btn" title="Aggiungi spot">➕</button>
 <button id="btnRandom" class="dock-btn" title="Random spot">🎲</button>
 <button id="missionBtn" class="dock-btn" title="Missione spot selezionato">📜</button>
+<button id="noteBtn" class="dock-btn" title="Note">📝</button> <!-- NUOVO BOTTONE NOTE -->
 <div id="legendContainer">
-<div class="legend-row"><div class="legend-dot" style="background:#b91c1c"></div><span class="legend-number">1</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#f97316"></div><span class="legend-number">2</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#eab308"></div><span class="legend-number">3</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><span class="legend-number">4</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-number">5</span></div>
-<div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span class="legend-number">6</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#6b7280"></div><span class="legend-number">1</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-number">2</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div><span class="legend-number">3</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#9333ea"></div><span class="legend-number">4</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#fbbf24"></div><span class="legend-number">5</span></div>
+<div class="legend-row"><div class="legend-dot" style="background:#06b6d4"></div><span class="legend-number">6</span></div>
 <div class="legend-row"><div class="legend-explorato"></div><span class="legend-label">✓</span></div>
 </div>
 <button id="dockToggleBtn" class="dock-btn" title="Mostra/Nascondi pulsanti">⬆️</button>
@@ -1227,12 +1180,12 @@ min-width: 8px;
 <label for="fieldVoto">Voto (1–6)</label>
 <select id="fieldVoto" class="select voto-select">
 <option value="">Nessun voto</option>
-<option value="1" style="color:#b91c1c">● 1</option>
-<option value="2" style="color:#f97316">● 2</option>
-<option value="3" style="color:#eab308">● 3</option>
-<option value="4" style="color:#2563eb">● 4</option>
-<option value="5" style="color:#16a34a">● 5</option>
-<option value="6" style="color:#a855f7">● 6</option>
+<option value="1" style="color:#6b7280">● 1 - Grigio</option>
+<option value="2" style="color:#16a34a">● 2 - Verde</option>
+<option value="3" style="color:#2563eb">● 3 - Blu</option>
+<option value="4" style="color:#9333ea">● 4 - Viola</option>
+<option value="5" style="color:#fbbf24">● 5 - Oro</option>
+<option value="6" style="color:#06b6d4">● 6 - Platino</option>
 </select>
 </div>
 <div class="form-row">
@@ -1306,12 +1259,12 @@ min-width: 8px;
 <label for="editFieldVoto">Voto (1–6)</label>
 <select id="editFieldVoto" class="select voto-select">
 <option value="">Nessun voto</option>
-<option value="1" style="color:#b91c1c">● 1</option>
-<option value="2" style="color:#f97316">● 2</option>
-<option value="3" style="color:#eab308">● 3</option>
-<option value="4" style="color:#2563eb">● 4</option>
-<option value="5" style="color:#16a34a">● 5</option>
-<option value="6" style="color:#a855f7">● 6</option>
+<option value="1" style="color:#6b7280">● 1 - Grigio</option>
+<option value="2" style="color:#16a34a">● 2 - Verde</option>
+<option value="3" style="color:#2563eb">● 3 - Blu</option>
+<option value="4" style="color:#9333ea">● 4 - Viola</option>
+<option value="5" style="color:#fbbf24">● 5 - Oro</option>
+<option value="6" style="color:#06b6d4">● 6 - Platino</option>
 </select>
 </div>
 <div class="form-row">
@@ -1406,6 +1359,25 @@ Includi anche spot con voto 1–2 nei random
 </div>
 </section>
 <section class="settings-section">
+<div class="settings-section-title">Allinea dati Google Maps</div>
+<div class="settings-section-desc">
+Carica un file CSV di Google Takeout per trovare spot mancanti nel database.
+</div>
+<button id="btnAlignGmaps" class="btn btn-secondary file-upload-btn" style="width: 100%;">
+📁 Carica CSV Google Takeout
+<input type="file" id="gmapsCsvFile" accept=".csv" style="display: none;">
+</button>
+<div id="gmapsAlignmentStatus" style="margin-top: 8px; font-size: 11px; color: var(--text-dim); display: none;">
+</div>
+<div id="gmapsMissingSpots" style="margin-top: 8px; display: none;">
+<h4 style="font-size: 12px; margin-bottom: 6px;">Spot mancanti trovati:</h4>
+<div id="gmapsSpotsList" style="max-height: 150px; overflow-y: auto;"></div>
+<button id="btnImportMissingSpots" class="btn btn-primary" style="margin-top: 8px; width: 100%;">
+➕ Importa spot selezionati
+</button>
+</div>
+</section>
+<section class="settings-section">
 <div class="settings-section-title">Import / Export</div>
 <div class="settings-section-desc">
 Puoi esportare tutti gli spot in CSV per GMaps o importare un JSON semplice.
@@ -1450,6 +1422,26 @@ oggetto con <code>places</code>.
 </div>
 </div>
 
+<!-- NOTE PANEL - NUOVO -->
+<div id="notePanel" class="overlay hidden">
+<div class="overlay-backdrop"></div>
+<div class="overlay-card">
+<div class="overlay-header">
+<div class="overlay-header-title">
+<strong>Note LTU</strong>
+<small>Scrivi note, idee, appunti per le tue esplorazioni</small>
+</div>
+<button id="btnCloseNote" class="icon-btn">✕</button>
+</div>
+<div class="overlay-body">
+<textarea id="noteText" placeholder="Scrivi qui le tue note..."></textarea>
+<div class="actions-row">
+<button id="btnSaveNote" class="btn btn-primary">💾 Salva note</button>
+</div>
+</div>
+</div>
+</div>
+
 <!-- IMPORT LINK PANEL -->
 <div id="importLinkPanel" class="overlay hidden">
 <div class="overlay-backdrop"></div>
@@ -1489,12 +1481,12 @@ per estrarre automaticamente le coordinate.
 <label for="linkSpotVoto">Voto (1–6)</label>
 <select id="linkSpotVoto" class="select voto-select">
 <option value="">Nessun voto</option>
-<option value="1" style="color:#b91c1c">● 1</option>
-<option value="2" style="color:#f97316">● 2</option>
-<option value="3" style="color:#eab308">● 3</option>
-<option value="4" style="color:#2563eb">● 4</option>
-<option value="5" style="color:#16a34a">● 5</option>
-<option value="6" style="color:#a855f7">● 6</option>
+<option value="1" style="color:#6b7280">● 1 - Grigio</option>
+<option value="2" style="color:#16a34a">● 2 - Verde</option>
+<option value="3" style="color:#2563eb">● 3 - Blu</option>
+<option value="4" style="color:#9333ea">● 4 - Viola</option>
+<option value="5" style="color:#fbbf24">● 5 - Oro</option>
+<option value="6" style="color:#06b6d4">● 6 - Platino</option>
 </select>
 </div>
 <div class="form-row">
@@ -1550,47 +1542,6 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
 crossorigin="anonymous"
 ></script>
-<!-- Custom Leaflet Rotate (embedded to avoid CORS) -->
-<script>
-// Simple Leaflet Rotate implementation
-L.Control.Rotate = L.Control.extend({
-options: {
-position: 'topright'
-},
-onAdd: function(map) {
-var container = L.DomUtil.create('div', 'leaflet-control-rotate leaflet-bar');
-container.style.backgroundColor = 'rgba(15, 23, 42, 0.9)';
-container.style.borderRadius = '50%';
-container.style.border = '1px solid rgba(148, 163, 184, 0.5)';
-container.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-
-var resetButton = L.DomUtil.create('a', 'leaflet-control-rotate-reset', container);
-resetButton.href = '#';
-resetButton.innerHTML = '↺';
-resetButton.title = 'Reset rotation';
-resetButton.style.color = '#e5e7eb';
-resetButton.style.display = 'block';
-resetButton.style.textAlign = 'center';
-resetButton.style.textDecoration = 'none';
-resetButton.style.width = '34px';
-resetButton.style.height = '34px';
-resetButton.style.lineHeight = '34px';
-
-L.DomEvent.on(resetButton, 'click', function(e) {
-L.DomEvent.preventDefault(e);
-L.DomEvent.stopPropagation(e);
-map.setBearing(0);
-});
-
-L.DomEvent.disableClickPropagation(container);
-return container;
-}
-});
-
-L.control.rotate = function(options) {
-return new L.Control.Rotate(options);
-};
-</script>
 <script>
 // =========================
 // UTILS
@@ -1651,16 +1602,16 @@ if (v >= 1 && v <= 6) return v;
 return null;
 }
 
-// nuovi colori in stile LTU (come nel tuo script originale)
+// NUOVI COLORI IN STILE LTU
 function getRatingColor(r) {
-if (typeof r !== "number" || !isFinite(r)) return "#64748b";
-if (r === 1) return "#b91c1c";
-if (r === 2) return "#f97316";
-if (r === 3) return "#eab308";
-if (r === 4) return "#2563eb";
-if (r === 5) return "#16a34a";
-if (r === 6) return "#a855f7";
-return "#64748b";
+if (typeof r !== "number" || !isFinite(r)) return "#000000"; // Nero per nessun voto
+if (r === 1) return "#6b7280"; // Grigio
+if (r === 2) return "#16a34a"; // Verde
+if (r === 3) return "#2563eb"; // Blu
+if (r === 4) return "#9333ea"; // Viola
+if (r === 5) return "#fbbf24"; // Oro
+if (r === 6) return "#06b6d4"; // Platino/Azzurro cangiante
+return "#000000";
 }
 
 function getTipo(name, desc) {
@@ -1888,12 +1839,11 @@ let allSpots = []; // tutti (solo dal DB)
 let filteredSpots = []; // spot filtrati
 let currentSpot = null; // ultimo spot cliccato (per missioni / random)
 let missions = {}; // localStorage
+let notes = {}; // localStorage per le note
 let lastAddedSpotId = null; // per centrare spot appena aggiunto
 let spotToHighlight = null; // ID dello spot da evidenziare nella lista
 let temporaryPin = { lat: null, lng: null, element: null }; // Pin temporaneo per PC
 let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-let ctrlPressed = false; // Stato del tasto Ctrl
-let isRotating = false; // Stato rotazione
 let pendingOperations = 0; // Contatore operazioni in corso
 let userLocationMarker = null; // Marker posizione utente
 let userLocationCircle = null; // Cerchio accuratezza posizione
@@ -1903,6 +1853,7 @@ let currentViewCenter = null; // Per mantenere la vista dopo modifiche
 let currentViewZoom = null; // Per mantenere lo zoom dopo modifiche
 let hasLocationPermission = false; // Permesso posizione già concesso
 let isFirstLocationUpdate = true; // Prima volta che aggiorniamo la posizione
+let gmapsMissingSpots = []; // Spot mancanti trovati in GMaps
 
 // FILTER STATE MODIFICATO: ora supporta array per selezioni multiple
 let filterState = {
@@ -1927,6 +1878,26 @@ missions = {};
 function saveMissions() {
 try {
 localStorage.setItem("ltu_missions_v1", JSON.stringify(missions));
+} catch (e) {}
+}
+
+// NUOVA FUNZIONE PER NOTE
+function loadNotes() {
+try {
+const raw = localStorage.getItem("ltu_notes_v1");
+if (!raw) {
+notes = { general: "" };
+return;
+}
+notes = JSON.parse(raw) || { general: "" };
+} catch (e) {
+notes = { general: "" };
+}
+}
+
+function saveNotes() {
+try {
+localStorage.setItem("ltu_notes_v1", JSON.stringify(notes));
 } catch (e) {}
 }
 
@@ -1995,8 +1966,6 @@ crosshairEnabled: appSettings.crosshairEnabled
 console.warn("Errore salvataggio settings locali", e);
 }
 }
-
-// RIMOSSO: loadBaseSpots() - non carichiamo più dal CSV
 
 async function loadExtraSpots() {
 try {
@@ -2076,7 +2045,7 @@ pendingOperations--;
 }
 
 // =========================
-// FILTER FUNCTIONS MODIFICATE PER MULTISELETTIONE
+// FILTER FUNCTIONS MODIFICATE
 // =========================
 function applyFilters() {
 filteredSpots = allSpots.filter(spot => {
@@ -2112,28 +2081,15 @@ return true;
 renderMarkers();
 renderList();
   
-// Aggiorna contatore in alto a sinistra
-const total = allSpots.length;
-const filtered = filteredSpots.length;
-const filterCounter = document.getElementById('filterCounter');
-const filterCounterText = document.getElementById('filterCounterText');
-  
-if (filtered < total) {
-filterCounterText.textContent = `${filtered}/${total}`;
-filterCounter.classList.add('show');
-} else {
-filterCounter.classList.remove('show');
-}
-  
 // Aggiorna pulsante filtro
 const filterBtn = document.getElementById('filterBtn');
 if (filterBtn) {
+const total = allSpots.length;
+const filtered = filteredSpots.length;
 if (filtered < total) {
-filterBtn.innerHTML = `${filtered}/${total}`;
 filterBtn.title = `Filtri attivi: ${filtered}/${total} spot`;
 filterBtn.classList.add('active');
 } else {
-filterBtn.innerHTML = '🔍';
 filterBtn.title = 'Filtra spot';
 filterBtn.classList.remove('active');
 }
@@ -2408,17 +2364,11 @@ chosen.addTo(map);
 // Crea layer group per marker
 markersLayer = L.layerGroup().addTo(map);
 
-// Aggiungi controllo rotazione personalizzato
-L.control.rotate().addTo(map);
-
 // Inizializza con vista Italia
 map.setView([44.5, 8.9], 7);
 
 // Gestione click sulla mappa per PC e mobile
 map.on("click", function (e) {
-// Se stiamo ruotando, non piazzare il pin
-if (isRotating) return;
-
 const lat = e.latlng.lat;
 const lng = e.latlng.lng;
 
@@ -2448,58 +2398,6 @@ mapContainer.addEventListener('contextmenu', function(e) {
 e.preventDefault();
 return false;
 });
-
-// Gestione rotazione con Ctrl su PC
-if (!isMobile) {
-document.addEventListener('keydown', function(e) {
-if (e.key === 'Control') {
-ctrlPressed = true;
-map.dragging.disable();
-document.getElementById('map').style.cursor = 'grab';
-}
-});
-
-document.addEventListener('keyup', function(e) {
-if (e.key === 'Control') {
-ctrlPressed = false;
-isRotating = false;
-map.dragging.enable();
-document.getElementById('map').style.cursor = 'crosshair';
-}
-});
-
-// Gestione mouse per rotazione
-let lastX = 0;
-
-mapContainer.addEventListener('mousedown', function(e) {
-if (ctrlPressed && e.button === 0) {
-isRotating = true;
-lastX = e.clientX;
-document.getElementById('map').style.cursor = 'grabbing';
-e.preventDefault();
-}
-});
-
-document.addEventListener('mousemove', function(e) {
-if (isRotating && ctrlPressed) {
-const deltaX = e.clientX - lastX;
-// Ruota la mappa
-if (map.setBearing) {
-const currentBearing = map.getBearing ? map.getBearing() : 0;
-map.setBearing(currentBearing + deltaX * 0.5);
-}
-lastX = e.clientX;
-e.preventDefault();
-}
-});
-
-document.addEventListener('mouseup', function(e) {
-if (isRotating) {
-isRotating = false;
-document.getElementById('map').style.cursor = ctrlPressed ? 'grab' : 'crosshair';
-}
-});
-}
 
 // Inizializza crosshair in base alle impostazioni
 updateCrosshairVisibility();
@@ -2610,13 +2508,21 @@ function buildPopupHtml(p) {
 const title = escapeHtml(p.name || "Spot senza nome");
 const desc = p.desc ? escapeHtml(p.desc).replace(/\n/g, '<br>') : "";
 const coords = `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
-const votoText = p.voto ? `${p.voto}` : "n.d.";
+const votoText = p.voto ? `${p.voto}` : "?";
 const color = getRatingColor(p.voto || 0);
 const emoji = getEmojiByTipo(p.tipo);
 const spotId = p.id || '';
 const updatedInfo = p.updatedAt ? 
 `<br><small>Aggiornato: ${new Date(p.updatedAt).toLocaleDateString('it-IT')}</small>` : '';
-const exploratoBadge = p.explorato ? '<span style="background:#10b981; color:#fff; padding:2px 6px; border-radius:999px; font-size:10px; margin-left:4px;">✓ Esplorato</span>' : '';
+const exploratoBadge = p.explorato ? '<span style="background:#f97316; color:#fff; padding:2px 6px; border-radius:999px; font-size:10px; margin-left:4px;">✓ Esplorato</span>' : '';
+      
+// Icona punto di domanda per spot senza voto
+let votoDisplay = '';
+if (!p.voto) {
+votoDisplay = '<span style="background:#000000; color:#ffffff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">?</span>';
+} else {
+votoDisplay = `<span style="background:${color}; color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">${votoText} ★</span>`;
+}
       
 return `
 <div class="ltu-popup">
@@ -2624,7 +2530,7 @@ return `
 <div style="font-size:36px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${emoji}</div>
 <div style="flex:1;">
 <div class="popup-title" style="font-size:15px; font-weight:700; margin-bottom:4px; color:#ffffff !important;">${title} ${exploratoBadge}</div>
-${p.voto ? `<span style="background:${color}; color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">${votoText} ★</span>` : ''}
+${votoDisplay}
 </div>
 </div>
 ${desc ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:12px; color:#e5e7eb;">${desc}</div>` : ''}
@@ -2645,6 +2551,7 @@ ${spotId ? `
 <button id="edit-btn-${spotId}" data-spot-id="${spotId}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
 <button id="delete-btn-${spotId}" data-spot-id="${spotId}" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Elimina</button>
 ` : ''}
+${p.source === "gmaps_missing" ? `<button id="confirm-btn-${spotId}" data-spot-id="${spotId}" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Conferma spot</button>` : ''}
 </div>
 </div>
 `;
@@ -2657,6 +2564,11 @@ markersLayer.clearLayers();
 const spotsToRender = filteredSpots.length > 0 ? filteredSpots : allSpots;
 let bounds = [];
 
+// Aggiungi anche gli spot mancanti da GMaps
+if (gmapsMissingSpots.length > 0) {
+spotsToRender.push(...gmapsMissingSpots);
+}
+
 // Ottimizzazione: usa batch rendering per molti marker
 const batchSize = 50;
 const renderBatch = (start) => {
@@ -2665,30 +2577,28 @@ const end = Math.min(start + batchSize, spotsToRender.length);
 for (let i = start; i < end; i++) {
 const p = spotsToRender[i];
 let color = getRatingColor(p.voto || 0);
-// Se esplorato, usa colore verde
-if (p.explorato) {
-color = "#10b981";
-}
-const emoji = getEmojiByTipo(p.tipo);
+let emoji = getEmojiByTipo(p.tipo);
 
-// CREA PIN ROTONDO CON BORDO PIU' SOTTILE (MODIFICATO: border da 3px a 1px)
+// Se è uno spot mancante da GMaps
+if (p.source === "gmaps_missing") {
+// Spot bianco con + nero
 const iconHtml = `
 <div style="
 position: relative;
 width: 24px;
 height: 24px;
 border-radius: 50%;
-background: ${color};
-border: 1px solid white; /* MODIFICATO: da 3px a 1px */
+background: #ffffff;
+border: 2px solid #000000;
 box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
 display: flex;
 align-items: center;
 justify-content: center;
 font-size: 12px;
-color: white;
+color: #000000;
+font-weight: bold;
 ">
-${emoji}
-${p.explorato ? '<div style="position:absolute; bottom:-6px; right:-6px; background:#10b981; color:white; width:14px; height:14px; border-radius:50%; border:1px solid white; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold;">✓</div>' : ''}
++
 </div>
 `;
 
@@ -2702,7 +2612,64 @@ popupAnchor: [0, -16]
 
 const marker = L.marker([p.lat, p.lng], { 
 icon,
-// Ottimizzazione: disabilita l'animazione per performance
+riseOnHover: false,
+riseOffset: 250
+}).addTo(markersLayer);
+marker.bindPopup(buildPopupHtml(p));
+
+p._marker = marker;
+marker.on("click", () => {
+currentSpot = p;
+});
+bounds.push([p.lat, p.lng]);
+continue;
+}
+
+// Per spot normali
+// Se esplorato, usa colore arancione invece di verde
+if (p.explorato) {
+color = "#f97316"; // Arancione
+}
+
+// Se non ha voto, usa nero con punto di domanda
+let iconContent = emoji;
+if (!p.voto) {
+color = "#000000"; // Nero
+iconContent = "?"; // Punto di domanda
+}
+
+// CREA PIN ROTONDO
+const iconHtml = `
+<div style="
+position: relative;
+width: 24px;
+height: 24px;
+border-radius: 50%;
+background: ${color};
+border: 1px solid white;
+box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: ${!p.voto ? '14px' : '12px'};
+color: ${!p.voto ? '#ffffff' : 'white'};
+font-weight: ${!p.voto ? 'bold' : 'normal'};
+">
+${iconContent}
+${p.explorato ? '<div style="position:absolute; bottom:-6px; right:-6px; background:#f97316; color:white; width:14px; height:14px; border-radius:50%; border:1px solid white; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold;">✓</div>' : ''}
+</div>
+`;
+
+const icon = L.divIcon({
+html: iconHtml,
+className: "ltu-round-marker",
+iconSize: [32, 32],
+iconAnchor: [16, 16],
+popupAnchor: [0, -16]
+});
+
+const marker = L.marker([p.lat, p.lng], { 
+icon,
 riseOnHover: false,
 riseOffset: 250
 }).addTo(markersLayer);
@@ -2790,8 +2757,8 @@ const emojiDiv = document.createElement("div");
 emojiDiv.className = "spot-emoji";
 emojiDiv.textContent = getEmojiByTipo(p.tipo);
 if (p.explorato) {
-emojiDiv.style.borderColor = "#10b981";
-emojiDiv.style.boxShadow = "0 0 0 1px #10b981";
+emojiDiv.style.borderColor = "#f97316"; // Arancione
+emojiDiv.style.boxShadow = "0 0 0 1px #f97316";
 }
         
 const mainDiv = document.createElement("div");
@@ -2803,15 +2770,15 @@ titleRow.className = "spot-main-title";
 const title = document.createElement("strong");
 title.textContent = p.name || "(senza nome)";
 if (p.explorato) {
-title.innerHTML += ' <span style="color:#10b981; font-size:10px;">✓</span>';
+title.innerHTML += ' <span style="color:#f97316; font-size:10px;">✓</span>';
 }
         
 const vote = document.createElement("div");
 vote.className = "spot-vote-pill";
-vote.textContent = p.voto ? `${p.voto}` : "-";
+vote.textContent = p.voto ? `${p.voto}` : "?";
 if (p.explorato) {
-vote.style.borderColor = "#10b981";
-vote.style.color = "#10b981";
+vote.style.borderColor = "#f97316";
+vote.style.color = "#f97316";
 }
         
 titleRow.appendChild(title);
@@ -3020,6 +2987,26 @@ document.getElementById("missionPanel").classList.add("hidden");
 }
 
 // =========================
+// NOTE FUNCTIONS
+// =========================
+function openNotePanel() {
+const panel = document.getElementById("notePanel");
+const textEl = document.getElementById("noteText");
+      
+// Carica le note salvate
+textEl.value = notes.general || "";
+panel.classList.remove("hidden");
+}
+
+function saveNote() {
+const text = document.getElementById("noteText").value;
+notes.general = text;
+saveNotes();
+showToast("Note salvate", "success");
+document.getElementById("notePanel").classList.add("hidden");
+}
+
+// =========================
 // IMPORT LINK
 // =========================
 function openImportLinkPanel() {
@@ -3132,6 +3119,239 @@ showToast("Spot aggiunto dal link!", "success");
 console.error(e);
 updateSyncStatus("Errore aggiunta spot", "error");
 showToast(`Errore nel salvataggio dello spot: ${e.message}`, "error");
+} finally {
+pendingOperations--;
+}
+}
+
+// =========================
+// GOOGLE MAPS ALIGNMENT
+// =========================
+function parseGoogleMapsCSV(csvText) {
+const rows = parseCSV(csvText);
+if (rows.length === 0) return [];
+  
+const headers = rows[0].map(h => h.toLowerCase());
+const dataRows = rows.slice(1);
+  
+// Cerca le colonne necessarie
+const latIndex = headers.findIndex(h => h.includes('latitudine') || h.includes('latitude') || h === 'lat');
+const lngIndex = headers.findIndex(h => h.includes('longitudine') || h.includes('longitude') || h === 'lng' || h === 'lon');
+const nameIndex = headers.findIndex(h => h.includes('nome') || h.includes('name') || h.includes('titolo') || h === 'title');
+  
+if (latIndex === -1 || lngIndex === -1) {
+throw new Error("Formato CSV non valido: colonne latitudine/longitudine non trovate");
+}
+  
+const gmapsSpots = [];
+  
+for (let i = 0; i < dataRows.length; i++) {
+const row = dataRows[i];
+if (row.length <= Math.max(latIndex, lngIndex)) continue;
+  
+const lat = parseFloat(row[latIndex]);
+const lng = parseFloat(row[lngIndex]);
+  
+if (isNaN(lat) || isNaN(lng)) continue;
+  
+const name = nameIndex !== -1 && row[nameIndex] ? row[nameIndex].trim() : `Spot GMaps ${i + 1}`;
+  
+gmapsSpots.push({
+name: name,
+lat: lat,
+lng: lng,
+desc: "Importato da Google Maps Takeout",
+source: "gmaps_import",
+voto: null,
+tipo: "altro",
+explorato: false
+});
+}
+  
+return gmapsSpots;
+}
+
+async function alignGoogleMapsData(csvFile) {
+try {
+updateSyncStatus("Analisi file Google Maps...", "syncing");
+const fileText = await readFileAsText(csvFile);
+const gmapsSpots = parseGoogleMapsCSV(fileText);
+  
+if (gmapsSpots.length === 0) {
+showToast("Nessuno spot valido trovato nel file CSV", "warning");
+return;
+}
+  
+// Trova spot mancanti
+const missingSpots = [];
+const existingCoords = allSpots.map(s => `${s.lat.toFixed(6)},${s.lng.toFixed(6)}`);
+  
+for (const gspot of gmapsSpots) {
+const coordKey = `${gspot.lat.toFixed(6)},${gspot.lng.toFixed(6)}`;
+if (!existingCoords.includes(coordKey)) {
+// Aggiungi ID temporaneo
+gspot.id = `gmaps_temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+gspot.source = "gmaps_missing";
+missingSpots.push(gspot);
+}
+}
+  
+if (missingSpots.length === 0) {
+showToast("Tutti gli spot di Google Maps sono già nel database", "success");
+return;
+}
+  
+// Salva gli spot mancanti
+gmapsMissingSpots = missingSpots;
+  
+// Mostra i risultati
+const statusEl = document.getElementById('gmapsAlignmentStatus');
+const spotsListEl = document.getElementById('gmapsSpotsList');
+const missingContainer = document.getElementById('gmapsMissingSpots');
+  
+statusEl.textContent = `Trovati ${gmapsSpots.length} spot in Google Maps, ${missingSpots.length} mancanti nel database`;
+statusEl.style.display = 'block';
+  
+spotsListEl.innerHTML = '';
+missingSpots.forEach((spot, index) => {
+const spotEl = document.createElement('div');
+spotEl.style.padding = '6px';
+spotEl.style.borderBottom = '1px solid rgba(55, 65, 81, 0.5)';
+spotEl.style.fontSize = '11px';
+spotEl.innerHTML = `
+<div style="display: flex; align-items: center; gap: 8px;">
+<input type="checkbox" id="gmaps_spot_${index}" checked style="width: 14px; height: 14px;">
+<label for="gmaps_spot_${index}" style="flex: 1; cursor: pointer;">
+<strong>${spot.name}</strong><br>
+<small>${spot.lat.toFixed(6)}, ${spot.lng.toFixed(6)}</small>
+</label>
+</div>
+`;
+spotsListEl.appendChild(spotEl);
+});
+  
+missingContainer.style.display = 'block';
+  
+// Rimuovi eventuali marker precedenti e renderizza quelli nuovi
+renderMarkers();
+  
+updateSyncStatus(`${missingSpots.length} spot mancanti trovati`, "success");
+showToast(`Trovati ${missingSpots.length} spot mancanti da Google Maps`, "success");
+  
+} catch (error) {
+console.error("Errore allineamento Google Maps:", error);
+updateSyncStatus("Errore allineamento", "error");
+showToast(`Errore nell'analisi del file CSV: ${error.message}`, "error");
+}
+}
+
+function readFileAsText(file) {
+return new Promise((resolve, reject) => {
+const reader = new FileReader();
+reader.onload = (e) => resolve(e.target.result);
+reader.onerror = (e) => reject(new Error("Errore nella lettura del file"));
+reader.readAsText(file, 'UTF-8');
+});
+}
+
+async function importMissingSpots() {
+const checkboxes = document.querySelectorAll('#gmapsSpotsList input[type="checkbox"]:checked');
+if (checkboxes.length === 0) {
+showToast("Seleziona almeno uno spot da importare", "warning");
+return;
+}
+  
+const spotsToImport = [];
+checkboxes.forEach((cb, index) => {
+if (cb.checked) {
+const spot = gmapsMissingSpots[index];
+if (spot) {
+spotsToImport.push(spot);
+}
+}
+});
+  
+if (spotsToImport.length === 0) {
+showToast("Nessuno spot selezionato", "warning");
+return;
+}
+  
+try {
+pendingOperations++;
+updateSyncStatus(`Importazione ${spotsToImport.length} spot...`, "syncing");
+  
+let importedCount = 0;
+let errors = [];
+  
+for (const spot of spotsToImport) {
+try {
+const payload = {
+name: spot.name,
+desc: spot.desc,
+lat: spot.lat,
+lng: spot.lng,
+voto: spot.voto,
+tipo: spot.tipo,
+explorato: spot.explorato
+};
+  
+const result = await fetchWithRetry("/api/spots-extra", {
+method: "POST",
+headers: { 
+"Content-Type": "application/json",
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
+body: JSON.stringify(payload)
+});
+  
+const saved = result.data;
+const newSpot = {
+id: saved.id,
+name: saved.name || spot.name,
+desc: saved.desc || spot.desc,
+lat: saved.lat,
+lng: saved.lng,
+voto: saved.voto,
+tipo: saved.tipo || spot.tipo,
+explorato: saved.explorato || spot.explorato,
+source: "extra",
+createdAt: saved.createdAt || new Date().toISOString(),
+updatedAt: saved.updatedAt || new Date().toISOString()
+};
+  
+allSpots.push(newSpot);
+importedCount++;
+  
+// Rimuovi dall'array dei mancanti
+const index = gmapsMissingSpots.findIndex(s => s.id === spot.id);
+if (index !== -1) {
+gmapsMissingSpots.splice(index, 1);
+}
+  
+} catch (error) {
+errors.push(`"${spot.name}": ${error.message}`);
+}
+}
+  
+// Aggiorna la vista
+applyFilters();
+  
+// Nascondi il pannello dei mancanti
+document.getElementById('gmapsMissingSpots').style.display = 'none';
+document.getElementById('gmapsAlignmentStatus').textContent = `Importati ${importedCount} spot su ${spotsToImport.length}`;
+  
+updateSyncStatus(`${importedCount} spot importati`, "success");
+  
+if (errors.length > 0) {
+showToast(`Importati ${importedCount} spot, errori: ${errors.length}`, "warning");
+} else {
+showToast(`${importedCount} spot importati con successo`, "success");
+}
+  
+} catch (error) {
+console.error("Errore importazione spot mancanti:", error);
+updateSyncStatus("Errore importazione", "error");
+showToast(`Errore nell'importazione: ${error.message}`, "error");
 } finally {
 pendingOperations--;
 }
@@ -3562,6 +3782,9 @@ const randomLowRatedCheckbox = document.getElementById("randomLowRatedCheckbox")
 const btnImportJson = document.getElementById("btnImportJson");
 const btnExportCsv = document.getElementById("btnExportCsv");
 const btnSaveAllSettings = document.getElementById("btnSaveAllSettings");
+const btnAlignGmaps = document.getElementById("btnAlignGmaps");
+const gmapsCsvFile = document.getElementById("gmapsCsvFile");
+const btnImportMissingSpots = document.getElementById("btnImportMissingSpots");
 
 settingsBtn.addEventListener("click", () => {
 // sync UI con settings correnti
@@ -3591,6 +3814,16 @@ showToast("Impostazione random aggiornata", "success");
 btnImportJson.addEventListener("click", handleImportJson);
 btnExportCsv.addEventListener("click", handleExportCsv);
 
+// Google Maps alignment
+gmapsCsvFile.addEventListener("change", (e) => {
+const file = e.target.files[0];
+if (file) {
+alignGoogleMapsData(file);
+}
+});
+
+btnImportMissingSpots.addEventListener("click", importMissingSpots);
+
 btnSaveAllSettings.addEventListener("click", () => {
 saveSettings({
 baseLayer: mapStyleSelect.value,
@@ -3618,6 +3851,18 @@ btnCloseMission.addEventListener("click", () => {
 missionPanel.classList.add("hidden");
 });
 btnSaveMission.addEventListener("click", saveMissionForCurrent);
+
+// NOTE - NUOVO
+const noteBtn = document.getElementById("noteBtn");
+const notePanel = document.getElementById("notePanel");
+const btnCloseNote = document.getElementById("btnCloseNote");
+const btnSaveNote = document.getElementById("btnSaveNote");
+      
+noteBtn.addEventListener("click", openNotePanel);
+btnCloseNote.addEventListener("click", () => {
+notePanel.classList.add("hidden");
+});
+btnSaveNote.addEventListener("click", saveNote);
 
 // IMPORT LINK
 const importLinkBtn = document.getElementById("importLinkBtn");
@@ -3658,7 +3903,7 @@ document.addEventListener('click', async (e) => {
 if (e.target.id && e.target.id.startsWith('list-btn-')) {
 e.preventDefault();
 const spotId = e.target.dataset.spotId;
-const spot = allSpots.find(s => s.id === spotId);
+const spot = allSpots.find(s => s.id === spotId) || gmapsMissingSpots.find(s => s.id === spotId);
 if (!spot) {
 showToast('Spot non trovato', 'error');
 return;
@@ -3740,6 +3985,30 @@ document.getElementById('editFieldTipo').value = spot.tipo || '';
 document.getElementById('editFieldExplorato').checked = spot.explorato || false;
 
 document.getElementById('editPanel').classList.remove('hidden');
+currentSpot = spot;
+map.closePopup();
+}
+
+// Conferma spot da GMaps
+if (e.target.id && e.target.id.startsWith('confirm-btn-')) {
+e.preventDefault();
+const spotId = e.target.dataset.spotId;
+const spot = gmapsMissingSpots.find(s => s.id === spotId);
+if (!spot) {
+showToast('Spot non trovato', 'error');
+return;
+}
+          
+// Apri pannello add con dati precompilati
+document.getElementById('fieldName').value = spot.name || '';
+document.getElementById('fieldDesc').value = spot.desc || '';
+document.getElementById('fieldLat').value = spot.lat.toFixed(6);
+document.getElementById('fieldLng').value = spot.lng.toFixed(6);
+document.getElementById('fieldVoto').value = '';
+document.getElementById('fieldTipo').value = spot.tipo || '';
+document.getElementById('fieldExplorato').checked = spot.explorato || false;
+
+document.getElementById('addPanel').classList.remove('hidden');
 currentSpot = spot;
 map.closePopup();
 }
@@ -3871,6 +4140,7 @@ reloadAllSpots(true);
 document.addEventListener("DOMContentLoaded", async () => {
 try {
 loadMissions();
+loadNotes(); // Carica le note
 await loadSettings();
 initMap();
 initUI();
