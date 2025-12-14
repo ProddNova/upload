@@ -1029,80 +1029,105 @@ color: var(--text-dim);
 margin-left: 4px;
 min-width: 8px;
 }
-/* NOTE PANEL - RIVISTO COMPLETAMENTE CON SPAZIO MIGLIORATO */
+/* NOTE PANEL - FIXED */
 #notePanel {
-z-index: 2000;
+    z-index: 2000;
 }
+
 #notePanel .overlay-card {
-width: 95%;
-height: 90%;
-max-width: 95%;
-max-height: 90%;
+    width: 95%;
+    height: 90%;
+    max-width: 95%;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
 }
+
 .note-tabs {
-display: flex;
-gap: 4px;
-padding: 8px 12px;
-border-bottom: 1px solid rgba(31, 41, 55, 1);
-background: rgba(15, 23, 42, 0.95);
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(31, 41, 55, 1);
+    background: rgba(15, 23, 42, 0.95);
+    flex-shrink: 0;
 }
+
 .note-tab {
-flex: 1;
-padding: 8px 12px;
-text-align: center;
-border-radius: 8px;
-border: 1px solid rgba(55, 65, 81, 0.5);
-background: rgba(15, 23, 42, 0.7);
-color: var(--text-dim);
-font-size: 13px;
-cursor: pointer;
-transition: all 0.2s ease;
-font-weight: 500;
+    flex: 1;
+    padding: 8px 12px;
+    text-align: center;
+    border-radius: 8px;
+    border: 1px solid rgba(55, 65, 81, 0.5);
+    background: rgba(15, 23, 42, 0.7);
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
 }
+
 .note-tab:hover {
-border-color: rgba(148, 163, 184, 0.6);
-color: var(--text-main);
+    border-color: rgba(148, 163, 184, 0.6);
+    color: var(--text-main);
 }
+
 .note-tab.active {
-background: rgba(37, 99, 235, 0.2);
-border-color: rgba(37, 99, 235, 0.8);
-color: #93c5fd;
+    background: rgba(37, 99, 235, 0.2);
+    border-color: rgba(37, 99, 235, 0.8);
+    color: #93c5fd;
 }
+
 .note-tab-content {
-display: none;
-flex: 1;
-overflow: hidden;
-min-height: 0; /* AGGIUNTO: Permette al flex item di ridursi */
+    display: none;
+    flex: 1;
+    overflow: hidden;
+    padding: 16px;
+    min-height: 0;
 }
+
 .note-tab-content.active {
-display: flex;
-flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
+
 .note-textarea {
-width: 100%;
-height: 100%; /* MODIFICATO: Ora occupa tutto lo spazio disponibile */
-border-radius: 12px;
-border: 1px solid rgba(55, 65, 81, 1);
-background: rgba(15, 23, 42, 0.95);
-padding: 16px;
-color: var(--text-main);
-font-size: 16px;
-resize: none;
-font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
-line-height: 1.6;
-outline: none;
-overflow-y: auto;
+    width: 100%;
+    flex: 1;
+    border-radius: 12px;
+    border: 1px solid rgba(55, 65, 81, 1);
+    background: rgba(15, 23, 42, 0.95);
+    padding: 16px;
+    color: var(--text-main);
+    font-size: 16px;
+    resize: none;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+    line-height: 1.6;
+    outline: none;
+    overflow-y: auto;
+    min-height: 200px;
 }
+
 .note-textarea:focus {
-border-color: #3b82f6;
-box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
+
 .note-stats {
-font-size: 11px;
-color: var(--text-dim);
-text-align: right;
-margin-top: 8px;
-padding: 0 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+    margin-top: 8px;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+
+/* MODIFICATO: Aggiunto per gestire correttamente l'altezza */
+#notePanel .overlay-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
 }
 /* FILE UPLOAD PER ALLINEAMENTO GMAPS */
 .file-upload-btn {
@@ -1492,7 +1517,7 @@ oggetto con <code>places</code>.
 </div>
 </div>
 
-<!-- NOTE PANEL - RIVISTO COMPLETAMENTE -->
+<!-- NOTE PANEL - FIXED -->
 <div id="notePanel" class="overlay hidden">
 <div class="overlay-backdrop"></div>
 <div class="overlay-card">
@@ -1503,7 +1528,7 @@ oggetto con <code>places</code>.
 </div>
 <button id="btnCloseNote" class="icon-btn">✕</button>
 </div>
-<div class="overlay-body" style="padding: 0; display: flex; flex-direction: column;">
+<div class="overlay-body">
 <div class="note-tabs">
 <div class="note-tab active" data-tab="note1">📝 Note 1</div>
 <div class="note-tab" data-tab="note2">📝 Note 2</div>
@@ -4211,7 +4236,7 @@ const lat = parseFloat(latStr.replace(',', '.'));
 const lng = parseFloat(lngStr.replace(',', '.'));
         
 if (Number.isNaN(lat) || Number.isNaN(lng)) {
-showToast('Coordinate non valide', 'error');
+showToast('Coordinate non validi', 'error');
 return;
 }
         
