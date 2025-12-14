@@ -70,17 +70,22 @@ function getTipo(name, desc) {
   return "altro";
 }
 
-// Nuova funzione per mappare i colori voti
+// NUOVA FUNZIONE: aggiornata con nuovi colori
 function getVotoColor(voto) {
   switch(voto) {
     case 1: return "#6b7280"; // Grigio
-    case 2: return "#16a34a"; // Verde
-    case 3: return "#2563eb"; // Blu
-    case 4: return "#9333ea"; // Viola
-    case 5: return "#fbbf24"; // Oro
-    case 6: return "#06b6d4"; // Platino/Azzurro cangiante
+    case 2: return "#ef4444"; // Rosso - MODIFICATO
+    case 3: return "#16a34a"; // Verde
+    case 4: return "#2563eb"; // Blu
+    case 5: return "#9333ea"; // Viola
+    case 6: return "#fbbf24"; // Oro
     default: return "#000000"; // Nero per nessun voto
   }
+}
+
+// NUOVA FUNZIONE: colore per spot esplorati (fucsia Barbie)
+function getExploratoColor() {
+  return "#ec4899"; // Fucsia stile Barbie
 }
 
 // ===============================
@@ -353,30 +358,85 @@ async function checkForDuplicates(lat, lng, excludeId = null) {
 }
 
 // ===============================
-// FUNZIONI PER NOTE
+// FUNZIONI PER NOTE - AGGIORNATE PER 3 TAB
 // ===============================
 async function getNotes(userId = "default") {
   if (isMongoConnected && db) {
     try {
-      const notes = await db.collection('notes').findOne({ userId });
-      return notes || { userId, content: "", updatedAt: new Date().toISOString() };
+      const notesDoc = await db.collection('notes').findOne({ userId });
+      
+      // Se non esiste, crea un documento con 3 note vuote
+      if (!notesDoc) {
+        return { 
+          userId, 
+          note1: "", 
+          note2: "", 
+          note3: "",
+          updatedAt: new Date().toISOString(),
+          version: 2
+        };
+      }
+      
+      // Se è la vecchia versione (con solo campo "content"), converti
+      if (notesDoc.content !== undefined && notesDoc.note1 === undefined) {
+        return {
+          userId,
+          note1: notesDoc.content || "",
+          note2: "",
+          note3: "",
+          updatedAt: notesDoc.updatedAt || new Date().toISOString(),
+          version: 2
+        };
+      }
+      
+      // Altrimenti ritorna le note esistenti
+      return {
+        userId,
+        note1: notesDoc.note1 || "",
+        note2: notesDoc.note2 || "",
+        note3: notesDoc.note3 || "",
+        updatedAt: notesDoc.updatedAt || new Date().toISOString(),
+        version: notesDoc.version || 2
+      };
     } catch (error) {
       console.error(`❌ Errore lettura note:`, error);
-      return { userId, content: "", updatedAt: new Date().toISOString() };
+      return { 
+        userId, 
+        note1: "", 
+        note2: "", 
+        note3: "",
+        updatedAt: new Date().toISOString(),
+        version: 2
+      };
     }
   }
-  return { userId, content: "", updatedAt: new Date().toISOString() };
+  return { 
+    userId, 
+    note1: "", 
+    note2: "", 
+    note3: "",
+    updatedAt: new Date().toISOString(),
+    version: 2
+  };
 }
 
-async function saveNotes(userId = "default", content) {
+async function saveNotes(userId = "default", note1 = "", note2 = "", note3 = "") {
   if (isMongoConnected && db) {
     try {
       await db.collection('notes').updateOne(
         { userId },
-        { $set: { content, updatedAt: new Date().toISOString() } },
+        { 
+          $set: { 
+            note1: note1 || "",
+            note2: note2 || "",
+            note3: note3 || "",
+            updatedAt: new Date().toISOString(),
+            version: 2
+          } 
+        },
         { upsert: true }
       );
-      console.log(`✅ Note salvate per utente: ${userId}`);
+      console.log(`✅ Note salvate per utente: ${userId} (versione 2, 3 tab)`);
       return true;
     } catch (error) {
       console.error(`❌ Errore salvataggio note:`, error);
@@ -486,19 +546,27 @@ async function compareWithDatabase(gmapsSpots) {
 // SETTINGS
 // ===============================
 const DEFAULT_SETTINGS = {
-  version: 4,
+  version: 5, // Incrementato per nuove funzionalità
   baseLayer: "osm",
   mapStyle: "default",
   randomIncludeLowRated: false,
   lastUpdated: new Date().toISOString(),
-  database: "mongodb"
+  database: "mongodb",
+  noteVersion: 2 // Nuovo: versione sistema note
 };
 
 async function getSettings() {
   if (isMongoConnected && db) {
     try {
       const settings = await db.collection('settings').findOne({});
-      return settings || DEFAULT_SETTINGS;
+      const mergedSettings = { ...DEFAULT_SETTINGS, ...settings };
+      
+      // Assicurati che noteVersion sia impostata
+      if (!mergedSettings.noteVersion) {
+        mergedSettings.noteVersion = 2;
+      }
+      
+      return mergedSettings;
     } catch (error) {
       console.error(`❌ Errore lettura settings:`, error);
       return DEFAULT_SETTINGS;
@@ -512,10 +580,17 @@ async function saveSettings(settings) {
     try {
       await db.collection('settings').updateOne(
         {},
-        { $set: { ...settings, lastUpdated: new Date().toISOString() } },
+        { 
+          $set: { 
+            ...settings, 
+            lastUpdated: new Date().toISOString(),
+            version: 5,
+            noteVersion: 2
+          } 
+        },
         { upsert: true }
       );
-      console.log(`✅ Settings salvati`);
+      console.log(`✅ Settings salvati (versione 5)`);
       return settings;
     } catch (error) {
       console.error(`❌ Errore salvataggio settings:`, error);
@@ -903,7 +978,7 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
 });
 
 // ===============================
-// ENDPOINT PER NOTE
+// ENDPOINT PER NOTE - AGGIORNATO PER 3 TAB
 // ===============================
 app.get("/api/notes", async (req, res) => {
   try {
@@ -913,7 +988,8 @@ app.get("/api/notes", async (req, res) => {
     res.json({
       success: true,
       data: notes,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      version: 2
     });
   } catch (err) {
     console.error("❌ Errore lettura note:", err);
@@ -928,22 +1004,26 @@ app.get("/api/notes", async (req, res) => {
 
 app.post("/api/notes", authMiddleware, async (req, res) => {
   try {
-    const { content, userId = "default" } = req.body || {};
+    const { note1, note2, note3, userId = "default" } = req.body || {};
     
-    if (content === undefined) {
-      return res.status(400).json({
-        success: false,
-        error: "Contenuto delle note obbligatorio",
-        code: "MISSING_CONTENT"
-      });
+    // Se riceviamo il vecchio formato "content", convertiamo in note1
+    let note1Content = note1;
+    let note2Content = note2;
+    let note3Content = note3;
+    
+    if (req.body.content !== undefined) {
+      note1Content = req.body.content;
+      note2Content = "";
+      note3Content = "";
     }
     
-    await saveNotes(userId, content);
+    await saveNotes(userId, note1Content || "", note2Content || "", note3Content || "");
     
     res.json({
       success: true,
-      message: "Note salvate con successo",
-      timestamp: new Date().toISOString()
+      message: "Note salvate con successo (3 tab)",
+      timestamp: new Date().toISOString(),
+      version: 2
     });
     
   } catch (err) {
@@ -1279,7 +1359,8 @@ app.get("/api/settings", async (req, res) => {
       success: true,
       data: settings,
       timestamp: new Date().toISOString(),
-      database: isMongoConnected ? "mongodb" : "offline"
+      database: isMongoConnected ? "mongodb" : "offline",
+      noteVersion: settings.noteVersion || 1
     });
   } catch (err) {
     console.error("❌ Errore lettura settings:", err);
@@ -1303,7 +1384,8 @@ app.post("/api/settings", authMiddleware, async (req, res) => {
       baseLayer: baseLayer || currentSettings.baseLayer,
       mapStyle: mapStyle || currentSettings.mapStyle,
       randomIncludeLowRated: randomIncludeLowRated !== undefined ? randomIncludeLowRated : currentSettings.randomIncludeLowRated,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      noteVersion: 2 // Forza la versione 2 per le note
     };
     
     await saveSettings(updatedSettings);
@@ -1313,7 +1395,8 @@ app.post("/api/settings", authMiddleware, async (req, res) => {
       message: "Impostazioni salvate",
       data: updatedSettings,
       timestamp: new Date().toISOString(),
-      database: "mongodb"
+      database: "mongodb",
+      noteVersion: 2
     });
     
   } catch (err) {
@@ -1328,7 +1411,7 @@ app.post("/api/settings", authMiddleware, async (req, res) => {
 });
 
 // ===============================
-// DEBUG & SYSTEM ENDPOINTS
+// DEBUG & SYSTEM ENDPOINTS - AGGIORNATO CON NUOVI COLORI
 // ===============================
 app.get("/api/debug/system-info", async (req, res) => {
   try {
@@ -1363,13 +1446,13 @@ app.get("/api/debug/system-info", async (req, res) => {
           settings: settings
         },
         colors: {
-          voto1: "#6b7280",
-          voto2: "#16a34a",
-          voto3: "#2563eb",
-          voto4: "#9333ea",
-          voto5: "#fbbf24",
-          voto6: "#06b6d4",
-          explorato: "#f97316",
+          voto1: "#6b7280", // Grigio
+          voto2: "#ef4444", // Rosso - MODIFICATO
+          voto3: "#16a34a", // Verde
+          voto4: "#2563eb", // Blu
+          voto5: "#9333ea", // Viola
+          voto6: "#fbbf24", // Oro
+          explorato: "#ec4899", // Fucsia Barbie - MODIFICATO
           noVoto: "#000000"
         },
         env: {
@@ -1397,7 +1480,8 @@ app.get("/api/health", (req, res) => {
     status: isMongoConnected ? "healthy" : "degraded",
     database: isMongoConnected ? "connected" : "disconnected",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    noteVersion: 2
   });
 });
 
@@ -1608,15 +1692,16 @@ async function initializeServer() {
       console.log(`   • Spot totali: ${spotCount}`);
       console.log(`   • Spot esplorati: ${exploratiCount}`);
       console.log(`   • Database: MongoDB Atlas`);
-      console.log(`   • Nuovi colori voti attivi`);
+      console.log(`   • Nuova palette colori attiva`);
+      console.log(`   • Sistema note: 3 tab (versione 2)`);
       console.log(`   • Allineamento Google Maps: pronto`);
-      console.log(`   • Sistema note: pronto`);
       
       await saveSettings({
         ...settings,
         database: "mongodb",
         lastUpdated: new Date().toISOString(),
-        version: 5
+        version: 5,
+        noteVersion: 2
       });
     } else {
       console.log('⚠️  Modalità offline: MongoDB non disponibile');
@@ -1628,8 +1713,8 @@ async function initializeServer() {
     console.log(`   • GET  /api/spots-extra - Lista spot`);
     console.log(`   • POST /api/spots-extra - Aggiungi spot (auth)`);
     console.log(`   • POST /api/align-gmaps - Allineamento Google Maps`);
-    console.log(`   • GET  /api/notes - Leggi note`);
-    console.log(`   • POST /api/notes - Salva note (auth)`);
+    console.log(`   • GET  /api/notes - Leggi note (3 tab)`);
+    console.log(`   • POST /api/notes - Salva note (auth, 3 tab)`);
     console.log(`   • GET  /api/search-city - Ricerca città`);
     console.log(`   • GET  /api/debug/system-info - Info sistema`);
     console.log(`   • GET  /api/health - Health check`);
@@ -1647,16 +1732,16 @@ initializeServer().then(() => {
     console.log(`🚀 Server LTU attivo su http://localhost:${port}`);
     console.log(`⏰ Avviato: ${new Date().toISOString()}`);
     console.log(`💾 Database: MongoDB Atlas`);
-    console.log(`🎨 Nuovi colori voti:`);
+    console.log(`🎨 Nuova palette colori:`);
     console.log(`   • 1: Grigio (#6b7280)`);
-    console.log(`   • 2: Verde (#16a34a)`);
-    console.log(`   • 3: Blu (#2563eb)`);
-    console.log(`   • 4: Viola (#9333ea)`);
-    console.log(`   • 5: Oro (#fbbf24)`);
-    console.log(`   • 6: Platino (#06b6d4)`);
+    console.log(`   • 2: Rosso (#ef4444) ← MODIFICATO`);
+    console.log(`   • 3: Verde (#16a34a)`);
+    console.log(`   • 4: Blu (#2563eb)`);
+    console.log(`   • 5: Viola (#9333ea)`);
+    console.log(`   • 6: Oro (#fbbf24)`);
     console.log(`   • Nessun voto: Nero con ?`);
-    console.log(`   • Esplorato: Arancione (#f97316)`);
-    console.log(`📝 Sistema note integrato`);
+    console.log(`   • Esplorato: Fucsia Barbie (#ec4899) ← MODIFICATO`);
+    console.log(`📝 Sistema note: 3 tab fullscreen`);
     console.log(`🔄 Allineamento Google Maps attivo`);
   });
   
