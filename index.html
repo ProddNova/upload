@@ -1948,6 +1948,8 @@ let hasLocationPermission = false; // Permesso posizione già concesso
 let isFirstLocationUpdate = true; // Prima volta che aggiorniamo la posizione
 let gmapsMissingSpots = []; // Spot mancanti trovati in GMaps
 let currentNoteTab = "note1"; // Tab note attualmente attivo
+let movingSpotId = null; // ID dello spot in fase di spostamento
+let moveMarker = null; // Marker temporaneo per lo spostamento
 
 // FILTER STATE MODIFICATO: ora supporta array per selezioni multiple
 let filterState = {
@@ -2468,25 +2470,95 @@ map.setView([44.5, 8.9], 7);
 
 // Gestione click sulla mappa per PC e mobile
 map.on("click", function (e) {
+// Se siamo in modalità spostamento, gestisci lo spostamento
+if (movingSpotId) {
 const lat = e.latlng.lat;
 const lng = e.latlng.lng;
 
-// Salva coordinate per pin temporaneo
+const spot = allSpots.find(s => s.id === movingSpotId);
+if (!spot) {
+showToast('Spot non trovato', 'error');
+cancelMoveMode();
+return;
+}
+
+// Mostra un messaggio di caricamento
+updateSyncStatus('Spostamento spot...', 'syncing');
+
+// Preparare i dati per l'aggiornamento
+const payload = {
+name: spot.name,
+desc: spot.desc,
+lat: lat,
+lng: lng,
+voto: spot.voto,
+tipo: spot.tipo,
+explorato: spot.explorato
+};
+
+// Chiamata API per aggiornare lo spot
+fetchWithRetry(`/api/spots-extra/${movingSpotId}`, {
+method: 'PUT',
+headers: { 
+'Content-Type': 'application/json',
+"Authorization": "Basic " + btoa("unit:ltunit")
+},
+body: JSON.stringify(payload)
+})
+.then(result => {
+const updatedSpot = result.data;
+const index = allSpots.findIndex(s => s.id === movingSpotId);
+if (index !== -1) {
+allSpots[index] = { 
+...allSpots[index],
+...updatedSpot,
+source: 'extra',
+updatedAt: updatedSpot.updatedAt || new Date().toISOString()
+};
+}
+
+// Aggiorna i marker e la lista
+applyFilters();
+updateSyncStatus('Spot spostato', 'success');
+showToast('Spot spostato con successo', 'success');
+})
+.catch(err => {
+console.error(err);
+updateSyncStatus('Errore spostamento', 'error');
+showToast(`Errore nello spostamento: ${err.message}`, 'error');
+})
+.finally(() => {
+cancelMoveMode();
+});
+
+// Non procedere con il pin temporaneo
+return;
+}
+
+// Codice esistente per il pin temporaneo e le coordinate del form
+const lat = e.latlng.lat;
+const lng = e.latlng.lng;
+
 temporaryPin.lat = lat;
 temporaryPin.lng = lng;
 
-// Mostra pin temporaneo su PC
 if (!isMobile) {
 showTemporaryPin(lat, lng);
 }
 
-// Aggiorna i campi dei form se aperti
 updateFormCoordinates(lat, lng);
 });
 
 // Gestione contextmenu (tasto destro) per rimuovere pin
 map.on("contextmenu", function(e) {
 e.originalEvent.preventDefault();
+
+if (movingSpotId) {
+cancelMoveMode();
+showToast('Spostamento annullato', 'info');
+return false;
+}
+
 removeTemporaryPin();
 return false;
 });
@@ -2500,6 +2572,45 @@ return false;
 
 // Inizializza crosshair in base alle impostazioni
 updateCrosshairVisibility();
+}
+
+// Funzione per annullare la modalità spostamento
+function cancelMoveMode() {
+movingSpotId = null;
+if (moveMarker) {
+map.removeLayer(moveMarker);
+moveMarker = null;
+}
+map.getContainer().style.cursor = '';
+}
+
+// Funzione per attivare la modalità spostamento
+function activateMoveMode(spotId) {
+const spot = allSpots.find(s => s.id === spotId);
+if (!spot) {
+showToast('Spot non trovato', 'error');
+return;
+}
+
+movingSpotId = spotId;
+map.getContainer().style.cursor = 'crosshair';
+
+// Crea un marker temporaneo per indicare la posizione corrente
+if (moveMarker) {
+map.removeLayer(moveMarker);
+}
+
+const moveIcon = L.divIcon({
+html: `<div style="width: 24px; height: 24px; border-radius: 50%; background: #f59e0b; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">→</div>`,
+className: "ltu-round-marker",
+iconSize: [32, 32],
+iconAnchor: [16, 16]
+});
+
+moveMarker = L.marker([spot.lat, spot.lng], { icon: moveIcon }).addTo(map);
+
+map.closePopup();
+showToast('Clicca sulla mappa per spostare lo spot. Premi ESC per annullare.', 'info');
 }
 
 function showTemporaryPin(lat, lng) {
@@ -2648,6 +2759,7 @@ Apri in Google Maps ↗
 <button id="list-btn-${spotId}" data-spot-id="${spotId}" style="background: #16a34a; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📋 Lista</button>
 ${spotId ? `
 <button id="edit-btn-${spotId}" data-spot-id="${spotId}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Modifica</button>
+<button id="move-btn-${spotId}" data-spot-id="${spotId}" style="background: #f59e0b; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Sposta</button>
 <button id="delete-btn-${spotId}" data-spot-id="${spotId}" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Elimina</button>
 ` : ''}
 ${p.source === "gmaps_missing" ? `<button id="confirm-btn-${spotId}" data-spot-id="${spotId}" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Conferma spot</button>` : ''}
@@ -3175,6 +3287,40 @@ return;
 try {
 updateSyncStatus("Decodifica link...", "syncing");
         
+// Prima proviamo a estrarre le coordinate dal link stesso
+let lat = null;
+let lng = null;
+let name = "";
+        
+// Pattern per link Google Maps con coordinate
+const coordPattern = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+const placePattern = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/;
+const queryPattern = /q=(-?\d+\.\d+),(-?\d+\.\d+)/;
+        
+// Prova a estrarre coordinate dal link
+if (coordPattern.test(url)) {
+const match = url.match(coordPattern);
+lat = parseFloat(match[1]);
+lng = parseFloat(match[2]);
+} else if (placePattern.test(url)) {
+const match = url.match(placePattern);
+lat = parseFloat(match[1]);
+lng = parseFloat(match[2]);
+} else if (queryPattern.test(url)) {
+const match = url.match(queryPattern);
+lat = parseFloat(match[1]);
+lng = parseFloat(match[2]);
+}
+        
+if (lat && lng) {
+// Coordinate trovate direttamente dal link
+document.getElementById("coordsFound").textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+document.getElementById("linkResult").style.display = "block";
+updateFormCoordinates(lat, lng);
+updateSyncStatus("Coordinate estratte dal link", "success");
+showToast("Coordinate estratte con successo!", "success");
+} else {
+// Usa l'endpoint API come fallback
 const result = await fetchWithRetry("/api/decode-gmaps-url", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
@@ -3184,24 +3330,22 @@ body: JSON.stringify({ url })
 const data = result.data;
 document.getElementById("coordsFound").textContent = `${data.lat}, ${data.lng}`;
 document.getElementById("linkResult").style.display = "block";
-
-// Popola i campi lat/lng automaticamente
 updateFormCoordinates(data.lat, data.lng);
-
+updateSyncStatus("Coordinate estratte via API", "success");
+showToast("Coordinate estratte con successo!", "success");
+}
+        
 // Imposta altri campi vuoti
 document.getElementById("linkSpotName").value = "";
 document.getElementById("linkSpotDesc").value = "";
 document.getElementById("linkSpotVoto").value = "";
 document.getElementById("linkSpotTipo").value = "";
 document.getElementById("linkSpotExplorato").checked = false;
-
-updateSyncStatus("Coordinate estratte", "success");
-showToast("Coordinate estratte con successo!", "success");
         
 } catch (error) {
 console.error("Errore decodifica:", error);
 updateSyncStatus("Errore decodifica link", "error");
-showToast("Impossibile decodificare il link. Assicurati che sia un link Google Maps valido.", "error");
+showToast("Impossibile decodificare il link. Assicurati che sia un link Google Maps valido con coordinate.", "error");
 }
 }
 
@@ -4063,6 +4207,14 @@ userLocationBtn.addEventListener("click", toggleUserLocation);
 // CERCA CITTA'
 initCitySearch();
 
+// Event listener per tasto ESC per annullare lo spostamento
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape' && movingSpotId) {
+cancelMoveMode();
+showToast('Spostamento annullato', 'info');
+}
+});
+
 // EVENTI PER POPUP DINAMICI
 document.addEventListener('click', async (e) => {
 if (e.target.id && e.target.id.startsWith('list-btn-')) {
@@ -4152,6 +4304,20 @@ document.getElementById('editFieldExplorato').checked = spot.explorato || false;
 document.getElementById('editPanel').classList.remove('hidden');
 currentSpot = spot;
 map.closePopup();
+}
+
+// Bottone "Sposta" nei popup
+if (e.target.id && e.target.id.startsWith('move-btn-')) {
+e.preventDefault();
+const spotId = e.target.dataset.spotId;
+const spot = allSpots.find(s => s.id === spotId);
+if (!spot) {
+showToast('Spot non trovato', 'error');
+return;
+}
+
+// Attiva la modalità spostamento
+activateMoveMode(spotId);
 }
 
 // Conferma spot da GMaps
