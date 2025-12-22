@@ -539,6 +539,43 @@ color: #fbbf24; /* Oro */
 font-weight: bold;
 background-color: rgba(251, 191, 36, 0.1);
 }
+/* NUOVI COLORI PER FATTIBILITA/STATO - PER IL BORDO DEL MARKER */
+option[value="1"][data-type="fattibilita"],
+option[value="1"][data-type="stato"] {
+color: #dc2626; /* Rosso scuro */
+font-weight: bold;
+background-color: rgba(220, 38, 38, 0.1);
+}
+option[value="2"][data-type="fattibilita"],
+option[value="2"][data-type="stato"] {
+color: #ea580c; /* Arancione */
+font-weight: bold;
+background-color: rgba(234, 88, 12, 0.1);
+}
+option[value="3"][data-type="fattibilita"],
+option[value="3"][data-type="stato"] {
+color: #d97706; /* Giallo ambra */
+font-weight: bold;
+background-color: rgba(217, 119, 6, 0.1);
+}
+option[value="4"][data-type="fattibilita"],
+option[value="4"][data-type="stato"] {
+color: #65a30d; /* Verde lime */
+font-weight: bold;
+background-color: rgba(101, 163, 13, 0.1);
+}
+option[value="5"][data-type="fattibilita"],
+option[value="5"][data-type="stato"] {
+color: #2563eb; /* Blu */
+font-weight: bold;
+background-color: rgba(37, 99, 235, 0.1);
+}
+option[value="6"][data-type="fattibilita"],
+option[value="6"][data-type="stato"] {
+color: #7c3aed; /* Viola */
+font-weight: bold;
+background-color: rgba(124, 58, 237, 0.1);
+}
 /* SETTINGS */
 .settings-section {
 margin-bottom: 10px;
@@ -1281,6 +1318,33 @@ cursor: pointer;
 </select>
 </div>
 </div>
+<!-- NUOVI CAMPI: FATTIBILITA E STATO -->
+<div class="cols">
+<div class="form-row">
+<label for="fieldFattibilita">Fattibilità (1–6)</label>
+<select id="fieldFattibilita" class="select voto-select">
+<option value="">Nessuna</option>
+<option value="1" data-type="fattibilita" style="color:#dc2626">● 1 - Molto bassa</option>
+<option value="2" data-type="fattibilita" style="color:#ea580c">● 2 - Bassa</option>
+<option value="3" data-type="fattibilita" style="color:#d97706">● 3 - Media</option>
+<option value="4" data-type="fattibilita" style="color:#65a30d">● 4 - Alta</option>
+<option value="5" data-type="fattibilita" style="color:#2563eb">● 5 - Molto alta</option>
+<option value="6" data-type="fattibilita" style="color:#7c3aed">● 6 - Eccellente</option>
+</select>
+</div>
+<div class="form-row">
+<label for="fieldStato">Stato (1–6)</label>
+<select id="fieldStato" class="select voto-select">
+<option value="">Nessuno</option>
+<option value="1" data-type="stato" style="color:#dc2626">● 1 - Pessimo</option>
+<option value="2" data-type="stato" style="color:#ea580c">● 2 - Scadente</option>
+<option value="3" data-type="stato" style="color:#d97706">● 3 - Mediocre</option>
+<option value="4" data-type="stato" style="color:#65a30d">● 4 - Buono</option>
+<option value="5" data-type="stato" style="color:#2563eb">● 5 - Ottimo</option>
+<option value="6" data-type="stato" style="color:#7c3aed">● 6 - Eccellente</option>
+</select>
+</div>
+</div>
 <div class="cols">
 <div class="form-row">
 <label for="fieldLat">Latitudine</label>
@@ -1357,6 +1421,33 @@ cursor: pointer;
 <option value="diga">💧 Diga</option>
 <option value="militare">🪖 Militare</option>
 <option value="altro">📍 Altro</option>
+</select>
+</div>
+</div>
+<!-- NUOVI CAMPI: FATTIBILITA E STATO -->
+<div class="cols">
+<div class="form-row">
+<label for="editFieldFattibilita">Fattibilità (1–6)</label>
+<select id="editFieldFattibilita" class="select voto-select">
+<option value="">Nessuna</option>
+<option value="1" data-type="fattibilita" style="color:#dc2626">● 1 - Molto bassa</option>
+<option value="2" data-type="fattibilita" style="color:#ea580c">● 2 - Bassa</option>
+<option value="3" data-type="fattibilita" style="color:#d97706">● 3 - Media</option>
+<option value="4" data-type="fattibilita" style="color:#65a30d">● 4 - Alta</option>
+<option value="5" data-type="fattibilita" style="color:#2563eb">● 5 - Molto alta</option>
+<option value="6" data-type="fattibilita" style="color:#7c3aed">● 6 - Eccellente</option>
+</select>
+</div>
+<div class="form-row">
+<label for="editFieldStato">Stato (1–6)</label>
+<select id="editFieldStato" class="select voto-select">
+<option value="">Nessuno</option>
+<option value="1" data-type="stato" style="color:#dc2626">● 1 - Pessimo</option>
+<option value="2" data-type="stato" style="color:#ea580c">● 2 - Scadente</option>
+<option value="3" data-type="stato" style="color:#d97706">● 3 - Mediocre</option>
+<option value="4" data-type="stato" style="color:#65a30d">● 4 - Buono</option>
+<option value="5" data-type="stato" style="color:#2563eb">● 5 - Ottimo</option>
+<option value="6" data-type="stato" style="color:#7c3aed">● 6 - Eccellente</option>
 </select>
 </div>
 </div>
@@ -1598,6 +1689,33 @@ per estrarre automaticamente le coordinate.
 </select>
 </div>
 </div>
+<!-- NUOVI CAMPI: FATTIBILITA E STATO -->
+<div class="cols">
+<div class="form-row">
+<label for="linkSpotFattibilita">Fattibilità (1–6)</label>
+<select id="linkSpotFattibilita" class="select voto-select">
+<option value="">Nessuna</option>
+<option value="1" data-type="fattibilita" style="color:#dc2626">● 1 - Molto bassa</option>
+<option value="2" data-type="fattibilita" style="color:#ea580c">● 2 - Bassa</option>
+<option value="3" data-type="fattibilita" style="color:#d97706">● 3 - Media</option>
+<option value="4" data-type="fattibilita" style="color:#65a30d">● 4 - Alta</option>
+<option value="5" data-type="fattibilita" style="color:#2563eb">● 5 - Molto alta</option>
+<option value="6" data-type="fattibilita" style="color:#7c3aed">● 6 - Eccellente</option>
+</select>
+</div>
+<div class="form-row">
+<label for="linkSpotStato">Stato (1–6)</label>
+<select id="linkSpotStato" class="select voto-select">
+<option value="">Nessuno</option>
+<option value="1" data-type="stato" style="color:#dc2626">● 1 - Pessimo</option>
+<option value="2" data-type="stato" style="color:#ea580c">● 2 - Scadente</option>
+<option value="3" data-type="stato" style="color:#d97706">● 3 - Mediocre</option>
+<option value="4" data-type="stato" style="color:#65a30d">● 4 - Buono</option>
+<option value="5" data-type="stato" style="color:#2563eb">● 5 - Ottimo</option>
+<option value="6" data-type="stato" style="color:#7c3aed">● 6 - Eccellente</option>
+</select>
+</div>
+</div>
 <div class="cols">
 <div class="form-row">
 <label for="linkSpotLat">Latitudine</label>
@@ -1700,6 +1818,18 @@ if (r === 4) return "#2563eb"; // Blu
 if (r === 5) return "#9333ea"; // Viola
 if (r === 6) return "#fbbf24"; // Oro
 return "#000000";
+}
+
+// NUOVA FUNZIONE: colore per fattibilità/stato (per il bordo)
+function getFattibilitaStatoColor(value) {
+if (typeof value !== "number" || !isFinite(value)) return "#ffffff"; // Bianco per nessun valore
+if (value === 1) return "#dc2626"; // Rosso scuro
+if (value === 2) return "#ea580c"; // Arancione
+if (value === 3) return "#d97706"; // Giallo ambra
+if (value === 4) return "#65a30d"; // Verde lime
+if (value === 5) return "#2563eb"; // Blu
+if (value === 6) return "#7c3aed"; // Viola
+return "#ffffff"; // Bianco come default
 }
 
 // MODIFICATO: Colore per spot esplorati #ff00e6
@@ -2087,6 +2217,8 @@ const desc = raw.desc || "";
 const voto = raw.voto != null ? parseInt(raw.voto, 10) : extractVoto(desc);
 const tipo = raw.tipo || getTipo(name, desc);
 const explorato = raw.explorato || false;
+const fattibilita = raw.fattibilita != null ? parseInt(raw.fattibilita, 10) : null;
+const stato = raw.stato != null ? parseInt(raw.stato, 10) : null;
 return {
 id: raw.id,
 name,
@@ -2096,6 +2228,8 @@ lng,
 voto: (voto >= 1 && voto <= 6) ? voto : null,
 tipo,
 explorato,
+fattibilita: (fattibilita >= 1 && fattibilita <= 6) ? fattibilita : null,
+stato: (stato >= 1 && stato <= 6) ? stato : null,
 source: "extra",
 createdAt: raw.createdAt || null,
 updatedAt: raw.updatedAt || null
@@ -2493,7 +2627,9 @@ lat: lat,
 lng: lng,
 voto: spot.voto,
 tipo: spot.tipo,
-explorato: spot.explorato
+explorato: spot.explorato,
+fattibilita: spot.fattibilita,
+stato: spot.stato
 };
 
 // Chiamata API per aggiornare lo spot
@@ -2734,6 +2870,21 @@ votoDisplay = '<span style="background:#000000; color:#ffffff; padding:4px 10px;
 votoDisplay = `<span style="background:${color}; color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block;">${votoText} ★</span>`;
 }
       
+// Aggiungi informazioni su fattibilità e stato
+let fattibilitaStatoInfo = '';
+if (p.fattibilita || p.stato) {
+fattibilitaStatoInfo = `<div style="margin-top: 8px; font-size: 11px; color: var(--text-dim);">`;
+if (p.fattibilita) {
+const fattibilitaColor = getFattibilitaStatoColor(p.fattibilita);
+fattibilitaStatoInfo += `<div style="margin-bottom: 2px;">Fattibilità: <span style="color:${fattibilitaColor}; font-weight:bold;">${p.fattibilita}</span></div>`;
+}
+if (p.stato) {
+const statoColor = getFattibilitaStatoColor(p.stato);
+fattibilitaStatoInfo += `<div>Stato: <span style="color:${statoColor}; font-weight:bold;">${p.stato}</span></div>`;
+}
+fattibilitaStatoInfo += `</div>`;
+}
+      
 return `
 <div class="ltu-popup">
 <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
@@ -2744,6 +2895,7 @@ ${votoDisplay}
 </div>
 </div>
 ${desc ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:12px; color:#e5e7eb;">${desc}</div>` : ''}
+${fattibilitaStatoInfo}
 <div style="font-size:11px; color:var(--text-dim); margin-bottom:14px;">
 ${coords}
 ${p.source === "extra" ? " • LTU extra" : " • Importato"}
@@ -2849,7 +3001,27 @@ color = "#000000"; // Nero
 iconContent = "?"; // Punto di domanda
 }
 
-// CREA PIN ROTONDO
+// Determina il colore del bordo in base a fattibilità/stato
+let borderColor = 'white'; // default
+let borderWidth = '2px';
+
+if (p.explorato) {
+// Se esplorato, usa il colore esplorato
+borderColor = '#ff00e6';
+borderWidth = '3px';
+} else {
+// Altrimenti, usa il colore in base a fattibilità/stato
+// Priorità: fattibilità, poi stato
+if (p.fattibilita) {
+borderColor = getFattibilitaStatoColor(p.fattibilita);
+borderWidth = '3px';
+} else if (p.stato) {
+borderColor = getFattibilitaStatoColor(p.stato);
+borderWidth = '3px';
+}
+}
+
+// CREA PIN ROTONDO con bordo personalizzato
 const iconHtml = `
 <div style="
 position: relative;
@@ -2857,7 +3029,7 @@ width: 24px;
 height: 24px;
 border-radius: 50%;
 background: ${color};
-border: 1px solid white;
+border: ${borderWidth} solid ${borderColor};
 box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
 display: flex;
 align-items: center;
@@ -3001,13 +3173,25 @@ desc.textContent = p.desc || "";
 const meta = document.createElement("div");
 meta.className = "spot-meta";
         
+// Aggiungi informazioni su fattibilità e stato nella lista
+let extraInfo = "";
+if (p.fattibilita || p.stato) {
+extraInfo = " • ";
+if (p.fattibilita) {
+extraInfo += `F:${p.fattibilita}`;
+}
+if (p.stato) {
+extraInfo += p.fattibilita ? ` S:${p.stato}` : `S:${p.stato}`;
+}
+}
+        
 const dateInfo = p.updatedAt ? 
 new Date(p.updatedAt).toLocaleDateString('it-IT') : 
 (p.createdAt ? new Date(p.createdAt).toLocaleDateString('it-IT') : '');
         
 meta.innerHTML = `
 <span>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>
-<span>${p.source === "extra" ? "LTU" : "Importato"} ${dateInfo ? '• ' + dateInfo : ''}</span>
+<span>${p.source === "extra" ? "LTU" : "Importato"} ${dateInfo ? '• ' + dateInfo : ''}${extraInfo}</span>
 `;
         
 mainDiv.appendChild(titleRow);
@@ -3050,6 +3234,10 @@ const votoStr = votoSelect.value;
 const tipoSelect = document.getElementById("fieldTipo");
 const tipo = tipoSelect.value || getTipo(name, desc);
 const explorato = document.getElementById("fieldExplorato").checked;
+const fattibilitaSelect = document.getElementById("fieldFattibilita");
+const fattibilitaStr = fattibilitaSelect.value;
+const statoSelect = document.getElementById("fieldStato");
+const statoStr = statoSelect.value;
 
 if (!name || !latStr || !lngStr) {
 showToast("Nome, latitudine e longitudine sono obbligatori", "error");
@@ -3070,7 +3258,19 @@ const v = parseInt(votoStr, 10);
 if (v >= 1 && v <= 6) voto = v;
 }
       
-const payload = { name, desc, lat, lng, voto, tipo, explorato };
+let fattibilita = null;
+if (fattibilitaStr) {
+const f = parseInt(fattibilitaStr, 10);
+if (f >= 1 && f <= 6) fattibilita = f;
+}
+      
+let stato = null;
+if (statoStr) {
+const s = parseInt(statoStr, 10);
+if (s >= 1 && s <= 6) stato = s;
+}
+      
+const payload = { name, desc, lat, lng, voto, tipo, explorato, fattibilita, stato };
       
 try {
 pendingOperations++;
@@ -3095,6 +3295,8 @@ lng: saved.lng,
 voto: saved.voto != null ? saved.voto : voto,
 tipo: saved.tipo || tipo,
 explorato: saved.explorato || explorato,
+fattibilita: saved.fattibilita != null ? saved.fattibilita : fattibilita,
+stato: saved.stato != null ? saved.stato : stato,
 source: "extra",
 createdAt: saved.createdAt || new Date().toISOString(),
 updatedAt: saved.updatedAt || new Date().toISOString()
@@ -3108,6 +3310,8 @@ document.getElementById("addPanel").classList.add("hidden");
 document.getElementById("addForm").reset();
 document.getElementById("fieldTipo").value = "";
 document.getElementById("fieldVoto").value = "";
+document.getElementById("fieldFattibilita").value = "";
+document.getElementById("fieldStato").value = "";
 document.getElementById("fieldExplorato").checked = false;
         
 updateSyncStatus("Spot aggiunto con successo", "success");
@@ -3339,6 +3543,8 @@ document.getElementById("linkSpotName").value = "";
 document.getElementById("linkSpotDesc").value = "";
 document.getElementById("linkSpotVoto").value = "";
 document.getElementById("linkSpotTipo").value = "";
+document.getElementById("linkSpotFattibilita").value = "";
+document.getElementById("linkSpotStato").value = "";
 document.getElementById("linkSpotExplorato").checked = false;
         
 } catch (error) {
@@ -3356,6 +3562,8 @@ const lng = parseFloat(document.getElementById("linkSpotLng").value);
 const votoStr = document.getElementById("linkSpotVoto").value;
 const tipo = document.getElementById("linkSpotTipo").value;
 const explorato = document.getElementById("linkSpotExplorato").checked;
+const fattibilitaStr = document.getElementById("linkSpotFattibilita").value;
+const statoStr = document.getElementById("linkSpotStato").value;
 
 if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
 showToast("Nome e coordinate valide sono obbligatori", "error");
@@ -3368,8 +3576,20 @@ const v = parseInt(votoStr, 10);
 if (v >= 1 && v <= 6) voto = v;
 }
 
+let fattibilita = null;
+if (fattibilitaStr) {
+const f = parseInt(fattibilitaStr, 10);
+if (f >= 1 && f <= 6) fattibilita = f;
+}
+
+let stato = null;
+if (statoStr) {
+const s = parseInt(statoStr, 10);
+if (s >= 1 && s <= 6) stato = s;
+}
+
 const tipoFinal = tipo ? String(tipo) : getTipo(name, desc);
-const payload = { name, desc, lat, lng, voto, tipo: tipoFinal, explorato };
+const payload = { name, desc, lat, lng, voto, tipo: tipoFinal, explorato, fattibilita, stato };
 
 try {
 pendingOperations++;
@@ -3394,6 +3614,8 @@ lng: saved.lng,
 voto: saved.voto,
 tipo: saved.tipo || tipoFinal,
 explorato: saved.explorato || explorato,
+fattibilita: saved.fattibilita != null ? saved.fattibilita : fattibilita,
+stato: saved.stato != null ? saved.stato : stato,
 source: "extra",
 createdAt: saved.createdAt || new Date().toISOString(),
 updatedAt: saved.updatedAt || new Date().toISOString()
@@ -3459,7 +3681,9 @@ desc: "Importato da Google Maps Takeout",
 source: "gmaps_import",
 voto: null,
 tipo: "altro",
-explorato: false
+explorato: false,
+fattibilita: null,
+stato: null
 });
 }
   
@@ -3587,7 +3811,9 @@ lat: spot.lat,
 lng: spot.lng,
 voto: spot.voto,
 tipo: spot.tipo,
-explorato: spot.explorato
+explorato: spot.explorato,
+fattibilita: spot.fattibilita,
+stato: spot.stato
 };
   
 const result = await fetchWithRetry("/api/spots-extra", {
@@ -3609,6 +3835,8 @@ lng: saved.lng,
 voto: saved.voto,
 tipo: saved.tipo || spot.tipo,
 explorato: saved.explorato || spot.explorato,
+fattibilita: saved.fattibilita != null ? saved.fattibilita : spot.fattibilita,
+stato: saved.stato != null ? saved.stato : spot.stato,
 source: "extra",
 createdAt: saved.createdAt || new Date().toISOString(),
 updatedAt: saved.updatedAt || new Date().toISOString()
@@ -3701,6 +3929,8 @@ const desc = place.desc || place.description || "";
 const lat = parseFloat(place.lat ?? place.latitude);
 const lng = parseFloat(place.lng ?? place.longitude);
 const explorato = place.explorato || false;
+const fattibilita = place.fattibilita != null ? parseInt(place.fattibilita, 10) : null;
+const stato = place.stato != null ? parseInt(place.stato, 10) : null;
           
 if (!name || Number.isNaN(lat) || Number.isNaN(lng)) {
 errors.push(`Spot ${i + 1}: Dati mancanti o invalidi`);
@@ -3709,7 +3939,7 @@ continue;
           
 const voto = place.voto != null ? parseInt(place.voto, 10) : extractVoto(desc);
 const tipo = place.tipo || getTipo(name, desc);
-const payload = { name, desc, lat, lng, voto, tipo, explorato };
+const payload = { name, desc, lat, lng, voto, tipo, explorato, fattibilita, stato };
           
 try {
 const result = await fetchWithRetry("/api/spots-extra", {
@@ -3732,6 +3962,8 @@ lng: saved.lng,
 voto: saved.voto != null ? saved.voto : voto,
 tipo: saved.tipo || tipo,
 explorato: saved.explorato || explorato,
+fattibilita: saved.fattibilita != null ? saved.fattibilita : fattibilita,
+stato: saved.stato != null ? saved.stato : stato,
 source: "extra",
 createdAt: saved.createdAt || new Date().toISOString(),
 updatedAt: saved.updatedAt || new Date().toISOString()
@@ -3775,17 +4007,19 @@ if (!spotsToExport.length) {
 showToast("Nessuno spot da esportare", "warning");
 return;
 }
-let csv = "Name,Description,Latitude,Longitude,Voto,Tipo,Explorato,CreatedAt,UpdatedAt,Source\n";
+let csv = "Name,Description,Latitude,Longitude,Voto,Tipo,Explorato,Fattibilita,Stato,CreatedAt,UpdatedAt,Source\n";
 spotsToExport.forEach(p => {
 const name = (p.name || "").replace(/"/g, '""');
 const desc = (p.desc || "").replace(/"/g, '""');
 const voto = p.voto || "";
 const tipo = p.tipo || "";
 const explorato = p.explorato ? "true" : "false";
+const fattibilita = p.fattibilita || "";
+const stato = p.stato || "";
 const createdAt = p.createdAt || "";
 const updatedAt = p.updatedAt || "";
 const source = p.source || "";
-csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo},${explorato},${createdAt},${updatedAt},${source}\n`;
+csv += `"${name}","${desc}",${p.lat},${p.lng},${voto},${tipo},${explorato},${fattibilita},${stato},${createdAt},${updatedAt},${source}\n`;
 });
       
 document.getElementById("exportTextarea").value = csv;
@@ -4299,6 +4533,8 @@ document.getElementById('editFieldLat').value = spot.lat.toFixed(6);
 document.getElementById('editFieldLng').value = spot.lng.toFixed(6);
 document.getElementById('editFieldTipo').value = spot.tipo || '';
 document.getElementById('editFieldExplorato').checked = spot.explorato || false;
+document.getElementById('editFieldFattibilita').value = spot.fattibilita || '';
+document.getElementById('editFieldStato').value = spot.stato || '';
 
 document.getElementById('editPanel').classList.remove('hidden');
 currentSpot = spot;
@@ -4337,6 +4573,8 @@ document.getElementById('fieldLng').value = spot.lng.toFixed(6);
 document.getElementById('fieldVoto').value = '';
 document.getElementById('fieldTipo').value = spot.tipo || '';
 document.getElementById('fieldExplorato').checked = spot.explorato || false;
+document.getElementById('fieldFattibilita').value = '';
+document.getElementById('fieldStato').value = '';
 
 document.getElementById('addPanel').classList.remove('hidden');
 currentSpot = spot;
@@ -4368,6 +4606,10 @@ const votoStr = votoSelect.value;
 const tipoSelect = document.getElementById('editFieldTipo');
 const tipo = tipoSelect.value || getTipo(name, desc);
 const explorato = document.getElementById('editFieldExplorato').checked;
+const fattibilitaSelect = document.getElementById('editFieldFattibilita');
+const fattibilitaStr = fattibilitaSelect.value;
+const statoSelect = document.getElementById('editFieldStato');
+const statoStr = statoSelect.value;
 
 if (!name || !latStr || !lngStr) {
 showToast('Nome, latitudine e longitudine sono obbligatori', 'error');
@@ -4388,7 +4630,19 @@ const v = parseInt(votoStr, 10);
 if (v >= 1 && v <= 6) voto = v;
 }
         
-const payload = { name, desc, lat, lng, voto, tipo, explorato };
+let fattibilita = null;
+if (fattibilitaStr) {
+const f = parseInt(fattibilitaStr, 10);
+if (f >= 1 && f <= 6) fattibilita = f;
+}
+        
+let stato = null;
+if (statoStr) {
+const s = parseInt(statoStr, 10);
+if (s >= 1 && s <= 6) stato = s;
+}
+        
+const payload = { name, desc, lat, lng, voto, tipo, explorato, fattibilita, stato };
         
 try {
 pendingOperations++;
