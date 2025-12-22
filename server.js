@@ -73,8 +73,8 @@ function getTipo(name, desc) {
 // NUOVA FUNZIONE: aggiornata con nuovi colori
 function getVotoColor(voto) {
   switch(voto) {
-    case 1: return "#6b7280"; // Grigio
-    case 2: return "#ef4444"; // Rosso - MODIFICATO
+    case 1: return "#ef4444"; // Rosso
+    case 2: return "#6b7280"; // Grigio
     case 3: return "#16a34a"; // Verde
     case 4: return "#2563eb"; // Blu
     case 5: return "#9333ea"; // Viola
@@ -83,9 +83,23 @@ function getVotoColor(voto) {
   }
 }
 
+// NUOVA FUNZIONE: colore per fattibilità/stato (per il bordo)
+function getFattibilitaStatoColor(value) {
+  if (!value || value < 1 || value > 6) return "#ffffff"; // Bianco per nessun valore
+  switch(value) {
+    case 1: return "#dc2626"; // Rosso scuro
+    case 2: return "#ea580c"; // Arancione
+    case 3: return "#d97706"; // Giallo ambra
+    case 4: return "#65a30d"; // Verde lime
+    case 5: return "#2563eb"; // Blu
+    case 6: return "#7c3aed"; // Viola
+    default: return "#ffffff"; // Bianco come default
+  }
+}
+
 // NUOVA FUNZIONE: colore per spot esplorati (fucsia Barbie)
 function getExploratoColor() {
-  return "#ec4899"; // Fucsia stile Barbie
+  return "#ff00e6"; // Fucsia stile Barbie
 }
 
 // ===============================
@@ -132,6 +146,8 @@ async function connectToMongoDB() {
       await db.collection('spots').createIndex({ id: 1 }, { unique: true });
       await db.collection('spots').createIndex({ explorato: 1 });
       await db.collection('spots').createIndex({ voto: 1 });
+      await db.collection('spots').createIndex({ fattibilita: 1 });
+      await db.collection('spots').createIndex({ stato: 1 });
       await db.collection('notes').createIndex({ userId: 1 }, { unique: true });
       console.log(`📊 Indici creati`);
     } catch (e) {
@@ -202,6 +218,8 @@ async function importInitialCSV() {
       const voto = extractVoto(desc);
       const tipo = getTipo(name, desc);
       const explorato = false;
+      const fattibilita = null;
+      const stato = null;
       
       const spot = {
         id: uuidv4(),
@@ -212,6 +230,8 @@ async function importInitialCSV() {
         voto,
         tipo,
         explorato,
+        fattibilita,
+        stato,
         source: "csv-import",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -492,6 +512,8 @@ function parseGoogleMapsCSV(csvText) {
             voto: null,
             tipo: "altro",
             explorato: false,
+            fattibilita: null,
+            stato: null,
             source: "gmaps_import"
           });
         }
@@ -546,7 +568,7 @@ async function compareWithDatabase(gmapsSpots) {
 // SETTINGS
 // ===============================
 const DEFAULT_SETTINGS = {
-  version: 5, // Incrementato per nuove funzionalità
+  version: 6, // Incrementato per nuove funzionalità (fattibilità/stato)
   baseLayer: "osm",
   mapStyle: "default",
   randomIncludeLowRated: false,
@@ -584,13 +606,13 @@ async function saveSettings(settings) {
           $set: { 
             ...settings, 
             lastUpdated: new Date().toISOString(),
-            version: 5,
+            version: 6,
             noteVersion: 2
           } 
         },
         { upsert: true }
       );
-      console.log(`✅ Settings salvati (versione 5)`);
+      console.log(`✅ Settings salvati (versione 6)`);
       return settings;
     } catch (error) {
       console.error(`❌ Errore salvataggio settings:`, error);
@@ -715,9 +737,9 @@ app.get("/api/spots-extra", async (req, res) => {
 
 app.post("/api/spots-extra", authMiddleware, async (req, res) => {
   try {
-    const { name, desc, lat, lng, voto, tipo, explorato } = req.body || {};
+    const { name, desc, lat, lng, voto, tipo, explorato, fattibilita, stato } = req.body || {};
     
-    console.log(`[POST] Nuovo spot: ${name} (${lat}, ${lng}) - Explorato: ${explorato || false}`);
+    console.log(`[POST] Nuovo spot: ${name} (${lat}, ${lng}) - Explorato: ${explorato || false} - Fattibilità: ${fattibilita || "null"} - Stato: ${stato || "null"}`);
     
     // Validazione
     if (!name || name.trim().length === 0) {
@@ -761,6 +783,18 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
       if (v >= 1 && v <= 6) votoNum = v;
     }
     
+    let fattibilitaNum = null;
+    if (fattibilita != null && fattibilita !== "" && !isNaN(fattibilita)) {
+      const f = parseInt(fattibilita, 10);
+      if (f >= 1 && f <= 6) fattibilitaNum = f;
+    }
+    
+    let statoNum = null;
+    if (stato != null && stato !== "" && !isNaN(stato)) {
+      const s = parseInt(stato, 10);
+      if (s >= 1 && s <= 6) statoNum = s;
+    }
+    
     // Verifica duplicati
     const duplicate = await checkForDuplicates(latNum, lngNum);
     if (duplicate) {
@@ -781,6 +815,8 @@ app.post("/api/spots-extra", authMiddleware, async (req, res) => {
       voto: votoNum,
       tipo: tipo ? String(tipo) : getTipo(name, desc),
       explorato: explorato === true || explorato === 'true',
+      fattibilita: fattibilitaNum,
+      stato: statoNum,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: req.user ? req.user.name : "anonymous",
@@ -869,9 +905,9 @@ app.delete("/api/spots-extra/:id", authMiddleware, async (req, res) => {
 app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
   try {
     const spotId = req.params.id;
-    const { name, desc, lat, lng, voto, tipo, explorato } = req.body || {};
+    const { name, desc, lat, lng, voto, tipo, explorato, fattibilita, stato } = req.body || {};
     
-    console.log(`[PUT] Aggiornamento spot ${spotId}: ${name} - Explorato: ${explorato}`);
+    console.log(`[PUT] Aggiornamento spot ${spotId}: ${name} - Explorato: ${explorato} - Fattibilità: ${fattibilita || "null"} - Stato: ${stato || "null"}`);
     
     if (!spotId || spotId.length < 10) {
       return res.status(400).json({
@@ -914,6 +950,18 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
       if (v >= 1 && v <= 6) votoNum = v;
     }
     
+    let fattibilitaNum = null;
+    if (fattibilita !== undefined && fattibilita !== "" && !isNaN(fattibilita)) {
+      const f = parseInt(fattibilita, 10);
+      if (f >= 1 && f <= 6) fattibilitaNum = f;
+    }
+    
+    let statoNum = null;
+    if (stato !== undefined && stato !== "" && !isNaN(stato)) {
+      const s = parseInt(stato, 10);
+      if (s >= 1 && s <= 6) statoNum = s;
+    }
+    
     // Verifica che lo spot esista
     const existingSpot = await getSpotById(spotId);
     if (!existingSpot) {
@@ -943,6 +991,8 @@ app.put("/api/spots-extra/:id", authMiddleware, async (req, res) => {
       voto: votoNum,
       tipo: tipo ? String(tipo) : getTipo(name, desc || existingSpot.desc),
       explorato: explorato !== undefined ? (explorato === true || explorato === 'true') : existingSpot.explorato,
+      fattibilita: fattibilitaNum,
+      stato: statoNum,
       updatedAt: new Date().toISOString(),
       updatedBy: req.user ? req.user.name : "anonymous"
     };
@@ -1116,7 +1166,7 @@ app.post("/api/spots-extra/batch", authMiddleware, async (req, res) => {
     
     for (const spotData of spots) {
       try {
-        const { name, desc, lat, lng, voto, tipo, explorato } = spotData || {};
+        const { name, desc, lat, lng, voto, tipo, explorato, fattibilita, stato } = spotData || {};
         
         if (!name || lat == null || lng == null) {
           results.errors.push({
@@ -1145,6 +1195,18 @@ app.post("/api/spots-extra/batch", authMiddleware, async (req, res) => {
           if (v >= 1 && v <= 6) votoNum = v;
         }
         
+        let fattibilitaNum = null;
+        if (fattibilita !== undefined && fattibilita !== "" && !isNaN(fattibilita)) {
+          const f = parseInt(fattibilita, 10);
+          if (f >= 1 && f <= 6) fattibilitaNum = f;
+        }
+        
+        let statoNum = null;
+        if (stato !== undefined && stato !== "" && !isNaN(stato)) {
+          const s = parseInt(stato, 10);
+          if (s >= 1 && s <= 6) statoNum = s;
+        }
+        
         const tipoFinal = tipo ? String(tipo) : getTipo(name, desc);
         const exploratoFinal = explorato === true || explorato === 'true';
         
@@ -1157,6 +1219,8 @@ app.post("/api/spots-extra/batch", authMiddleware, async (req, res) => {
           voto: votoNum,
           tipo: tipoFinal,
           explorato: exploratoFinal,
+          fattibilita: fattibilitaNum,
+          stato: statoNum,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           createdBy: req.user ? req.user.name : "batch_import",
@@ -1212,7 +1276,7 @@ app.post("/api/spots-extra/batch", authMiddleware, async (req, res) => {
 });
 
 // ===============================
-// FORCE SAVE ENDPOINT (aggiornato per includere explorato)
+// FORCE SAVE ENDPOINT (aggiornato per includere explorato, fattibilita, stato)
 // ===============================
 app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
   try {
@@ -1237,7 +1301,7 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
     
     for (const spotData of spots) {
       try {
-        const { name, desc, lat, lng, voto, tipo, explorato, id } = spotData || {};
+        const { name, desc, lat, lng, voto, tipo, explorato, fattibilita, stato, id } = spotData || {};
         
         if (!name || lat == null || lng == null) {
           results.errors.push({
@@ -1266,6 +1330,18 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
           if (v >= 1 && v <= 6) votoNum = v;
         }
         
+        let fattibilitaNum = null;
+        if (fattibilita !== undefined && fattibilita !== "" && !isNaN(fattibilita)) {
+          const f = parseInt(fattibilita, 10);
+          if (f >= 1 && f <= 6) fattibilitaNum = f;
+        }
+        
+        let statoNum = null;
+        if (stato !== undefined && stato !== "" && !isNaN(stato)) {
+          const s = parseInt(stato, 10);
+          if (s >= 1 && s <= 6) statoNum = s;
+        }
+        
         const tipoFinal = tipo ? String(tipo) : getTipo(name, desc);
         const exploratoFinal = explorato === true || explorato === 'true';
         
@@ -1277,6 +1353,8 @@ app.post("/api/spots-extra/force-save", authMiddleware, async (req, res) => {
           voto: votoNum,
           tipo: tipoFinal,
           explorato: exploratoFinal,
+          fattibilita: fattibilitaNum,
+          stato: statoNum,
           updatedAt: new Date().toISOString(),
           updatedBy: req.user ? req.user.name : "force_save",
           version: 1,
@@ -1427,6 +1505,20 @@ app.get("/api/debug/system-info", async (req, res) => {
     }
     votoStats['null'] = isMongoConnected ? await db.collection('spots').countDocuments({ voto: null }) : 0;
     
+    // Statistiche per fattibilità
+    const fattibilitaStats = {};
+    for (let i = 1; i <= 6; i++) {
+      fattibilitaStats[i] = isMongoConnected ? await db.collection('spots').countDocuments({ fattibilita: i }) : 0;
+    }
+    fattibilitaStats['null'] = isMongoConnected ? await db.collection('spots').countDocuments({ fattibilita: null }) : 0;
+    
+    // Statistiche per stato
+    const statoStats = {};
+    for (let i = 1; i <= 6; i++) {
+      statoStats[i] = isMongoConnected ? await db.collection('spots').countDocuments({ stato: i }) : 0;
+    }
+    statoStats['null'] = isMongoConnected ? await db.collection('spots').countDocuments({ stato: null }) : 0;
+    
     res.json({
       success: true,
       data: {
@@ -1443,16 +1535,24 @@ app.get("/api/debug/system-info", async (req, res) => {
           nonExploratiCount: spotCount - exploratiCount,
           notesCount: notesCount,
           votoStats: votoStats,
+          fattibilitaStats: fattibilitaStats,
+          statoStats: statoStats,
           settings: settings
         },
         colors: {
-          voto1: "#6b7280", // Grigio
-          voto2: "#ef4444", // Rosso - MODIFICATO
+          voto1: "#ef4444", // Rosso
+          voto2: "#6b7280", // Grigio
           voto3: "#16a34a", // Verde
           voto4: "#2563eb", // Blu
           voto5: "#9333ea", // Viola
           voto6: "#fbbf24", // Oro
-          explorato: "#ec4899", // Fucsia Barbie - MODIFICATO
+          fattibilita1: "#dc2626", // Rosso scuro
+          fattibilita2: "#ea580c", // Arancione
+          fattibilita3: "#d97706", // Giallo ambra
+          fattibilita4: "#65a30d", // Verde lime
+          fattibilita5: "#2563eb", // Blu
+          fattibilita6: "#7c3aed", // Viola
+          explorato: "#ff00e6", // Fucsia
           noVoto: "#000000"
         },
         env: {
@@ -1686,13 +1786,16 @@ async function initializeServer() {
       // 3. Inizializza settings
       const spotCount = await db.collection('spots').countDocuments();
       const exploratiCount = await db.collection('spots').countDocuments({ explorato: true });
+      const fattibilitaCount = await db.collection('spots').countDocuments({ fattibilita: { $ne: null } });
+      const statoCount = await db.collection('spots').countDocuments({ stato: { $ne: null } });
       const settings = await getSettings();
       
       console.log('📊 Stato iniziale:');
       console.log(`   • Spot totali: ${spotCount}`);
       console.log(`   • Spot esplorati: ${exploratiCount}`);
+      console.log(`   • Spot con fattibilità: ${fattibilitaCount}`);
+      console.log(`   • Spot con stato: ${statoCount}`);
       console.log(`   • Database: MongoDB Atlas`);
-      console.log(`   • Nuova palette colori attiva`);
       console.log(`   • Sistema note: 3 tab (versione 2)`);
       console.log(`   • Allineamento Google Maps: pronto`);
       
@@ -1700,7 +1803,7 @@ async function initializeServer() {
         ...settings,
         database: "mongodb",
         lastUpdated: new Date().toISOString(),
-        version: 5,
+        version: 6,
         noteVersion: 2
       });
     } else {
@@ -1733,14 +1836,20 @@ initializeServer().then(() => {
     console.log(`⏰ Avviato: ${new Date().toISOString()}`);
     console.log(`💾 Database: MongoDB Atlas`);
     console.log(`🎨 Nuova palette colori:`);
-    console.log(`   • 1: Grigio (#6b7280)`);
-    console.log(`   • 2: Rosso (#ef4444) ← MODIFICATO`);
-    console.log(`   • 3: Verde (#16a34a)`);
-    console.log(`   • 4: Blu (#2563eb)`);
-    console.log(`   • 5: Viola (#9333ea)`);
-    console.log(`   • 6: Oro (#fbbf24)`);
+    console.log(`   • Voto 1: Rosso (#ef4444)`);
+    console.log(`   • Voto 2: Grigio (#6b7280)`);
+    console.log(`   • Voto 3: Verde (#16a34a)`);
+    console.log(`   • Voto 4: Blu (#2563eb)`);
+    console.log(`   • Voto 5: Viola (#9333ea)`);
+    console.log(`   • Voto 6: Oro (#fbbf24)`);
     console.log(`   • Nessun voto: Nero con ?`);
-    console.log(`   • Esplorato: Fucsia Barbie (#ec4899) ← MODIFICATO`);
+    console.log(`   • Fattibilità/Stato 1: Rosso scuro (#dc2626)`);
+    console.log(`   • Fattibilità/Stato 2: Arancione (#ea580c)`);
+    console.log(`   • Fattibilità/Stato 3: Giallo ambra (#d97706)`);
+    console.log(`   • Fattibilità/Stato 4: Verde lime (#65a30d)`);
+    console.log(`   • Fattibilità/Stato 5: Blu (#2563eb)`);
+    console.log(`   • Fattibilità/Stato 6: Viola (#7c3aed)`);
+    console.log(`   • Esplorato: Fucsia (#ff00e6)`);
     console.log(`📝 Sistema note: 3 tab fullscreen`);
     console.log(`🔄 Allineamento Google Maps attivo`);
   });
